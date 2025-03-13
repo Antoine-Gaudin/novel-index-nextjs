@@ -1,101 +1,136 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import SortieJours from "./components/SortieJours";
+import SortieOeuvre from "./components/SortieOeuvre";
+import OeuvresParTeam from "./components/OeuvresParTeam";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [searchText, setSearchText] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const apiUrl = "http://localhost:1337";
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleSearch = async () => {
+    try {
+      const url = `${apiUrl}/api/oeuvres?filters[titre][$containsi]=${searchText}&populate=*`;
+      const res = await fetch(url);
+      const data = await res.json();
+      setSearchResults(data.data);
+    } catch (error) {
+      console.error("Erreur lors de la recherche :", error);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  return (
+    <div>
+      {/* Hero Header */}
+      <div
+        className="relative h-screen w-full bg-cover bg-center"
+        style={{
+          backgroundImage: `url('/image/HeroHeader.webp')`,
+          backgroundAttachment: "fixed",
+        }}
+      >
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+
+        {/* Content */}
+        <div className="absolute inset-0 flex flex-col justify-center items-center text-center text-white px-4">
+          <h1 className="text-5xl md:text-6xl font-bold mb-4">
+            Bienvenue sur Novel-Index
+          </h1>
+          <p className="text-lg md:text-2xl mb-6">
+            Explorez et découvrez notre univers.
+          </p>
+          <input
+            type="text"
+            placeholder="Rechercher une œuvre"
+            className="px-4 py-2 rounded-md text-gray-900 focus:outline-none w-3/4 max-w-lg"
+            onClick={() => setIsSearchOpen(true)}
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Dégradé en bas du Hero Header */}
+        <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-b from-transparent to-gray-900"></div>
+      </div>
+
+      {/* Contenu suivant */}
+      <SortieJours />
+      <SortieOeuvre />
+      <OeuvresParTeam />
+
+      {/* Recherche Plein Écran */}
+      {isSearchOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center">
+          <div className="w-full max-w-2xl p-4">
+            <input
+              type="text"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Rechercher une œuvre..."
+              className="w-full px-4 py-3 rounded-md text-gray-900 focus:outline-none"
+              autoFocus
+            />
+            <button
+              onClick={handleSearch}
+              className="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md"
+            >
+              Rechercher
+            </button>
+          </div>
+
+          <div className="mt-6 w-full max-w-2xl bg-gray-800 rounded-lg p-4">
+            {searchResults.length > 0 ? (
+              <ul>
+                {searchResults.map((oeuvre) => (
+                  <li
+                    key={oeuvre.id}
+                    className="p-4 border-b border-gray-700 hover:bg-gray-700 cursor-pointer flex items-center"
+                    onClick={() => {
+                      setIsSearchOpen(false);
+                    }}
+                  >
+                    {oeuvre.couverture?.length > 0 && (
+                      <img
+                        src={`${apiUrl}${oeuvre.couverture[0].url}`}
+                        alt={oeuvre.titre || "Image non disponible"}
+                        className="w-16 h-16 object-cover rounded-md mr-4"
+                      />
+                    )}
+                    <div>
+                      <h3 className="text-xl font-bold">
+                        {oeuvre.titre || "Titre non disponible"}
+                      </h3>
+                      <p className="text-sm text-gray-400">
+                        Auteur : {oeuvre.auteur || "Auteur non spécifié"}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-400 text-center">
+                Aucun résultat pour cette recherche.
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={() => setIsSearchOpen(false)}
+            className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
+          >
+            Fermer
+          </button>
+        </div>
+      )}
     </div>
   );
 }
