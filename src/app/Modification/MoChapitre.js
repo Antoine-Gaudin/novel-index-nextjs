@@ -13,7 +13,7 @@ const MoChapitre = ({ user, oeuvre }) => {
       try {
         const jwt = localStorage.getItem("jwt");
         const response = await axios.get(
-          `http://localhost:1337/api/oeuvres/${oeuvre.documentId}?populate=chapitres`,
+          `https://novel-index-strapi.onrender.com/api/oeuvres/${oeuvre.documentId}?populate=chapitres`,
           {
             headers: { Authorization: `Bearer ${jwt}` },
           }
@@ -57,7 +57,7 @@ const MoChapitre = ({ user, oeuvre }) => {
         console.log("Filtered chapitre data:", filteredChapitre);
   
         await axios.put(
-          `http://localhost:1337/api/chapitres/${chapitre.documentId}`, // On utilise `documentId` pour identifier le chapitre
+          `https://novel-index-strapi.onrender.com/api/chapitres/${chapitre.documentId}`, // On utilise `documentId` pour identifier le chapitre
           { data: filteredChapitre }, // Envoyer uniquement les champs pertinents
           {
             headers: { Authorization: `Bearer ${jwt}` },

@@ -12,7 +12,7 @@ const ProfilePage = () => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
   const [activeMenu, setActiveMenu] = useState("profil"); // Vue active par défaut
-  const apiUrl = "http://localhost:1337";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const fetchUserData = async () => {

@@ -35,7 +35,7 @@ const AddMaisonEdition = () => {
     try {
       const jwt = localStorage.getItem("jwt");
       const response = await axios.get(
-        `http://localhost:1337/api/oeuvres?filters[titre][$contains]=${searchTerm}`,
+        `https://novel-index-strapi.onrender.com/api/oeuvres?filters[titre][$contains]=${searchTerm}`,
         {
           headers: {
             Authorization: `Bearer ${jwt}`,
@@ -92,7 +92,7 @@ const AddMaisonEdition = () => {
 
       console.log("Payload JSON :", payload);
 
-      const response = await axios.post("http://localhost:1337/api/editions", payload, {
+      const response = await axios.post("https://novel-index-strapi.onrender.com/api/editions", payload, {
         headers: {
           Authorization: `Bearer ${jwt}`,
           "Content-Type": "application/json",
@@ -114,7 +114,7 @@ const AddMaisonEdition = () => {
         console.log("Début de l'upload du fichier logo...");
 
         try {
-          const uploadResponse = await axios.post("http://localhost:1337/api/upload", uploadData, {
+          const uploadResponse = await axios.post("https://novel-index-strapi.onrender.com/api/upload", uploadData, {
             headers: {
               Authorization: `Bearer ${jwt}`,
             },

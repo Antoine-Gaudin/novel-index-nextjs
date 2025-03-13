@@ -13,7 +13,7 @@ const Genre = ({ selectedOeuvre }) => {
       const jwt = localStorage.getItem("jwt");
 
       const response = await axios.get(
-        `http://localhost:1337/api/oeuvres/${selectedOeuvre.documentId}?populate=genres`,
+        `https://novel-index-strapi.onrender.com/api/oeuvres/${selectedOeuvre.documentId}?populate=genres`,
         {
           headers: { Authorization: `Bearer ${jwt}` },
         }
@@ -37,7 +37,7 @@ const Genre = ({ selectedOeuvre }) => {
       });
 
       const response = await axios.post(
-        "http://127.0.0.1:1337/api/genres",
+        "https://novel-index-strapi.onrender.com/api/genres",
         {
           data: {
             titre: newGenre,

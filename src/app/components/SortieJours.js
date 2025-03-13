@@ -15,7 +15,7 @@ const SortieJours = () => {
   const [selectedData, setSelectedData] = useState(null); // Données sélectionnées pour le pop-up
   const [selectedType, setSelectedType] = useState("Tout"); // Type sélectionné pour le filtrage
 
-  const apiUrl = "http://localhost:1337";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const fetchOeuvresMisesAJour = async () => {

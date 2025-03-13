@@ -51,7 +51,7 @@ const OneChapitre = ({ user, oeuvre }) => {
 
       // Vérification si l'URL existe déjà
       const urlCheckResponse = await axios.get(
-        `http://localhost:1337/api/chapitres?filters[url][$eq]=${formData.url}`,
+        `https://novel-index-strapi.onrender.com/api/chapitres?filters[url][$eq]=${formData.url}`,
         {
           headers: { Authorization: `Bearer ${jwt}` },
         }
@@ -68,7 +68,7 @@ const OneChapitre = ({ user, oeuvre }) => {
       console.log("Récupération des chapitres de l'œuvre :", oeuvre.documentId);
 
       const oeuvreResponse = await axios.get(
-        `http://localhost:1337/api/oeuvres/${oeuvre.documentId}?populate=chapitres`,
+        `https://novel-index-strapi.onrender.com/api/oeuvres/${oeuvre.documentId}?populate=chapitres`,
         {
           headers: { Authorization: `Bearer ${jwt}` },
         }
@@ -107,7 +107,7 @@ const OneChapitre = ({ user, oeuvre }) => {
       console.log("Payload envoyé :", payload);
 
       // Envoi des données à l'API
-      const response = await axios.post("http://localhost:1337/api/chapitres", payload, {
+      const response = await axios.post("https://novel-index-strapi.onrender.com/api/chapitres", payload, {
         headers: {
           Authorization: `Bearer ${jwt}`,
           "Content-Type": "application/json",

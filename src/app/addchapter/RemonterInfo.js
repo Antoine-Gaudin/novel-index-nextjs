@@ -47,7 +47,7 @@ const RemonterInfo = ({ user }) => {
 
       console.log("Payload envoyé :", payload);
 
-      const response = await axios.post("http://localhost:1337/api/administrations", payload, {
+      const response = await axios.post("https://novel-index-strapi.onrender.com/api/administrations", payload, {
         headers: {
           Authorization: `Bearer ${jwt}`,
           "Content-Type": "application/json",

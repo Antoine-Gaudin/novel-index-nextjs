@@ -20,7 +20,7 @@ const LoginPage = () => {
     try {
       // Appel à l'API Strapi pour authentification
       const response = await axios.post(
-        `http://localhost:1337/api/auth/local`,
+        `https://novel-index-strapi.onrender.com/api/auth/local`,
         {
           identifier,
           password,
@@ -34,7 +34,7 @@ Cookies.set("jwt", response.data.jwt, { expires: 7 });
 
       // Récupérer les informations utilisateur
       const userInfoResponse = await axios.get(
-        `http://localhost:1337/api/users/me`,
+        `https://novel-index-strapi.onrender.com/api/users/me`,
         {
           headers: {
             Authorization: `Bearer ${response.data.jwt}`,

@@ -22,7 +22,7 @@ const InfoChapitre = ({ oeuvre }) => {
 
         // Requête pour récupérer les chapitres et leurs utilisateurs associés
         const response = await axios.get(
-          `http://localhost:1337/api/oeuvres/${oeuvre.documentId}?populate=chapitres.users_permissions_users`,
+          `https://novel-index-strapi.onrender.com/api/oeuvres/${oeuvre.documentId}?populate=chapitres.users_permissions_users`,
           {
             headers: {
               Authorization: `Bearer ${jwt}`,

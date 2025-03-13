@@ -25,7 +25,7 @@ const MoTeams = ({ user }) => {
       }
 
       const response = await axios.get(
-        `http://localhost:1337/api/teams?filters[titre][$contains]=${searchTerm}`,
+        `https://novel-index-strapi.onrender.com/api/teams?filters[titre][$contains]=${searchTerm}`,
         {
           headers: { Authorization: `Bearer ${jwt}` },
         }
@@ -52,7 +52,7 @@ const MoTeams = ({ user }) => {
       }
 
       const response = await axios.get(
-        `http://localhost:1337/api/teams/${team.documentId}`,
+        `https://novel-index-strapi.onrender.com/api/teams/${team.documentId}`,
         {
           headers: { Authorization: `Bearer ${jwt}` },
         }
@@ -89,7 +89,7 @@ const MoTeams = ({ user }) => {
       console.log("Données filtrées à sauvegarder :", filteredTeamData);
 
       await axios.put(
-        `http://localhost:1337/api/teams/${selectedTeam.documentId}`,
+        `https://novel-index-strapi.onrender.com/api/teams/${selectedTeam.documentId}`,
         { data: filteredTeamData },
         {
           headers: { Authorization: `Bearer ${jwt}` },

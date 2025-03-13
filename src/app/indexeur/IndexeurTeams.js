@@ -74,7 +74,7 @@ const IndexeurTeams = ({ user }) => {
       console.log("Payload envoyé pour la team :", teamPayload);
 
       // Création de la team
-      const response = await axios.post("http://localhost:1337/api/teams", teamPayload, {
+      const response = await axios.post("https://novel-index-strapi.onrender.com/api/teams", teamPayload, {
         headers: {
           Authorization: `Bearer ${jwt}`,
           "Content-Type": "application/json",
@@ -93,7 +93,7 @@ const IndexeurTeams = ({ user }) => {
         coverData.append("field", "couverture");
 
         try {
-          await axios.post("http://localhost:1337/api/upload", coverData, {
+          await axios.post("https://novel-index-strapi.onrender.com/api/upload", coverData, {
             headers: {
               Authorization: `Bearer ${jwt}`,
               "Content-Type": "multipart/form-data",
@@ -122,7 +122,7 @@ const IndexeurTeams = ({ user }) => {
 
         console.log("Payload envoyé pour le teamlien :", teamLienPayload);
 
-        await axios.post("http://localhost:1337/api/teamliens", teamLienPayload, {
+        await axios.post("https://novel-index-strapi.onrender.com/api/teamliens", teamLienPayload, {
           headers: {
             Authorization: `Bearer ${jwt}`,
             "Content-Type": "application/json",

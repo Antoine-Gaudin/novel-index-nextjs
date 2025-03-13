@@ -8,7 +8,7 @@ const Parametre = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [profilePicture, setProfilePicture] = useState(null);
-  const apiUrl = "http://localhost:1337";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   const handleToggle = async (key) => {
     const jwt = Cookies.get("jwt");

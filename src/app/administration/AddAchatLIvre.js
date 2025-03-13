@@ -33,7 +33,7 @@ const AddAchatLivre = () => {
     try {
       const jwt = localStorage.getItem("jwt");
       const response = await axios.get(
-        `http://localhost:1337/api/oeuvres?filters[titre][$contains]=${searchOeuvreTerm}`,
+        `https://novel-index-strapi.onrender.com/api/oeuvres?filters[titre][$contains]=${searchOeuvreTerm}`,
         {
           headers: {
             Authorization: `Bearer ${jwt}`,
@@ -56,7 +56,7 @@ const AddAchatLivre = () => {
     try {
       const jwt = localStorage.getItem("jwt");
       const response = await axios.get(
-        `http://localhost:1337/api/editions?filters[titre][$contains]=${searchEditionTerm}`,
+        `https://novel-index-strapi.onrender.com/api/editions?filters[titre][$contains]=${searchEditionTerm}`,
         {
           headers: {
             Authorization: `Bearer ${jwt}`,
@@ -133,7 +133,7 @@ const AddAchatLivre = () => {
       console.log("Payload :", payload);
 
       // Envoi des données à Strapi
-      const response = await axios.post("http://localhost:1337/api/achatlivres", payload, {
+      const response = await axios.post("https://novel-index-strapi.onrender.com/api/achatlivres", payload, {
         headers: {
           Authorization: `Bearer ${jwt}`,
           "Content-Type": "application/json",

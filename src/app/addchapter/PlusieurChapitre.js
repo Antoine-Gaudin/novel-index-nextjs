@@ -35,7 +35,7 @@ const PlusieursChapitre = ({ user, oeuvre }) => {
       }
 
       const oeuvreResponse = await axios.get(
-        `http://localhost:1337/api/oeuvres/${oeuvre.documentId}?populate=chapitres`,
+        `https://novel-index-strapi.onrender.com/api/oeuvres/${oeuvre.documentId}?populate=chapitres`,
         {
           headers: { Authorization: `Bearer ${jwt}` },
         }
@@ -88,7 +88,7 @@ const PlusieursChapitre = ({ user, oeuvre }) => {
       });
 
       for (const payload of payloads) {
-        await axios.post("http://localhost:1337/api/chapitres", payload, {
+        await axios.post("https://novel-index-strapi.onrender.com/api/chapitres", payload, {
           headers: {
             Authorization: `Bearer ${jwt}`,
             "Content-Type": "application/json",

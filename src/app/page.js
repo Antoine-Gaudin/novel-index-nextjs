@@ -9,7 +9,7 @@ export default function Home() {
   const [searchText, setSearchText] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const apiUrl = "http://localhost:1337";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   const handleSearch = async () => {
     try {

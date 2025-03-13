@@ -14,7 +14,7 @@ const MessageAdministration = () => {
       setLoading(true);
       try {
         const jwt = localStorage.getItem("jwt");
-        const response = await axios.get("http://localhost:1337/api/administrations", {
+        const response = await axios.get("https://novel-index-strapi.onrender.com/api/administrations", {
           headers: {
             Authorization: `Bearer ${jwt}`,
           },
@@ -35,7 +35,7 @@ const MessageAdministration = () => {
   const handleDelete = async (documentId) => {
     try {
       const jwt = localStorage.getItem("jwt");
-      await axios.delete(`http://localhost:1337/api/administrations/${documentId}`, {
+      await axios.delete(`https://novel-index-strapi.onrender.com/api/administrations/${documentId}`, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },

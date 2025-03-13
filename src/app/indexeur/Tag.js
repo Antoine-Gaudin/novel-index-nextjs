@@ -13,7 +13,7 @@ const Tag = ({ selectedOeuvre }) => {
       const jwt = localStorage.getItem("jwt");
 
       const response = await axios.get(
-        `http://localhost:1337/api/oeuvres/${selectedOeuvre.documentId}?populate=tags`,
+        `https://novel-index-strapi.onrender.com/api/oeuvres/${selectedOeuvre.documentId}?populate=tags`,
         {
           headers: { Authorization: `Bearer ${jwt}` },
         }
@@ -37,7 +37,7 @@ const Tag = ({ selectedOeuvre }) => {
       });
 
       const response = await axios.post(
-        "http://localhost:1337/api/tags",
+        "https://novel-index-strapi.onrender.com/api/tags",
         {
           data: {
             titre: newTag,

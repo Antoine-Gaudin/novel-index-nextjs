@@ -14,7 +14,7 @@ const OeuvrePage = () => {
   const [chapitres, setChapitres] = useState([]); // Liste des chapitres
   const [selectedChapter, setSelectedChapter] = useState(null); // Chapitre sélectionné pour le pop-up
   const [loading, setLoading] = useState(true);
-  const apiUrl = "http://localhost:1337";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const fetchOeuvre = async () => {
@@ -83,7 +83,7 @@ const OeuvrePage = () => {
           {/* Image de couverture */}
           {oeuvre.couverture?.url ? (
             <img
-              src={`http://localhost:1337${oeuvre.couverture.url}`}
+              src={`https://novel-index-strapi.onrender.com${oeuvre.couverture.url}`}
               alt={oeuvre.titre || "Image non disponible"}
               className="w-64 h-96 object-cover rounded-lg shadow-lg"
             />

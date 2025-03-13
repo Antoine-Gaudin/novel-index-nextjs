@@ -25,7 +25,7 @@ const MoOeuvre = ({ user, oeuvre }) => {
         console.log("JWT retrieved:", jwt);
 
         const response = await axios.get(
-          `http://localhost:1337/api/oeuvres/${oeuvre.documentId}`,
+          `https://novel-index-strapi.onrender.com/api/oeuvres/${oeuvre.documentId}`,
           {
             headers: { Authorization: `Bearer ${jwt}` },
           }
@@ -66,7 +66,7 @@ const MoOeuvre = ({ user, oeuvre }) => {
       console.log("Filtered œuvre data:", filteredOeuvreData);
   
       await axios.put(
-        `http://localhost:1337/api/oeuvres/${oeuvre.documentId}`,
+        `https://novel-index-strapi.onrender.com/api/oeuvres/${oeuvre.documentId}`,
         { data: filteredOeuvreData }, // Envoyer uniquement les données filtrées
         {
           headers: { Authorization: `Bearer ${jwt}` },

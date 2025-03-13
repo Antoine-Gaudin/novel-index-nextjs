@@ -30,7 +30,7 @@ const IndexeurChapitre = ({ user }) => {
     try {
       const jwt = localStorage.getItem("jwt") || Cookies.get("jwt");
       const response = await axios.get(
-        `http://localhost:1337/api/oeuvres?populate=couverture&filters[titre][$contains]=${searchTerm}&filters[licence][$eq]=false`,
+        `https://novel-index-strapi.onrender.com/api/oeuvres?populate=couverture&filters[titre][$contains]=${searchTerm}&filters[licence][$eq]=false`,
         {
           headers: {
             Authorization: `Bearer ${jwt}`,
@@ -130,7 +130,7 @@ const IndexeurChapitre = ({ user }) => {
                 >
                   {oeuvre.couverture?.url ? (
                     <img
-                      src={`http://localhost:1337${oeuvre.couverture.url}`}
+                      src={`https://novel-index-strapi.onrender.com/${oeuvre.couverture.url}`}
                       alt={oeuvre.titre}
                       className="w-16 h-16 rounded-lg mr-4 object-cover"
                     />

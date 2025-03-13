@@ -13,7 +13,7 @@ const Commentaire = ({ oeuvre }) => {
   const [currentPage, setCurrentPage] = useState(1); // Page actuelle
   const commentsPerPage = 5; // Nombre de commentaires par page
 
-  const apiUrl = "http://localhost:1337";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   // Récupérer les informations de l'utilisateur
   useEffect(() => {

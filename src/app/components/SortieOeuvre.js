@@ -15,7 +15,7 @@ const SortieOeuvre = () => {
   const [selectedData, setSelectedData] = useState(null);
   const [selectedType, setSelectedType] = useState("Tout");
 
-  const apiUrl = "http://localhost:1337";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const fetchOeuvresDuJour = async () => {

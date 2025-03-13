@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"; // Import du router pour la redirec
 
 export default function Oeuvres() {
   const [oeuvres, setOeuvres] = useState([]);
-  const apiUrl = "http://localhost:1337";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter(); // Initialisation du router
 
   useEffect(() => {

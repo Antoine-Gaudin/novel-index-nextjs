@@ -15,7 +15,7 @@ const OeuvresParTeam = () => {
   const [error, setError] = useState(null);
   const [selectedData, setSelectedData] = useState(null);
 
-  const apiUrl = "http://localhost:1337";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const fetchRandomTeam = async () => {

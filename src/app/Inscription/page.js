@@ -49,7 +49,7 @@ const SignupPage = () => {
     try {
       const authenticatedRoleId = 2;
 
-      const response = await axios.post("http://localhost:1337/api/users", {
+      const response = await axios.post(`https://novel-index-strapi.onrender.com/api/users`, {
         username,
         email,
         password,

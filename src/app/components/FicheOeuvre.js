@@ -7,7 +7,7 @@ import Commentaire from "./commentaire";
 const FicheOeuvre = ({ oeuvre, onClose }) => {
   const [chapitres, setChapitres] = useState([]);
   const [selectedChapter, setSelectedChapter] = useState(null);
-  const apiUrl = "http://localhost:1337";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const fetchChapitres = async () => {
@@ -106,7 +106,7 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
           {/* Image de couverture */}
           {oeuvre.couverture ? (
             <img
-              src={`http://localhost:1337${oeuvre.couverture}`}
+              src={`https://novel-index-strapi.onrender.com${oeuvre.couverture}`}
               alt={oeuvre.titre || "Image non disponible"}
               className="rounded-md shadow-md"
               style={{

@@ -66,7 +66,7 @@ const IndexeurOeuvre = ({ user }) => {
 
   
       // Envoi des données textuelles à Strapi
-      const response = await axios.post("http://localhost:1337/api/oeuvres", payload, {
+      const response = await axios.post(`https://novel-index-strapi.onrender.com/api/oeuvres`, payload, {
         headers: {
           Authorization: `Bearer ${jwt}`,
           "Content-Type": "application/json",
@@ -85,7 +85,7 @@ const IndexeurOeuvre = ({ user }) => {
       
         try {
           console.log("Début de l'upload du fichier...");
-          const uploadResponse = await axios.post("http://localhost:1337/api/upload", uploadData, {
+          const uploadResponse = await axios.post("https://novel-index-strapi.onrender.com/api/upload", uploadData, {
             headers: {
               Authorization: `Bearer ${jwt}`,
             },

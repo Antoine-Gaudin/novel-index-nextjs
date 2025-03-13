@@ -12,7 +12,7 @@ const ValidationProprietaire = () => {
       try {
         const jwt = localStorage.getItem("jwt");
 
-        const response = await axios.get("http://localhost:1337/api/proprietaires", {
+        const response = await axios.get("https://novel-index-strapi.onrender.com/api/proprietaires", {
           headers: {
             Authorization: `Bearer ${jwt}`,
           },
@@ -66,7 +66,7 @@ const ValidationProprietaire = () => {
               bullInfo: proprietaire.bullInfo,
             },
           };
-          const apiUrl = `http://localhost:1337/api/proprietaires/${proprietaire.documentId}`;
+          const apiUrl = `https://novel-index-strapi.onrender.com/api/proprietaires/${proprietaire.documentId}`;
           const headers = { Authorization: `Bearer ${jwt}` };
 
           return axios.put(apiUrl, dataToSend, { headers });

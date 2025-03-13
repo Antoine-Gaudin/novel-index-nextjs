@@ -8,7 +8,7 @@ const AffiChapitre = ({ documentId, licence }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null); // Élément sélectionné pour le pop-up
-  const apiUrl = "http://localhost:1337";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const fetchData = async () => {

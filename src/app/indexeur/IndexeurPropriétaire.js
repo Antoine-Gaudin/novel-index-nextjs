@@ -126,7 +126,7 @@ const Proprietaire = ({ user }) => {
       console.log("Données envoyées :", payload);
 
       const response = await axios.post(
-        "http://localhost:1337/api/proprietaires",
+        "https://novel-index-strapi.onrender.com/api/proprietaires",
         { data: payload },
         {
           headers: { Authorization: `Bearer ${jwt}` },
