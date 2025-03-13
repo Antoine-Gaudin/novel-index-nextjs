@@ -34,7 +34,7 @@ export default function Home() {
       <div
         className="relative h-screen w-full bg-cover bg-center"
         style={{
-          backgroundImage: `url('/image/HeroHeader.webp')`,
+          backgroundImage: `url('/images/HeroHeader.webp')`,
           backgroundAttachment: "fixed",
         }}
       >
