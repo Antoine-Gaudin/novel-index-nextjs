@@ -75,6 +75,7 @@ export default function ImportPage({ user }) {
       
 
       const oeuvre = {
+        nameurl: parts[0],             // ✅ Ajout de nameurl (l'ID en première colonne)
         titre: parts[1],               // ✅ Titre
         auteur: parts[2],              // ✅ Auteur
         categorie: parts[3],           // ✅ Catégorie
@@ -85,6 +86,7 @@ export default function ImportPage({ user }) {
         type: parts[8],                // ✅ Type
         users_permissions_users: [currentUser?.documentId], // ✅ User lié
       };
+      
 
       console.log("📌 DEBUG: Données envoyées à Strapi :", oeuvre);
 
