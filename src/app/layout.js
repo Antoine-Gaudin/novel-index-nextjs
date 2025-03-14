@@ -30,7 +30,7 @@ export default function RootLayout({ children }) {
       // Récupérer l'image de profil de l'utilisateur
       const fetchUserProfile = async () => {
         try {
-          const response = await fetch("http://localhost:1337/api/users/me?populate=profil", {
+          const response = await fetch("https://novel-index-strapi.onrender.com/api/users/me?populate=profil", {
             headers: {
               Authorization: `Bearer ${jwt}`,
             },
@@ -43,7 +43,7 @@ export default function RootLayout({ children }) {
             // Accéder à l'URL de l'image au format "small"
             const profilePictureUrl = userData?.profil?.formats?.small?.url;
             if (profilePictureUrl) {
-              setUserProfilePicture(`http://localhost:1337${profilePictureUrl}`);
+              setUserProfilePicture(`https://novel-index-strapi.onrender.com${profilePictureUrl}`);
             }
           } else {
             console.error("Erreur lors de la récupération des données utilisateur");
