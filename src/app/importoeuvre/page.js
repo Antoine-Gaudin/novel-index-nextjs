@@ -84,8 +84,10 @@ export default function ImportPage({ user }) {
         synopsis: parts[6],            // ✅ Synopsis
         annee: parseInt(parts[7], 10) || null, // ✅ Année de parution
         type: parts[8],                // ✅ Type
+        langage: "Francais",           // ✅ Langage par défaut
         users_permissions_users: [currentUser?.documentId], // ✅ User lié
       };
+      
       
 
       console.log("📌 DEBUG: Données envoyées à Strapi :", oeuvre);
