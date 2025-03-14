@@ -68,7 +68,7 @@ export default function ImportPage({ user }) {
     for (let i = 0; i < lines.length; i++) {
       const parts = lines[i].split("|").map(part => part.trim());
 
-      if (parts.length < 9) { 
+      if (parts.length < 8) { 
         errors.push(`❌ Ligne ${i + 1} invalide : ${lines[i]}`);
         continue;
       }
