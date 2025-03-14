@@ -81,7 +81,7 @@ export default function ImportPage({ user }) {
         synopsis: parts[6],
         annee: parseInt(parts[7], 10) || null,
         type: parts[8],
-        users_permissions_users: [user.id],
+        users_permissions_users: [user.documentId],
       };
       
 
