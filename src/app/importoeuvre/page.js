@@ -84,13 +84,20 @@ export default function ImportPage() {
     <div className="p-6 max-w-lg mx-auto">
       <h1 className="text-xl font-bold mb-4">Importer des Œuvres dans Strapi</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <textarea
-          rows="10"
-          className="border p-2 w-full"
-          placeholder="Collez vos œuvres ici..."
-          value={textData}
-          onChange={(e) => setTextData(e.target.value)}
-        />
+      <textarea
+  rows="10"
+  className="border p-2 w-full text-black"
+  placeholder="Collez vos œuvres ici..."
+  value={textData}
+  onChange={(e) => setTextData(e.target.value)}
+  onPaste={(e) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain").replace(/\n/g, " "); // Remplace les retours à la ligne par un espace
+    setTextData(prev => prev + text);
+  }}
+  style={{ whiteSpace: "nowrap", overflowX: "scroll" }} // Empêche le retour à la ligne et active le scroll horizontal
+/>
+
         <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded" disabled={isUploading}>
           {isUploading ? "Importation en cours..." : "Importer"}
         </button>
