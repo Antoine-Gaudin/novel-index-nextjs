@@ -3,78 +3,100 @@
 import { useState } from "react";
 
 export default function ImportPage() {
-  const [file, setFile] = useState(null);
-  const [progress, setProgress] = useState(0);
+  const [textData, setTextData] = useState("");
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
-  };
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-  const handleUpload = async () => {
-    if (!file) {
-      setMessage("❌ Veuillez sélectionner un fichier JSON.");
+    // Récupérer le token JWT de l'utilisateur connecté
+    const jwt = localStorage.getItem("jwt");
+
+    if (!jwt) {
+      setMessage("❌ Vous devez être connecté pour ajouter une œuvre.");
+      return;
+    }
+
+    if (!textData.trim()) {
+      setMessage("❌ Le texte est vide.");
       return;
     }
 
     setIsUploading(true);
-    setProgress(0);
+    setMessage("⏳ Importation en cours...");
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const oeuvres = JSON.parse(e.target.result);
-        const totalOeuvres = oeuvres.length;
+    // Séparer chaque ligne
+    const lines = textData.split("\n").map(line => line.trim()).filter(line => line !== "");
+    
+    let successCount = 0;
+    let errors = [];
 
-        for (let i = 0; i < totalOeuvres; i++) {
-          await fetch("/api/import-oeuvres", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ oeuvre: oeuvres[i] }),
-          });
+    for (let i = 0; i < lines.length; i++) {
+      const parts = lines[i].split("|").map(part => part.trim());
 
-          // Mise à jour de la barre de progression
-          setProgress(((i + 1) / totalOeuvres) * 100);
-          await new Promise((resolve) => setTimeout(resolve, 500)); // Délai de 500ms entre chaque requête
-        }
-
-        setMessage(`✅ Importation réussie ! ${totalOeuvres} œuvres ajoutées.`);
-      } catch (error) {
-        setMessage("❌ Erreur : Format JSON invalide.");
-      } finally {
-        setIsUploading(false);
+      if (parts.length < 9) { 
+        errors.push(`❌ Ligne ${i + 1} invalide : ${lines[i]}`);
+        continue;
       }
-    };
 
-    reader.readAsText(file);
+      const oeuvre = {
+        nameurl: parts[0],   // ID pour nameurl
+        titre: parts[1],     // Titre
+        auteur: parts[2],    // Auteur
+        categorie: parts[3], // Catégorie
+        etat: parts[4],      // Statut => etat
+        teams: parts[5],     // Team => teams
+        synopsis: parts[6],  // Synopsis
+        annee: parseInt(parts[7], 10) || null, // Parution => annee
+        type: parts[8],      // Type
+      };
+
+      try {
+        const res = await fetch("https://novel-index-strapi.onrender.com/api/oeuvre", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${jwt}`, // Utilisation du JWT de l'utilisateur connecté
+          },
+          body: JSON.stringify({ data: oeuvre }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          successCount++;
+        } else {
+          errors.push(`❌ Erreur ligne ${i + 1} : ${data.error || "Réponse invalide de Strapi"}`);
+        }
+      } catch (error) {
+        errors.push(`❌ Erreur serveur ligne ${i + 1}`);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500)); // Délai pour éviter la surcharge de requêtes
+    }
+
+    setMessage(`✅ ${successCount} œuvres ajoutées avec succès.\n${errors.join("\n")}`);
+    setIsUploading(false);
   };
 
   return (
     <div className="p-6 max-w-lg mx-auto">
-      <h1 className="text-xl font-bold mb-4">Importer des Œuvres</h1>
-      <input type="file" accept="application/json" onChange={handleFileChange} />
-      <button
-        onClick={handleUpload}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
-        disabled={isUploading}
-      >
-        {isUploading ? "Importation en cours..." : "Importer"}
-      </button>
+      <h1 className="text-xl font-bold mb-4">Importer des Œuvres dans Strapi</h1>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <textarea
+          rows="10"
+          className="border p-2 w-full"
+          placeholder="Collez vos œuvres ici..."
+          value={textData}
+          onChange={(e) => setTextData(e.target.value)}
+        />
+        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded" disabled={isUploading}>
+          {isUploading ? "Importation en cours..." : "Importer"}
+        </button>
 
-      {/* Barre de progression */}
-      {isUploading && (
-        <div className="mt-4 w-full bg-gray-200 rounded">
-          <div
-            className="bg-blue-500 text-xs text-center text-white p-1 rounded"
-            style={{ width: `${progress}%` }}
-          >
-            {Math.round(progress)}%
-          </div>
-        </div>
-      )}
-
-      {message && <p className="mt-4">{message}</p>}
+        {message && <pre className="mt-4 whitespace-pre-wrap">{message}</pre>}
+      </form>
     </div>
   );
 }
