@@ -68,22 +68,25 @@ export default function ImportPage({ user }) {
     for (let i = 0; i < lines.length; i++) {
       const parts = lines[i].split("|").map(part => part.trim());
 
-      if (parts.length < 8) { 
-        errors.push(`❌ Ligne ${i + 1} invalide : ${lines[i]}`);
+      if (parts.length !== 9) { 
+        errors.push(`❌ Ligne ${i + 1} invalide : ${lines[i]} (${parts.length}/9 colonnes détectées)`);
         continue;
       }
+      
 
       const oeuvre = {
-        titre: parts[1],
-        auteur: parts[2],
-        categorie: parts[3],
-        etat: parts[4],
-        synopsis: parts[6],
-        annee: parseInt(parts[7], 10) || null,
-        type: parts[8],
-        users_permissions_users: [currentUser?.documentId],
+        titre: parts[1],               // ✅ Titre
+        auteur: parts[2],              // ✅ Auteur
+        categorie: parts[3],           // ✅ Catégorie
+        etat: parts[4],                // ✅ Statut (État)
+        traduction: parts[5],          // ✅ Nouvelle colonne : Traduction
+        synopsis: parts[6],            // ✅ Synopsis
+        annee: parseInt(parts[7], 10) || null, // ✅ Année de parution
+        type: parts[8],                // ✅ Type
+        users_permissions_users: [currentUser?.documentId], // ✅ User lié
       };
-      
+
+      console.log("📌 DEBUG: Données envoyées à Strapi :", oeuvre);
 
       try {
         const response = await axios.post("https://novel-index-strapi.onrender.com/api/oeuvres", { data: oeuvre }, {
