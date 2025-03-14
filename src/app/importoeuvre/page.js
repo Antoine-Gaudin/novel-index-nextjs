@@ -26,8 +26,8 @@ export default function ImportPage() {
     setIsUploading(true);
     setMessage("⏳ Importation en cours...");
 
-    // Séparer chaque ligne
-    const lines = textData.split("\n").map(line => line.trim()).filter(line => line !== "");
+    // Séparer les lignes et nettoyer les espaces/retours à la ligne
+    const lines = textData.split(/\r?\n/).map(line => line.replace(/\s+/g, " ").trim()).filter(line => line !== "");
     
     let successCount = 0;
     let errors = [];
@@ -53,11 +53,11 @@ export default function ImportPage() {
       };
 
       try {
-        const res = await fetch("https://novel-index-strapi.onrender.com/api/oeuvre", {
+        const res = await fetch("https://novel-index-strapi.onrender.com/api/oeuvres", {  // ⬅️ Correction de l'URL
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${jwt}`, // Utilisation du JWT de l'utilisateur connecté
+            "Authorization": `Bearer ${jwt}`, // ⬅️ Utilisation du JWT utilisateur
           },
           body: JSON.stringify({ data: oeuvre }),
         });
