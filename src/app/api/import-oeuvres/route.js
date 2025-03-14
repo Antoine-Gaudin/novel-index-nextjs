@@ -1,14 +1,9 @@
-async function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-  
-  export async function POST(req) {
+export async function POST(req) {
     try {
       console.log("📩 Réception d'une requête d'importation...");
   
       const { oeuvre } = await req.json();
-      
-      // Vérifier si l'œuvre reçue est bien définie
+  
       if (!oeuvre) {
         console.log("❌ Donnée invalide reçue :", oeuvre);
         return new Response(JSON.stringify({ error: "Donnée invalide" }), { status: 400 });
@@ -21,18 +16,21 @@ async function delay(ms) {
   
       await delay(500); // Ajoute un délai de 500ms entre chaque requête
   
-      // Préparer les données envoyées à Strapi
       const payload = {
         data: {
           titre: oeuvre.titre || "Titre inconnu",
           auteur: oeuvre.auteur || "Auteur inconnu",
-          categorie: oeuvre.categorie || "Non spécifié",
-          etat: oeuvre.statut || "Non défini",
-          teams: oeuvre.team || null,
+          traduction: oeuvre.traduction || "",
           synopsis: oeuvre.synopsis || "",
-          type: oeuvre.type || "Non défini",
           annee: oeuvre.parution ? parseInt(oeuvre.parution, 10) : null,
-          nameurl: oeuvre.id ? oeuvre.id.toString() : "id-inconnu",
+          etat: oeuvre.statut || "Non défini",
+          type: oeuvre.type || "Non défini",
+          categorie: oeuvre.categorie || "Non spécifié",
+          licence: oeuvre.licence || "",
+          langage: oeuvre.langage || "",
+          couverture: oeuvre.image || null, // Vérifier si c'est bien une URL ou un fichier
+          teams: oeuvre.team || null,
+          nameurl: oeuvre.titre_url || "nom-inconnu",
         },
       };
   
@@ -52,7 +50,7 @@ async function delay(ms) {
       console.log("📥 Réponse de Strapi :", JSON.stringify(data, null, 2));
   
       if (!response.ok) {
-        console.error("❌ Erreur lors de l'envoi à Strapi :", data);
+        console.error("❌ Erreur Strapi :", data);
         return new Response(JSON.stringify({ error: "Erreur avec Strapi", details: data }), { status: response.status });
       }
   
@@ -63,5 +61,4 @@ async function delay(ms) {
       return new Response(JSON.stringify({ error: "Erreur serveur", details: error.message }), { status: 500 });
     }
   }
-  
   
