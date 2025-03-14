@@ -75,17 +75,17 @@ export default function ImportPage({ user }) {
       
 
       const oeuvre = {
-        nameurl: parts[0],             // ✅ Ajout de nameurl (l'ID en première colonne)
-        titre: parts[1],               // ✅ Titre
-        auteur: parts[2],              // ✅ Auteur
-        categorie: parts[3],           // ✅ Catégorie
-        etat: parts[4],                // ✅ Statut (État)
-        traduction: parts[5],          // ✅ Nouvelle colonne : Traduction
-        synopsis: parts[6],            // ✅ Synopsis
-        annee: parseInt(parts[7], 10) || null, // ✅ Année de parution
-        type: parts[8],                // ✅ Type
-        langage: "Francais",           // ✅ Langage par défaut
-        users_permissions_users: [currentUser?.documentId], // ✅ User lié
+        nameurl: parts[0],               // ✅ ID de l'œuvre
+        titre: parts[1],                 // ✅ Titre
+        auteur: parts[2],                // ✅ Auteur
+        categorie: parts[3],              // ✅ Catégorie
+        etat: parts[4],                   // ✅ Statut (État)
+        traduction: parts[5],             // ✅ Traduction (ex: "Anglais")
+        synopsis: parts[6],               // ✅ Synopsis
+        annee: parseInt(parts[10], 10) || null, // ✅ Année de parution (ignorer les colonnes inutiles)
+        type: parts[12],                 // ✅ Type (ex: "Web Novel")
+        langage: "Francais",              // ✅ Valeur par défaut
+        users_permissions_users: [currentUser?.documentId], // ✅ Utilisateur lié
       };
       
       
