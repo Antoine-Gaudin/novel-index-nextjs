@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import axios from "axios";
 
-export default function ImportPage() {
+export default function ImportPage({ user }) {
   const [textData, setTextData] = useState("");
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -41,7 +42,6 @@ export default function ImportPage() {
       }
 
       const oeuvre = {
-        nameurl: parts[0],   // ID pour nameurl
         titre: parts[1],     // Titre
         auteur: parts[2],    // Auteur
         categorie: parts[3], // Catégorie
@@ -50,26 +50,24 @@ export default function ImportPage() {
         synopsis: parts[6],  // Synopsis
         annee: parseInt(parts[7], 10) || null, // Parution => annee
         type: parts[8],      // Type
+        users_permissions_users: [user.documentId], // Ajout de la relation utilisateur
       };
 
       try {
-        const res = await fetch("https://novel-index-strapi.onrender.com/api/oeuvres", {  // ⬅️ Correction de l'URL
-          method: "POST",
+        const response = await axios.post("https://novel-index-strapi.onrender.com/api/oeuvres", { data: oeuvre }, {
           headers: {
+            "Authorization": `Bearer ${jwt}`,
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${jwt}`, // ⬅️ Utilisation du JWT utilisateur
           },
-          body: JSON.stringify({ data: oeuvre }),
         });
 
-        const data = await res.json();
-
-        if (res.ok) {
+        if (response.status === 200 || response.status === 201) {
           successCount++;
         } else {
-          errors.push(`❌ Erreur ligne ${i + 1} : ${data.error || "Réponse invalide de Strapi"}`);
+          errors.push(`❌ Erreur ligne ${i + 1} : ${response.data.error || "Réponse invalide de Strapi"}`);
         }
       } catch (error) {
+        console.error("❌ Erreur serveur ligne", i + 1, ":", error.response?.data || error.message);
         errors.push(`❌ Erreur serveur ligne ${i + 1}`);
       }
 
@@ -84,20 +82,19 @@ export default function ImportPage() {
     <div className="p-6 max-w-lg mx-auto">
       <h1 className="text-xl font-bold mb-4">Importer des Œuvres dans Strapi</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <textarea
-  rows="10"
-  className="border p-2 w-full text-black"
-  placeholder="Collez vos œuvres ici..."
-  value={textData}
-  onChange={(e) => setTextData(e.target.value)}
-  onPaste={(e) => {
-    e.preventDefault();
-    const text = e.clipboardData.getData("text/plain").replace(/\n/g, " "); // Remplace les retours à la ligne par un espace
-    setTextData(prev => prev + text);
-  }}
-  style={{ whiteSpace: "nowrap", overflowX: "scroll" }} // Empêche le retour à la ligne et active le scroll horizontal
-/>
-
+        <textarea
+          rows="10"
+          className="border p-2 w-full text-black"
+          placeholder="Collez vos œuvres ici..."
+          value={textData}
+          onChange={(e) => setTextData(e.target.value)}
+          onPaste={(e) => {
+            e.preventDefault();
+            const text = e.clipboardData.getData("text/plain").replace(/\n/g, " ");
+            setTextData(prev => prev + text);
+          }}
+          style={{ whiteSpace: "nowrap", overflowX: "scroll" }} // Empêche le retour à la ligne et active le scroll horizontal
+        />
         <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded" disabled={isUploading}>
           {isUploading ? "Importation en cours..." : "Importer"}
         </button>
