@@ -1,21 +1,52 @@
-"use client";
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 
 export default function ImportPage({ user }) {
+  const [currentUser, setCurrentUser] = useState(user || null);
   const [textData, setTextData] = useState("");
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (!user) {  // Si user n'est pas en prop, on le récupère
+        const jwt = localStorage.getItem("jwt");
+        if (!jwt) {
+          setMessage("❌ Vous devez être connecté pour importer des œuvres.");
+          return;
+        }
+
+        try {
+          const res = await axios.get("https://novel-index-strapi.onrender.com/api/users/me", {
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+            },
+          });
+
+          setCurrentUser(res.data);  // On stocke l'utilisateur récupéré
+          console.log("✅ Utilisateur récupéré :", res.data);
+        } catch (error) {
+          console.error("❌ Erreur récupération utilisateur :", error);
+          setMessage("❌ Impossible de récupérer votre profil.");
+        }
+      }
+    };
+
+    fetchUser();
+  }, [user]); // Ne s'exécute qu'une fois si user n'est pas défini
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Récupérer le token JWT de l'utilisateur connecté
-    const jwt = localStorage.getItem("jwt");
+    if (!currentUser || !currentUser.id) {
+      setMessage("❌ Vous devez être connecté.");
+      console.error("❌ ERREUR: user est undefined ou sans ID", currentUser);
+      return;
+    }
 
+    const jwt = localStorage.getItem("jwt");
     if (!jwt) {
-      setMessage("❌ Vous devez être connecté pour ajouter une œuvre.");
+      setMessage("❌ Vous devez être connecté.");
       return;
     }
 
@@ -27,8 +58,7 @@ export default function ImportPage({ user }) {
     setIsUploading(true);
     setMessage("⏳ Importation en cours...");
 
-    // Séparer les lignes et nettoyer les espaces/retours à la ligne
-    const lines = textData.split(/\r?\n/).map(line => line.replace(/\s+/g, " ").trim()).filter(line => line !== "");
+    const lines = textData.split(/\r?\n/).map(line => line.trim()).filter(line => line !== "");
     
     let successCount = 0;
     let errors = [];
@@ -42,15 +72,15 @@ export default function ImportPage({ user }) {
       }
 
       const oeuvre = {
-        titre: parts[1],     // Titre
-        auteur: parts[2],    // Auteur
-        categorie: parts[3], // Catégorie
-        etat: parts[4],      // Statut => etat
-        teams: parts[5],     // Team => teams
-        synopsis: parts[6],  // Synopsis
-        annee: parseInt(parts[7], 10) || null, // Parution => annee
-        type: parts[8],      // Type
-        users_permissions_users: [user.documentId], // Ajout de la relation utilisateur
+        titre: parts[1],
+        auteur: parts[2],
+        categorie: parts[3],
+        etat: parts[4],
+        teams: parts[5],
+        synopsis: parts[6],
+        annee: parseInt(parts[7], 10) || null,
+        type: parts[8],
+        users_permissions_users: [currentUser.id],  // On utilise l'ID récupéré
       };
 
       try {
@@ -71,15 +101,12 @@ export default function ImportPage({ user }) {
         errors.push(`❌ Erreur serveur ligne ${i + 1}`);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500)); // Délai pour éviter la surcharge de requêtes
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     setMessage(`✅ ${successCount} œuvres ajoutées avec succès.\n${errors.join("\n")}`);
     setIsUploading(false);
   };
-
-  console.log("DEBUG: user =", user);
-
 
   return (
     <div className="p-6 max-w-lg mx-auto">
@@ -96,7 +123,7 @@ export default function ImportPage({ user }) {
             const text = e.clipboardData.getData("text/plain").replace(/\n/g, " ");
             setTextData(prev => prev + text);
           }}
-          style={{ whiteSpace: "nowrap", overflowX: "scroll" }} // Empêche le retour à la ligne et active le scroll horizontal
+          style={{ whiteSpace: "nowrap", overflowX: "scroll" }}
         />
         <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded" disabled={isUploading}>
           {isUploading ? "Importation en cours..." : "Importer"}
