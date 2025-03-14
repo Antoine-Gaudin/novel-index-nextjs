@@ -94,7 +94,7 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
             style={{
               backgroundImage: `
                 linear-gradient(to bottom, rgba(17, 24, 39, 0.6), rgba(17, 24, 39, 1)),
-                url('/image/HeroHeader.webp')`,
+                url('/image/heroheader.webp')`,
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}

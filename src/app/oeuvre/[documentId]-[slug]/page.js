@@ -72,7 +72,7 @@ const OeuvrePage = () => {
       {/* Bannière */}
       <div className="relative h-80 w-full bg-cover bg-center"
         style={{
-          backgroundImage: `linear-gradient(to bottom, rgba(17, 24, 39, 0.6), rgba(17, 24, 39, 1)), url('/image/HeroHeader.webp')`,
+          backgroundImage: `linear-gradient(to bottom, rgba(17, 24, 39, 0.6), rgba(17, 24, 39, 1)), url('/image/heroheader.webp')`,
         }}>
       </div>
 
