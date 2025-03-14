@@ -78,6 +78,9 @@ export default function ImportPage({ user }) {
     setIsUploading(false);
   };
 
+  console.log("DEBUG: user =", user);
+
+
   return (
     <div className="p-6 max-w-lg mx-auto">
       <h1 className="text-xl font-bold mb-4">Importer des Œuvres dans Strapi</h1>
