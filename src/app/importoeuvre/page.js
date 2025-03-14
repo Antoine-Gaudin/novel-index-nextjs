@@ -82,7 +82,7 @@ export default function ImportPage({ user }) {
         etat: parts[4],                   // ✅ Statut (État)
         traduction: parts[5],             // ✅ Traduction (ex: "Anglais")
         synopsis: parts[6],               // ✅ Synopsis
-        annee: parseInt(parts[10], 10) || null, // ✅ Année de parution (ignorer les colonnes inutiles)
+        annee: parseInt(parts[9], 10) || null, // ✅ Année de parution (ignorer les colonnes inutiles)
         type: parts[12],                 // ✅ Type (ex: "Web Novel")
         langage: "Francais",              // ✅ Valeur par défaut
         users_permissions_users: [currentUser?.documentId], // ✅ Utilisateur lié
