@@ -78,12 +78,12 @@ export default function ImportPage({ user }) {
         auteur: parts[2],
         categorie: parts[3],
         etat: parts[4],
-        teams: parts[5],
         synopsis: parts[6],
         annee: parseInt(parts[7], 10) || null,
         type: parts[8],
-        users_permissions_users: [currentUser.id],  // On utilise l'ID récupéré
+        users_permissions_users: [user.id],
       };
+      
 
       try {
         const response = await axios.post("https://novel-index-strapi.onrender.com/api/oeuvres", { data: oeuvre }, {
