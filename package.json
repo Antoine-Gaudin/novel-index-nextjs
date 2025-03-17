@@ -12,6 +12,7 @@
     "axios": "^1.7.9",
     "js-cookie": "^3.0.5",
     "next": "15.1.5",
+    "nextjs-google-analytics": "^2.3.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "swiper": "^11.2.1"

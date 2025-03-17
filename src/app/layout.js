@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
+import { GoogleAnalytics } from "nextjs-google-analytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -72,6 +73,7 @@ export default function RootLayout({ children }) {
         <title>Novel-index</title>
       </head>
       <body className="bg-gray-900 text-white">
+        <GoogleAnalytics gaMeasurementId="G-7MK34RRGND" trackPageViews />
         <header className="bg-black bg-opacity-80 text-white py-4">
           <nav className="max-w-7xl mx-auto px-4 flex justify-between items-center">
             <h1
