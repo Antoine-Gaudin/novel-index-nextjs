@@ -83,7 +83,7 @@ const OeuvrePage = () => {
           {/* Image de couverture */}
           {oeuvre.couverture?.url ? (
             <img
-              src={`https://novel-index-strapi.onrender.com${oeuvre.couverture.url}`}
+              src={`${oeuvre.couverture.url}`}
               alt={oeuvre.titre || "Image non disponible"}
               className="w-64 h-96 object-cover rounded-lg shadow-lg"
             />

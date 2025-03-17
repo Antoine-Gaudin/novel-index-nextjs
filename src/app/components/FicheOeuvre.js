@@ -106,7 +106,7 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
           {/* Image de couverture */}
           {oeuvre.couverture ? (
             <img
-              src={`https://novel-index-strapi.onrender.com${oeuvre.couverture}`}
+              src={`${oeuvre.couverture}`}
               alt={oeuvre.titre || "Image non disponible"}
               className="rounded-md shadow-md"
               style={{
