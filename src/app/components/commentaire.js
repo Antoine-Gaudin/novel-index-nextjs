@@ -228,7 +228,7 @@ const handleNextPage = () => {
           {/* Photo de profil de l'utilisateur */}
           {user?.profil?.url ? (
             <img
-              src={`${apiUrl}${user.profil.url}`}
+              src={`${user.profil.url}`}
               alt="Photo de profil"
               className="w-12 h-12 rounded-full object-cover"
             />
