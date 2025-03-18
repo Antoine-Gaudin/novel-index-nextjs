@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import AffiChapitre from "./Affichapitre";
 import Commentaire from "./commentaire";
+import DOMPurify from "dompurify";
 
 const FicheOeuvre = ({ oeuvre, onClose }) => {
   const [chapitres, setChapitres] = useState([]);
@@ -43,6 +44,9 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
   const closePopup = () => {
     setSelectedChapter(null);
   };
+
+
+console.log(oeuvre);
 
   if (!oeuvre) {
     return null; // Si aucune œuvre n'est passée, on ne montre rien
@@ -102,11 +106,11 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
         </div>
 
         {/* Zone d'informations */}
-        <div className="relative flex items-end px-12 responsive-section">
+        <div className="relative flex items-end px-12 responsive-section mt-[5rem]">
           {/* Image de couverture */}
           {oeuvre.couverture ? (
             <img
-              src={`${oeuvre.couverture}`}
+              src={`${oeuvre.couverture.url}`}
               alt={oeuvre.titre || "Image non disponible"}
               className="rounded-md shadow-md"
               style={{
@@ -197,6 +201,7 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
             )}
           </div>
 
+  <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(oeuvre.synopsis) }}></div>
           {/* Fenêtre Pop-up de confirmation */}
           {selectedChapter && (
             <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "axios": "^1.7.9",
+    "dompurify": "^3.2.4",
     "js-cookie": "^3.0.5",
     "next": "15.1.5",
     "nextjs-google-analytics": "^2.3.7",

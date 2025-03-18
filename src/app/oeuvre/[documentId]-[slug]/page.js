@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AffiChapitre from "../../components/Affichapitre";
 import Commentaire from "../../components/commentaire";
+import DOMPurify from "dompurify";
 
 const OeuvrePage = () => {
   const pathname = usePathname();
@@ -186,7 +187,7 @@ const OeuvrePage = () => {
             )}
         </div>
 
-
+        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(oeuvre.synopsis) }}></div>
 
         {/* Chapitres et Achats */}
         <div className="p-6 space-y-4">

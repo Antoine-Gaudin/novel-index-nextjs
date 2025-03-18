@@ -182,7 +182,7 @@ const SortieJours = () => {
                 <div
                   className="h-64 bg-cover bg-center"
                   style={{
-                    backgroundImage: `url(${apiUrl}${oeuvre.couverture})`,
+                    backgroundImage: `url(${oeuvre.couverture})`,
                   }}
                 ></div>
               ) : (

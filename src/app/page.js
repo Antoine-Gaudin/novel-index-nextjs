@@ -4,28 +4,48 @@ import { useState } from "react";
 import SortieJours from "./components/SortieJours";
 import SortieOeuvre from "./components/SortieOeuvre";
 import OeuvresParTeam from "./components/OeuvresParTeam";
+import { useRouter } from "next/navigation"; // Import du router pour la redirection
 
 export default function Home() {
   const [searchText, setSearchText] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const router = useRouter(); // Initialisation du router
+
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   const handleSearch = async () => {
+    if (!searchText.trim()) return; // Évite les recherches vides
+  
     try {
-      const url = `${apiUrl}/api/oeuvres?filters[titre][$containsi]=${searchText}&populate=*`;
+      const url = `${apiUrl}/api/oeuvres?filters[titre][$containsi]=${searchText}&populate=couverture`;
       const res = await fetch(url);
       const data = await res.json();
+  
+      if (!data || !data.data) throw new Error("Aucune donnée reçue");
+  
+      console.log("Résultats API :", data.data); // Debug API
+  
       setSearchResults(data.data);
     } catch (error) {
       console.error("Erreur lors de la recherche :", error);
     }
   };
+  
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       handleSearch();
     }
+  };
+
+  const handleOeuvreClick = (oeuvre) => {
+    const slug = oeuvre.titre
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-") // Remplace les caractères spéciaux par "-"
+      .replace(/^-+|-+$/g, ""); // Supprime les tirets en trop
+  
+    router.push(`/oeuvre/${oeuvre.documentId}-${slug}`); // ✅ Nouvelle URL
   };
 
   return (
@@ -87,24 +107,23 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="mt-6 w-full max-w-2xl bg-gray-800 rounded-lg p-4">
+          <div className="mt-6 w-full max-w-2xl bg-gray-800 rounded-lg p-4 max-h-80 overflow-y-auto">
             {searchResults.length > 0 ? (
               <ul>
                 {searchResults.map((oeuvre) => (
                   <li
                     key={oeuvre.id}
                     className="p-4 border-b border-gray-700 hover:bg-gray-700 cursor-pointer flex items-center"
-                    onClick={() => {
-                      setIsSearchOpen(false);
-                    }}
+                    onClick={() => handleOeuvreClick(oeuvre)} // Redirection au clic
                   >
-                    {oeuvre.couverture?.length > 0 && (
+
+                    {console.log("recherche barre nom",oeuvre)}               
                       <img
-                        src={`${apiUrl}${oeuvre.couverture[0].url}`}
+                        src={`${oeuvre.couverture.url}`}
                         alt={oeuvre.titre || "Image non disponible"}
                         className="w-16 h-16 object-cover rounded-md mr-4"
                       />
-                    )}
+               
                     <div>
                       <h3 className="text-xl font-bold">
                         {oeuvre.titre || "Titre non disponible"}

@@ -115,7 +115,7 @@ const OeuvresParTeam = () => {
                           <div
                             className="h-64 bg-cover bg-center"
                             style={{
-                              backgroundImage: `url(${apiUrl}${oeuvre.couverture.url})`,
+                              backgroundImage: `url(${oeuvre.couverture.url})`,
                             }}
                           ></div>
                         ) : (
