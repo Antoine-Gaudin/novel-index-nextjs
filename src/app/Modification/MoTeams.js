@@ -25,7 +25,7 @@ const MoTeams = ({ user }) => {
       }
 
       const response = await axios.get(
-        `https://novel-index-strapi.onrender.com/api/teams?filters[titre][$contains]=${searchTerm}`,
+        `https://novel-index-strapi.onrender.com/api/teams?filters[titre][$containsi]=${searchTerm}`,
         {
           headers: { Authorization: `Bearer ${jwt}` },
         }

@@ -25,7 +25,7 @@ const Proprietaire = ({ user }) => {
 
       // Requête pour récupérer les œuvres
       const oeuvresResponse = await axios.get(
-        `http://localhost:1337/api/oeuvres?filters[nomdomaine][$contains]=${domain}`,
+        `http://localhost:1337/api/oeuvres?filters[nomdomaine][$containsi]=${domain}`,
         {
           headers: { Authorization: `Bearer ${jwt}` },
         }

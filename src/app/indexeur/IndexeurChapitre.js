@@ -30,7 +30,7 @@ const IndexeurChapitre = ({ user }) => {
     try {
       const jwt = localStorage.getItem("jwt") || Cookies.get("jwt");
       const response = await axios.get(
-        `https://novel-index-strapi.onrender.com/api/oeuvres?populate=couverture&filters[titre][$contains]=${searchTerm}`,
+        `https://novel-index-strapi.onrender.com/api/oeuvres?populate=couverture&filters[titre][$containsi]=${searchTerm}`,
         {
           headers: {
             Authorization: `Bearer ${jwt}`,
