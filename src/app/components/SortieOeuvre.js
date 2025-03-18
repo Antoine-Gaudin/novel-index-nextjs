@@ -67,10 +67,10 @@ const SortieOeuvre = () => {
     return false;
   });
 
-  // **Ne rien afficher si aucune œuvre n'est disponible**
+ /* // **Ne rien afficher si aucune œuvre n'est disponible**
   if (!loading && !error && filteredOeuvres.length === 0) {
     return null;
-  }
+  }*/
 
   return (
     <div className="bg-gray-900 text-white p-8">

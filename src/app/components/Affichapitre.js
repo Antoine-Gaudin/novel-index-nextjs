@@ -65,17 +65,22 @@ const AffiChapitre = ({ documentId, licence }) => {
     }
   }, [documentId, licence]);
 
-  // Gestion de la recherche
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
-
-    // Filtrer les éléments
-    const filtered = items.filter((item) =>
-      item.titre.toLowerCase().includes(term)
-    );
-    setFilteredItems(filtered);
+  
+    setTimeout(() => {
+      const filtered = items.filter((item) =>
+        item.titre.toLowerCase().includes(term)
+      );
+  
+      // Vérifie si des résultats existent avant de mettre à jour
+      if (filtered.length > 0 || term === "") {
+        setFilteredItems(filtered);
+      }
+    }, 100);
   };
+  
 
   // Fonction pour gérer l'ouverture de la fenêtre pop-up
   const handleItemClick = (item) => {

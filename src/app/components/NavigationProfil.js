@@ -26,7 +26,7 @@ const NavigationProfil = ({ onMenuSelect, user }) => {
 
       {/* Menu principal */}
       <aside
-        className={`w-64 h-auto bg-gray-800 text-white shadow-lg md:block ${
+        className={`w-64 h-[40rem] bg-gray-800 text-white shadow-lg md:block ${
           isMenuOpen ? "block" : "hidden"
         }`}
       >

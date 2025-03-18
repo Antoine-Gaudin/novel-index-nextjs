@@ -6,6 +6,7 @@ export default function JsonSorter() {
   const [jsonData, setJsonData] = useState("");
   const [sortedData, setSortedData] = useState([]);
   const [filterChapId, setFilterChapId] = useState("");
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // Fonction pour trier les données JSON par `chap_id`
   const handleSort = () => {
@@ -29,9 +30,24 @@ export default function JsonSorter() {
       const sorted = [...filteredData].sort((a, b) => a.chap_id - b.chap_id);
 
       setSortedData(sorted);
+      setCopySuccess(false); // Réinitialiser l'état du bouton copier
     } catch (error) {
       alert("JSON invalide !");
     }
+  };
+
+  // Fonction pour copier les résultats triés
+  const handleCopy = () => {
+    if (sortedData.length === 0) return;
+
+    const textToCopy = sortedData
+      .map((item) => `Chapitre ${item.chapitre} ; Tome ${item.tome} ; ${item.lien}`)
+      .join("\n");
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000); // Réinitialisation après 2 secondes
+    });
   };
 
   return (
@@ -54,20 +70,49 @@ export default function JsonSorter() {
         onChange={(e) => setFilterChapId(e.target.value)}
       />
 
-      {/* Bouton pour trier */}
-      <button
-        className="bg-blue-500 text-white px-4 py-2 rounded"
-        onClick={handleSort}
-      >
-        Trier par chap_id
-      </button>
+      {/* Boutons pour Trier et Copier */}
+      <div className="flex gap-4">
+        <button
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+          onClick={handleSort}
+        >
+          Trier par chap_id
+        </button>
+        
+        {sortedData.length > 0 && (
+          <button
+            className="bg-green-500 text-white px-4 py-2 rounded"
+            onClick={handleCopy}
+          >
+            {copySuccess ? "✅ Copié !" : "📋 Copier"}
+          </button>
+        )}
+      </div>
 
-      {/* Affichage des résultats triés avec fond sombre et texte lisible */}
-      <pre className="w-full bg-gray-900 text-green-400 p-4 mt-4 rounded overflow-auto">
-        {sortedData.length > 0
-          ? JSON.stringify(sortedData, null, 2)
-          : "Les données triées apparaîtront ici..."}
-      </pre>
+      {/* Affichage des résultats triés sous forme de texte lisible */}
+      <div className="w-full mt-4">
+        {sortedData.length > 0 ? (
+          <div className="text-white bg-gray-900 p-4 rounded">
+            {sortedData.map((item, index) => (
+              <p key={index} className="mb-2">
+                <span className="text-green-400 font-semibold">
+                  Chapitre {item.chapitre} ; Tome {item.tome} ;
+                </span>{" "}
+                <a
+                  href={item.lien}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:underline"
+                >
+                  {item.lien}
+                </a>
+              </p>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-400">Les données triées apparaîtront ici...</p>
+        )}
+      </div>
     </div>
   );
 }

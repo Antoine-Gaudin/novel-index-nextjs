@@ -24,7 +24,6 @@ export default function Home() {
   
       if (!data || !data.data) throw new Error("Aucune donnée reçue");
   
-      console.log("Résultats API :", data.data); // Debug API
   
       setSearchResults(data.data);
     } catch (error) {
@@ -116,8 +115,7 @@ export default function Home() {
                     className="p-4 border-b border-gray-700 hover:bg-gray-700 cursor-pointer flex items-center"
                     onClick={() => handleOeuvreClick(oeuvre)} // Redirection au clic
                   >
-
-                    {console.log("recherche barre nom",oeuvre)}               
+             
                       <img
                         src={`${oeuvre.couverture.url}`}
                         alt={oeuvre.titre || "Image non disponible"}

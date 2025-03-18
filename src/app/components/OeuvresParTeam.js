@@ -23,13 +23,10 @@ const OeuvresParTeam = () => {
       setError(null);
 
       try {
-        console.log("⏳ Fetching teams...");
 
         // Récupérer toutes les teams avec leurs œuvres
         const response = await fetch(`${apiUrl}/api/teams?populate=oeuvres.couverture`);
         const data = await response.json();
-        
-        console.log("📥 Teams reçues :", data);
 
         if (!response.ok || !data.data.length) {
           throw new Error("Aucune équipe trouvée avec des œuvres.");
@@ -38,10 +35,7 @@ const OeuvresParTeam = () => {
         // Filtrer les teams qui ont au moins 4 œuvres
         const teamsWithEnoughOeuvres = data.data.filter(team => team.oeuvres.length >= 4);
 
-        console.log("🎯 Teams filtrées (4 œuvres minimum) :", teamsWithEnoughOeuvres);
-
         if (teamsWithEnoughOeuvres.length === 0) {
-          console.log("⚠️ Aucune team avec au moins 4 œuvres trouvée.");
           setLoading(false);
           return;
         }
@@ -49,13 +43,11 @@ const OeuvresParTeam = () => {
         // Sélectionner une team aléatoire
         const randomTeam = teamsWithEnoughOeuvres[Math.floor(Math.random() * teamsWithEnoughOeuvres.length)];
         
-        console.log("🎲 Team sélectionnée :", randomTeam);
 
         setTeam(randomTeam);
         setOeuvres(randomTeam.oeuvres);
       } catch (err) {
         setError("Impossible de récupérer une équipe avec des œuvres.");
-        console.error("❌ Erreur lors du fetch :", err);
       } finally {
         setLoading(false);
       }
@@ -65,7 +57,6 @@ const OeuvresParTeam = () => {
   }, []);
 
   const handleOeuvreClick = (oeuvre) => {
-    console.log("📌 Œuvre cliquée :", oeuvre);
     setSelectedData(oeuvre);
   };
 
@@ -75,16 +66,11 @@ const OeuvresParTeam = () => {
 
   // **Ne rien afficher si aucune team n'a été trouvée ou a moins de 4 œuvres**
   if (!loading && !error && (!team || oeuvres.length < 4)) {
-    console.log("🚫 Aucune team éligible trouvée. Section cachée.");
     return null;
   }
 
-  console.log("✅ Affichage de l'équipe :", team);
-
   return (
     <div className="bg-gray-900 text-white p-8">
-      {loading && <p>⏳ Chargement des œuvres de l'équipe...</p>}
-      {error && <p className="text-red-500">❌ {error}</p>}
 
       {!loading && !error && team && (
         <>

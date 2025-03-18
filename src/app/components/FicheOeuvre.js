@@ -107,23 +107,24 @@ console.log(oeuvre);
 
         {/* Zone d'informations */}
         <div className="relative flex items-end px-12 responsive-section mt-[5rem]">
-          {/* Image de couverture */}
-          {oeuvre.couverture ? (
-            <img
-              src={`${oeuvre.couverture.url}`}
-              alt={oeuvre.titre || "Image non disponible"}
-              className="rounded-md shadow-md"
-              style={{
-                width: "14rem",
-                height: "20rem",
-                objectFit: "cover",
-              }}
-            />
-          ) : (
-            <div className="w-full md:w-1/3 bg-gray-700 text-gray-400 flex items-center justify-center rounded-lg">
-              Pas de couverture
-            </div>
-          )}
+{/* Image de couverture */}
+{oeuvre.couverture && (oeuvre.couverture.url || typeof oeuvre.couverture === "string") ? (
+  <img
+    src={typeof oeuvre.couverture === "string" ? oeuvre.couverture : oeuvre.couverture.url}
+    alt={oeuvre.titre || "Image non disponible"}
+    className="rounded-md shadow-md"
+    style={{
+      width: "14rem",
+      height: "20rem",
+      objectFit: "cover",
+    }}
+  />
+) : (
+  <div className="w-full md:w-1/3 bg-gray-700 text-gray-400 flex items-center justify-center rounded-lg">
+    Pas de couverture
+  </div>
+)}
+
 
           {/* Informations principales */}
           <div className="flex flex-col justify-end space-y-6 ml-8 h-full">

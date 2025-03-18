@@ -30,13 +30,12 @@ const SortieJours = () => {
           `${apiUrl}/api/chapitres?filters[updatedAt][$gte]=${today}T00:00:00&populate=oeuvres`
         );
         const chapitreData = await chapitreResponse.json();
-        console.log("Chapitre data récupéré :", chapitreData);
 
         const achatResponse = await fetch(
           `${apiUrl}/api/Achatlivres?filters[updatedAt][$gte]=${today}T00:00:00&populate=oeuvres`
         );
         const achatData = await achatResponse.json();
-        console.log("Achat livres récupéré :", achatData);
+  
 
         // Combiner les œuvres des deux requêtes
         const allOeuvres = [
@@ -60,7 +59,6 @@ const SortieJours = () => {
             return acc;
           }, []);
 
-        console.log("Liste des œuvres mises à jour :", allOeuvres);
 
         // Étape 2 : Récupérer les couvertures des œuvres en utilisant `documentId`
         const oeuvresAvecCouv = await Promise.all(
@@ -70,7 +68,6 @@ const SortieJours = () => {
                 `${apiUrl}/api/oeuvres/${oeuvre.documentId}?populate=couverture`
               );
               const oeuvreData = await oeuvreResponse.json();
-              console.log(`Données de couverture pour ${oeuvre.documentId} :`, oeuvreData);
 
               return {
                 ...oeuvre,
@@ -88,7 +85,6 @@ const SortieJours = () => {
           })
         );
 
-        console.log("Œuvres finales avec couvertures :", oeuvresAvecCouv);
 
         setOeuvres(oeuvresAvecCouv);
       } catch (err) {
@@ -104,7 +100,6 @@ const SortieJours = () => {
 
   // Gestion du clic pour ouvrir le pop-up
   const handleOeuvreClick = (oeuvre) => {
-    console.log("Oeuvre cliquée :", oeuvre);
     setSelectedData(oeuvre);
   };
 
