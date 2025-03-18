@@ -44,7 +44,7 @@ export default function RootLayout({ children }) {
             // Accéder à l'URL de l'image au format "small"
             const profilePictureUrl = userData?.profil?.formats?.small?.url;
             if (profilePictureUrl) {
-              setUserProfilePicture(`https://novel-index-strapi.onrender.com${profilePictureUrl}`);
+              setUserProfilePicture(`${profilePictureUrl}`);
             }
           } else {
             console.error("Erreur lors de la récupération des données utilisateur");
