@@ -7,6 +7,8 @@ import ConstructeurUrl from "./ConstructeurUrl";
 const PlusieursChapitre = ({ user, oeuvre }) => {
   const [chapitres, setChapitres] = useState("");
   const [message, setMessage] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [showConstructeur, setShowConstructeur] = useState(false);
 
   const handleChange = (e) => {
@@ -15,12 +17,16 @@ const PlusieursChapitre = ({ user, oeuvre }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setProgress(0);
+    setMessage(null);
 
     try {
       const jwt = localStorage.getItem("jwt");
 
       if (!jwt) {
         setMessage("Vous devez être connecté pour ajouter des chapitres.");
+        setLoading(false);
         return;
       }
 
@@ -31,9 +37,11 @@ const PlusieursChapitre = ({ user, oeuvre }) => {
 
       if (lignes.length === 0) {
         setMessage("Aucun chapitre n'a été saisi.");
+        setLoading(false);
         return;
       }
 
+      // Récupération des chapitres existants
       const oeuvreResponse = await axios.get(
         `https://novel-index-strapi.onrender.com/api/oeuvres/${oeuvre.documentId}?populate=chapitres`,
         {
@@ -59,9 +67,7 @@ const PlusieursChapitre = ({ user, oeuvre }) => {
         const parts = ligne.split(";").map((part) => part.trim());
 
         if (parts.length < 2 || parts.length > 3) {
-          errors.push(
-            `Format invalide à la ligne ${index + 1}: "${ligne}". Utilisez "titre ; tome ; url" ou "titre ; url".`
-          );
+          errors.push(`Format invalide à la ligne ${index + 1}: "${ligne}".`);
           return;
         }
 
@@ -69,7 +75,6 @@ const PlusieursChapitre = ({ user, oeuvre }) => {
         const tome = parts.length === 3 ? tomeOrUrl : "";
         const finalUrl = parts.length === 3 ? url : tomeOrUrl;
 
-        // Contrôle de l'URL déjà attribuée
         if (urlsExistantes.includes(finalUrl)) {
           errors.push(`L'URL "${finalUrl}" à la ligne ${index + 1} est déjà attribuée.`);
           return;
@@ -87,31 +92,44 @@ const PlusieursChapitre = ({ user, oeuvre }) => {
         });
       });
 
-      for (const payload of payloads) {
-        await axios.post("https://novel-index-strapi.onrender.com/api/chapitres", payload, {
+      let successCount = 0;
+
+      for (let i = 0; i < payloads.length; i++) {
+        await axios.post("https://novel-index-strapi.onrender.com/api/chapitres", payloads[i], {
           headers: {
             Authorization: `Bearer ${jwt}`,
             "Content-Type": "application/json",
           },
         });
+
+        successCount++;
+
+        // 🔹 Mise à jour de la progression
+        setProgress(((successCount / payloads.length) * 100).toFixed(0));
+
+        // 🔹 Pause toutes les 100 requêtes
+        if (successCount % 100 === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // Pause de 2 secondes
+        }
       }
 
-      let successMessage = `${payloads.length} chapitres ajoutés avec succès !`;
+      let successMessage = `${successCount} chapitres ajoutés avec succès !`;
       if (errors.length > 0) {
-        successMessage += ` Cependant, certaines erreurs ont été détectées :\n${errors.join(
-          "\n"
-        )}`;
+        successMessage += ` Certaines erreurs ont été détectées :\n${errors.join("\n")}`;
       }
+
       setMessage(successMessage);
       setChapitres(""); // Réinitialiser le textarea
     } catch (error) {
       console.error("Erreur lors de l'ajout :", error.response?.data || error.message);
       setMessage("Erreur lors de l'ajout des chapitres. Vérifiez le format des lignes.");
     }
+
+    setLoading(false);
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg text-white space-y-12">
+    <div className="w-full max-w-4xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg text-white space-y-12">
       <h1 className="text-2xl font-bold mb-6 text-center">Ajouter plusieurs chapitres</h1>
       {message && <p className="mb-4 text-center text-yellow-400 whitespace-pre-line">{message}</p>}
 
@@ -126,17 +144,31 @@ const PlusieursChapitre = ({ user, oeuvre }) => {
             value={chapitres}
             onChange={handleChange}
             rows={10}
-            className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
-            placeholder={`Exemples :\nChapitre 1 ; Tome 1 ; https://example.com\nChapitre 2 ; https://example.com`}
+            className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg
+             whitespace-nowrap overflow-auto resize-none"
+            placeholder={`Exemples de format :\nChapitre 1 ; Tome 1 ; https://example.com\nChapitre 2 ; https://example.com`}
             required
           />
         </div>
 
+        {/* Barre de progression */}
+        {loading && (
+          <div className="w-full bg-gray-600 rounded-lg overflow-hidden">
+            <div
+              className="h-4 bg-blue-500 text-xs font-bold text-center text-white transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            >
+              {progress}%
+            </div>
+          </div>
+        )}
+
         <button
           type="submit"
           className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white font-bold"
+          disabled={loading}
         >
-          Ajouter les chapitres
+          {loading ? "Ajout en cours..." : "Ajouter les chapitres"}
         </button>
       </form>
 

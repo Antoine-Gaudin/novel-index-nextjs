@@ -195,6 +195,11 @@ console.log(oeuvre);
                 État : {oeuvre.etat}
               </span>
             )}
+            {oeuvre.type && (
+              <span className="bg-gray-600 text-white px-3 py-1 rounded-md text-sm">
+                Type : {oeuvre.type}
+              </span>
+            )}
             {oeuvre.annee && (
               <span className="bg-gray-600 text-white px-3 py-1 rounded-md text-sm">
                 Année : {oeuvre.annee}

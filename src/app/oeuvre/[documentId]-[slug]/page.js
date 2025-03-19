@@ -24,6 +24,19 @@ const OeuvrePage = () => {
         if (!res.ok) throw new Error("Erreur API");
         const data = await res.json();
         setOeuvre(data.data);
+
+        // ✅ Mise à jour dynamique du title et meta description
+        if (data.data) {
+          document.title = `${data.data.titre} ${data.data.type} fr`;
+
+          let metaDescription = document.querySelector("meta[name='description']");
+          if (!metaDescription) {
+            metaDescription = document.createElement("meta");
+            metaDescription.name = "description";
+            document.head.appendChild(metaDescription);
+          }
+          metaDescription.setAttribute("content", data.data.synopsis || "Découvrez nos œuvres littéraires.");
+        }
       } catch (err) {
         console.error("Erreur lors de la récupération de l'œuvre :", err);
       } finally {
@@ -67,8 +80,8 @@ const OeuvrePage = () => {
   const closePopup = () => {
     setSelectedChapter(null);
   };
-
   return (
+
     <div className="bg-gray-900 text-white min-h-screen">
       {/* Bannière */}
       <div className="relative h-80 w-full bg-cover bg-center"
@@ -84,9 +97,9 @@ const OeuvrePage = () => {
           {/* Image de couverture */}
           {oeuvre.couverture?.url ? (
             <img
-              src={`${oeuvre.couverture.url}`}
-              alt={oeuvre.titre || "Image non disponible"}
-              className="w-64 h-96 object-cover rounded-lg shadow-lg"
+            src={`${oeuvre.couverture.url}`}
+            alt={oeuvre.titre || "Image non disponible"}
+            className="w-64 h-96 object-cover rounded-lg shadow-lg"
             />
           ) : (
             <div className="w-64 h-96 bg-gray-700 flex items-center justify-center rounded-lg text-gray-400">
@@ -108,13 +121,13 @@ const OeuvrePage = () => {
               <button 
                 className="px-6 py-3 bg-indigo-600 text-white rounded-md shadow hover:bg-indigo-700 text-lg"
                 onClick={() => handleReadClick("first")}
-              >
+                >
                 Commencer à lire
               </button>
               <button 
                 className="px-6 py-3 bg-green-600 text-white rounded-md shadow hover:bg-green-700 text-lg"
                 onClick={() => handleReadClick("last")}
-              >
+                >
                 Lire le dernier chapitre
               </button>
             </div>
@@ -132,7 +145,7 @@ const OeuvrePage = () => {
                 <button
                   className="px-4 py-2 bg-red-600 rounded-md hover:bg-red-700"
                   onClick={closePopup}
-                >
+                  >
                   Annuler
                 </button>
                 <button
@@ -141,7 +154,7 @@ const OeuvrePage = () => {
                     window.open(selectedChapter.url, "_blank");
                     closePopup();
                   }}
-                >
+                  >
                   Continuer
                 </button>
               </div>
@@ -163,9 +176,9 @@ const OeuvrePage = () => {
             )}
             {typeof oeuvre.licence === "boolean" && (
               <span
-                className={`${
-                  oeuvre.licence ? "bg-green-600" : "bg-red-600"
-                } text-white px-3 py-1 rounded-md text-sm`}
+              className={`${
+                oeuvre.licence ? "bg-green-600" : "bg-red-600"
+              } text-white px-3 py-1 rounded-md text-sm`}
               >
                 {oeuvre.licence ? "Licencié" : "Non licencié"}
               </span>
@@ -178,6 +191,11 @@ const OeuvrePage = () => {
             {oeuvre.etat && (
               <span className="bg-gray-600 text-white px-3 py-1 rounded-md text-sm">
                 État : {oeuvre.etat}
+              </span>
+            )}
+            {oeuvre.type && (
+              <span className="bg-gray-600 text-white px-3 py-1 rounded-md text-sm">
+                type : {oeuvre.type}
               </span>
             )}
             {oeuvre.annee && (
