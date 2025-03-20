@@ -27,6 +27,7 @@ const AffiChapitre = ({ documentId, licence }) => {
               id: achat.id,
               titre: achat.titre,
               url: achat.url, // URL de redirection
+              tome: achat.tome,
               publishedAt: achat.publishedAt,
               order: achat.order || 0, // Ajouter un `order` par défaut si absent
             }))
@@ -34,6 +35,7 @@ const AffiChapitre = ({ documentId, licence }) => {
               id: chapitre.id,
               titre: chapitre.titre,
               url: chapitre.url, // URL de redirection
+              tome: chapitre.tome,
               publishedAt: chapitre.publishedAt,
               order: chapitre.order || 0, // Ajouter un `order` par défaut si absent
             }));
@@ -100,6 +102,8 @@ const AffiChapitre = ({ documentId, licence }) => {
     return <p className="text-gray-400">Aucun résultat disponible pour cette œuvre.</p>;
   }
 
+  console.log("controle immédiat de l'information",filteredItems);
+
   return (
     <div className="space-y-4">
       <h3 className="text-xl font-bold">Chapitres</h3>
@@ -115,31 +119,41 @@ const AffiChapitre = ({ documentId, licence }) => {
         />
       </div>
 
-      {/* Liste des résultats triés et limités */}
-      <ul className="space-y-2">
-        {filteredItems.map((item) => (
-          <li
-            key={item.id}
-            className="flex justify-between items-center bg-gray-800 p-4 rounded-md shadow hover:bg-gray-700 cursor-pointer"
-            onClick={() => handleItemClick(item)} // Ouvrir le pop-up
-          >
-            <div>
-              {/* Titre de l'élément */}
-              <span className="font-bold">{item.titre || "Titre non disponible"}</span>
-              {/* Afficher "Nouveau" si applicable */}
-              {item.isNew && (
-                <span className="ml-2 text-xs bg-red-600 text-white px-2 py-1 rounded-full">
-                  Nouveau
-                </span>
-              )}
-            </div>
-            {/* Différenciation entre chapitres et achats */}
-            <span className="text-sm italic text-gray-500">
-              {licence ? "Redirection achat" : "Redirection"}
-            </span>
-          </li>
-        ))}
-      </ul>
+{/* Liste des résultats triés et limités */}
+<ul className="space-y-2">
+  {filteredItems.map((item) => (
+    <li
+      key={item.id}
+      className="flex justify-between items-center bg-gray-800 p-4 rounded-md shadow hover:bg-gray-700 cursor-pointer"
+      onClick={() => handleItemClick(item)} // Ouvrir le pop-up
+    >
+      <div className="flex flex-col">
+        {/* Titre de l'élément */}
+        <span className="font-bold text-white text-lg">{item.titre || "Titre non disponible"}</span>
+
+        {/* Tome affiché en bleu, uniquement si non vide */}
+        {item.tome && (
+          <span className="text-blue-400 text-sm font-medium mt-1">
+          Tome {item.tome}
+          </span>
+        )}
+
+        {/* Afficher "Nouveau" si applicable */}
+        {item.isNew && (
+          <span className="mt-2 text-xs bg-red-600 text-white px-2 py-1 rounded-full w-fit">
+            Nouveau
+          </span>
+        )}
+      </div>
+
+      {/* Différenciation entre chapitres et achats */}
+      <span className="text-sm italic text-gray-400">
+        {licence ? "Redirection achat" : "Redirection"}
+      </span>
+    </li>
+  ))}
+</ul>
+
 
       {/* Fenêtre Pop-up */}
       {selectedItem && (
