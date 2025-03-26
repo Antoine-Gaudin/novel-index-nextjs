@@ -40,12 +40,12 @@ const IndexeurOeuvre = ({ user }) => {
     e.preventDefault();
     try {
       const jwt = localStorage.getItem("jwt");
-  
+
       if (!jwt) {
         setMessage("Vous devez être connecté pour ajouter une œuvre.");
         return;
       }
-  
+
       // Création du payload
       const payload = {
         data: {
@@ -64,17 +64,20 @@ const IndexeurOeuvre = ({ user }) => {
         },
       };
 
-  
       // Envoi des données textuelles à Strapi
-      const response = await axios.post(`https://novel-index-strapi.onrender.com/api/oeuvres`, payload, {
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-          "Content-Type": "application/json",
-        },
-      });
-  
+      const response = await axios.post(
+        `https://novel-index-strapi.onrender.com/api/oeuvres`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
       const newOeuvreId = response.data?.data?.id;
-  
+
       if (formData.couverture && newOeuvreId) {
         // Gestion séparée du fichier couverture
         const uploadData = new FormData();
@@ -82,24 +85,31 @@ const IndexeurOeuvre = ({ user }) => {
         uploadData.append("ref", "api::oeuvre.oeuvre");
         uploadData.append("refId", newOeuvreId);
         uploadData.append("field", "couverture");
-      
+
         try {
           console.log("Début de l'upload du fichier...");
-          const uploadResponse = await axios.post("https://novel-index-strapi.onrender.com/api/upload", uploadData, {
-            headers: {
-              Authorization: `Bearer ${jwt}`,
-            },
-          });
+          const uploadResponse = await axios.post(
+            "https://novel-index-strapi.onrender.com/api/upload",
+            uploadData,
+            {
+              headers: {
+                Authorization: `Bearer ${jwt}`,
+              },
+            }
+          );
           console.log("Upload réussi :", uploadResponse.data);
         } catch (error) {
-          console.warn("Erreur lors de l'upload :", error.response?.data || error.message);
+          console.warn(
+            "Erreur lors de l'upload :",
+            error.response?.data || error.message
+          );
           // Masquer l'erreur et continuer
-          setMessage("Œuvre ajoutée avec succès, mais une erreur mineure s'est produite lors de l'upload de la couverture.");
+          setMessage(
+            "Œuvre ajoutée avec succès, mais une erreur mineure s'est produite lors de l'upload de la couverture."
+          );
         }
       }
-      
-      
-  
+
       setMessage("Œuvre ajoutée avec succès !");
       setFormData({
         titre: "",
@@ -116,12 +126,13 @@ const IndexeurOeuvre = ({ user }) => {
         couverture: null,
       });
     } catch (error) {
-      console.error("Erreur lors de l'ajout :", error.response?.data || error.message);
+      console.error(
+        "Erreur lors de l'ajout :",
+        error.response?.data || error.message
+      );
       setMessage("Erreur lors de l'ajout de l'œuvre.");
     }
   };
-  
-  
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg text-white">
@@ -130,7 +141,9 @@ const IndexeurOeuvre = ({ user }) => {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Informations principales */}
         <fieldset className="border border-gray-700 p-4 rounded-lg">
-          <legend className="text-lg font-semibold px-2">Informations principales</legend>
+          <legend className="text-lg font-semibold px-2">
+            Informations principales
+          </legend>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="titre" className="block text-sm font-medium">
@@ -191,7 +204,9 @@ const IndexeurOeuvre = ({ user }) => {
 
         {/* Détails de l'œuvre */}
         <fieldset className="border border-gray-700 p-4 rounded-lg">
-          <legend className="text-lg font-semibold px-2">Détails de l'œuvre</legend>
+          <legend className="text-lg font-semibold px-2">
+            Détails de l'œuvre
+          </legend>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="synopsis" className="block text-sm font-medium">
@@ -280,48 +295,59 @@ const IndexeurOeuvre = ({ user }) => {
 
         {/* Autres informations */}
         <fieldset className="border border-gray-700 p-4 rounded-lg">
-          <legend className="text-lg font-semibold px-2">Autres informations</legend>
+          <legend className="text-lg font-semibold px-2">
+            Autres informations
+          </legend>
           <div className="grid grid-cols-1 gap-4">
-          <div>
-              <label className="block text-sm font-medium">Licencié</label>
-              <div className="mt-2 flex items-center space-x-4">
-                <label className="flex items-center">
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                L'œuvre est-elle licenciée en France ?
+              </label>
+              <p className="text-xs text-gray-400 mb-2">
+                Activez si l'œuvre possède une licence officielle en France.
+              </p>
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-300">Non licenciée</span>
+                <label className="relative inline-flex items-center cursor-pointer">
                   <input
-                    type="radio"
+                    type="checkbox"
                     name="licence"
-                    value={true}
                     checked={formData.licence === true}
-                    onChange={handleChange}
-                    className="text-indigo-600 focus:ring-indigo-500"
+                    onChange={(e) =>
+                      handleChange({
+                        target: {
+                          name: "licence",
+                          value: e.target.checked,
+                        },
+                      })
+                    }
+                    className="sr-only peer"
                   />
-                  <span className="ml-2">Oui</span>
+                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:bg-green-500 transition-colors duration-200"></div>
+                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transform peer-checked:translate-x-full transition duration-200"></div>
                 </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="licence"
-                    value={false}
-                    checked={formData.licence === false}
-                    onChange={handleChange}
-                    className="text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span className="ml-2">Non</span>
-                </label>
+                <span className="text-sm text-gray-300">Licenciée</span>
               </div>
             </div>
+
             <div>
               <label htmlFor="langage" className="block text-sm font-medium">
                 Langage
               </label>
+              <p className="text-xs text-gray-400 mb-1">
+                Choisissez les langues ou traductions disponibles pour cette
+                œuvre
+              </p>
               <input
                 type="text"
                 id="langage"
                 name="langage"
-                value={formData.langage}
+                value={formData.langage || "Français"}
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
               />
             </div>
+
             <div>
               <label htmlFor="couverture" className="block text-sm font-medium">
                 Couverture
