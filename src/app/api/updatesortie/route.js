@@ -1,5 +1,3 @@
-// app/api/updatesortie/route.js
-
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
@@ -10,14 +8,14 @@ export async function GET() {
 
 export async function POST(req) {
   try {
-    const body = await req.json(); // Ce que Strapi envoie
+    const body = await req.json();
 
-    // 🔍 Affiche les données reçues de Strapi dans la réponse JSON
+
     const debugLog = {
       receivedFromStrapi: body,
     };
 
-    // Ensuite, on continue avec la logique de mise à jour
+
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     const today = new Date().toISOString().split("T")[0];
 
