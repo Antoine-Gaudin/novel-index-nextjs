@@ -8,7 +8,13 @@ export async function GET() {
   return NextResponse.json({ message: "✅ L'API répond correctement en GET." });
 }
 
-export async function POST() {
+export async function POST(req) {
+    try {
+      const body = await req.json(); // <– Récupère le body envoyé par Strapi
+      console.log("📦 Données reçues de Strapi :", body);
+    } catch (err) {
+      console.warn("❌ Aucune donnée JSON envoyée (pas grave si Webhook)", err);
+    }
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const today = new Date().toISOString().split("T")[0];
 
