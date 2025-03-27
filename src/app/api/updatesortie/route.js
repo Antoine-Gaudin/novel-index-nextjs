@@ -26,6 +26,8 @@ export async function GET() {
   
 
 export async function POST(req) {
+    console.log("✅ Strapi webhook déclenché");
+
   try {
     const body = await req.json();
 
