@@ -18,85 +18,23 @@ const SortieJours = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
-    const fetchOeuvresMisesAJour = async () => {
-      setLoading(true);
-      setError(null);
-
+    const fetchSorties = async () => {
       try {
-        const today = new Date().toISOString().split("T")[0];
-
-        // Étape 1 : Récupérer les chapitres et achats mis à jour aujourd'hui
-        const chapitreResponse = await fetch(
-          `${apiUrl}/api/chapitres?filters[updatedAt][$gte]=${today}T00:00:00&populate=oeuvres`
-        );
-        const chapitreData = await chapitreResponse.json();
-
-        const achatResponse = await fetch(
-          `${apiUrl}/api/Achatlivres?filters[updatedAt][$gte]=${today}T00:00:00&populate=oeuvres`
-        );
-        const achatData = await achatResponse.json();
-  
-
-        // Combiner les œuvres des deux requêtes
-        const allOeuvres = [
-          ...chapitreData.data.map((chapitre) => ({
-            ...chapitre.oeuvres?.[0],
-            typeSource: "chapitre",
-            sourceData: chapitre, // Inclure les données du chapitre
-          })),
-          ...achatData.data.map((achat) => ({
-            ...achat.oeuvres?.[0],
-            typeSource: "achatlivre",
-            sourceData: achat, // Inclure les données de l'achat
-          })),
-        ]
-          .filter(Boolean) // Éliminer les valeurs nulles
-          .reduce((acc, oeuvre) => {
-            // Éviter les doublons en utilisant `documentId` comme clé unique
-            if (!acc.some((o) => o.documentId === oeuvre.documentId)) {
-              acc.push(oeuvre);
-            }
-            return acc;
-          }, []);
-
-
-        // Étape 2 : Récupérer les couvertures des œuvres en utilisant `documentId`
-        const oeuvresAvecCouv = await Promise.all(
-          allOeuvres.map(async (oeuvre) => {
-            try {
-              const oeuvreResponse = await fetch(
-                `${apiUrl}/api/oeuvres/${oeuvre.documentId}?populate=couverture`
-              );
-              const oeuvreData = await oeuvreResponse.json();
-
-              return {
-                ...oeuvre,
-                couverture: oeuvreData.data.couverture?.url || null,
-                type: oeuvreData.data.type || "Type inconnu",
-                traduction: oeuvreData.data.traduction || "Catégorie inconnue",
-              };
-            } catch (err) {
-              console.error(
-                `Erreur lors de la récupération de la couverture pour ${oeuvre.documentId}`,
-                err
-              );
-              return { ...oeuvre, couverture: null }; // Retourne l'œuvre même si la couverture est absente
-            }
-          })
-        );
-
-
-        setOeuvres(oeuvresAvecCouv);
+        const res = await fetch("/data/sorties-du-jour.json");
+        const data = await res.json();
+        setOeuvres(data);
       } catch (err) {
-        console.error("Erreur lors de la récupération des œuvres mises à jour :", err);
-        setError("Une erreur est survenue lors de la récupération des œuvres mises à jour.");
+        console.error("Erreur JSON:", err);
+        setError("Erreur lors du chargement des sorties du jour.");
       } finally {
         setLoading(false);
       }
     };
-
-    fetchOeuvresMisesAJour();
+  
+    fetchSorties();
   }, []);
+  
+  
 
   // Gestion du clic pour ouvrir le pop-up
   const handleOeuvreClick = (oeuvre) => {
@@ -111,19 +49,18 @@ const SortieJours = () => {
   const handleTypeChange = (type) => {
     setSelectedType(type);
   };
-  
+
   const filteredOeuvres = oeuvres.filter((oeuvre) => {
     if (selectedType === "Tout") return true; // Affiche tout
     if (selectedType === "Novel") return ["Light novel", "Web novel"].includes(oeuvre.type);
     if (selectedType === "Scan/Webtoon") return ["Scan", "Webtoon"].includes(oeuvre.type);
     return false; // Aucun autre type n'est affiché
   });
-  
   return (
     <div className="bg-gray-900 text-white p-8">
       <h2 className="text-3xl font-bold mb-6">Sorties du jour</h2>
 
-      {loading && <p>Chargement des œuvres mises à jour...</p>}
+      
       {error && <p className="text-red-500">{error}</p>}
 
 
@@ -147,6 +84,8 @@ const SortieJours = () => {
     Scan/Webtoon
   </button>
 </div>
+
+{loading && <p>Chargement des œuvres mises à jour...</p>}
 
       {!loading && !error && oeuvres.length === 0 && (
         <p className="text-gray-400">Aucune mise à jour aujourd'hui.</p>
@@ -177,7 +116,7 @@ const SortieJours = () => {
                 <div
                   className="h-64 bg-cover bg-center"
                   style={{
-                    backgroundImage: `url(${oeuvre.couverture})`,
+                    backgroundImage: `url(${oeuvre.couverture.url})`,
                   }}
                 ></div>
               ) : (
