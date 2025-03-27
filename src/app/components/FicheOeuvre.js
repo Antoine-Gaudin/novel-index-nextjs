@@ -45,9 +45,6 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
     setSelectedChapter(null);
   };
 
-
-console.log(oeuvre);
-
   if (!oeuvre) {
     return null; // Si aucune œuvre n'est passée, on ne montre rien
   }

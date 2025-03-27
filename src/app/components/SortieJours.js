@@ -18,26 +18,83 @@ const SortieJours = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
-    const fetchSorties = async () => {
+    const fetchOeuvresMisesAJour = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
-        const res = await fetch("/data/sorties-du-jour.json");
-        const data = await res.json(); // 💥 ICI, erreur si le fichier est vide
+        const today = new Date().toISOString().split("T")[0];
+
+        // Étape 1 : Récupérer les chapitres et achats mis à jour aujourd'hui
+        const chapitreResponse = await fetch(
+          `${apiUrl}/api/chapitres?filters[updatedAt][$gte]=${today}T00:00:00&populate=oeuvres`
+        );
+        const chapitreData = await chapitreResponse.json();
+
+        const achatResponse = await fetch(
+          `${apiUrl}/api/Achatlivres?filters[updatedAt][$gte]=${today}T00:00:00&populate=oeuvres`
+        );
+        const achatData = await achatResponse.json();
   
-        if (!Array.isArray(data)) throw new Error("Format de fichier invalide");
-        setOeuvres(data);
-      } catch (error) {
-        console.error("Erreur lors du chargement des sorties du jour :", error);
-        setError("Erreur lors du chargement des sorties du jour.");
+
+        // Combiner les œuvres des deux requêtes
+        const allOeuvres = [
+          ...chapitreData.data.map((chapitre) => ({
+            ...chapitre.oeuvres?.[0],
+            typeSource: "chapitre",
+            sourceData: chapitre, // Inclure les données du chapitre
+          })),
+          ...achatData.data.map((achat) => ({
+            ...achat.oeuvres?.[0],
+            typeSource: "achatlivre",
+            sourceData: achat, // Inclure les données de l'achat
+          })),
+        ]
+          .filter(Boolean) // Éliminer les valeurs nulles
+          .reduce((acc, oeuvre) => {
+            // Éviter les doublons en utilisant `documentId` comme clé unique
+            if (!acc.some((o) => o.documentId === oeuvre.documentId)) {
+              acc.push(oeuvre);
+            }
+            return acc;
+          }, []);
+
+
+          const fetched = {};
+          const oeuvresAvecCouv = await Promise.all(
+            allOeuvres.map(async (oeuvre) => {
+              if (fetched[oeuvre.documentId]) return fetched[oeuvre.documentId];
+          
+              try {
+                const res = await fetch(`${apiUrl}/api/oeuvres/${oeuvre.documentId}?populate=couverture`);
+                const data = await res.json();
+                const enriched = {
+                  ...oeuvre,
+                  couverture: data.data?.couverture?.url || null,
+                  type: data.data?.type || "Type inconnu",
+                  traduction: data.data?.traduction || "Catégorie inconnue",
+                };
+                fetched[oeuvre.documentId] = enriched;
+                return enriched;
+              } catch (err) {
+                console.error("Erreur fetch :", err);
+                return { ...oeuvre, couverture: null };
+              }
+            })
+          );
+          
+
+        setOeuvres(oeuvresAvecCouv);
+      } catch (err) {
+        console.error("Erreur lors de la récupération des œuvres mises à jour :", err);
+        setError("Une erreur est survenue lors de la récupération des œuvres mises à jour.");
       } finally {
         setLoading(false);
       }
     };
-  
-    fetchSorties();
+
+    fetchOeuvresMisesAJour();
   }, []);
-  
-  
-  
 
   // Gestion du clic pour ouvrir le pop-up
   const handleOeuvreClick = (oeuvre) => {
@@ -52,13 +109,14 @@ const SortieJours = () => {
   const handleTypeChange = (type) => {
     setSelectedType(type);
   };
-
+  
   const filteredOeuvres = oeuvres.filter((oeuvre) => {
     if (selectedType === "Tout") return true; // Affiche tout
     if (selectedType === "Novel") return ["Light novel", "Web novel"].includes(oeuvre.type);
     if (selectedType === "Scan/Webtoon") return ["Scan", "Webtoon"].includes(oeuvre.type);
     return false; // Aucun autre type n'est affiché
   });
+  
   return (
     <div className="bg-gray-900 text-white p-8">
       <h2 className="text-3xl font-bold mb-6">Sorties du jour</h2>
@@ -119,7 +177,7 @@ const SortieJours = () => {
                 <div
                   className="h-64 bg-cover bg-center"
                   style={{
-                    backgroundImage: `url(${oeuvre.couverture.url})`,
+                    backgroundImage: `url(${oeuvre.couverture})`,
                   }}
                 ></div>
               ) : (
