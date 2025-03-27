@@ -9,21 +9,39 @@ export default function Oeuvres() {
   const router = useRouter(); // Initialisation du router
 
   useEffect(() => {
-    const fetchOeuvres = async () => {
-      const url = `${apiUrl}/api/oeuvres?populate=couverture`;
-
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-
-        setOeuvres(data.data); // Met à jour les œuvres récupérées
-      } catch (error) {
-        console.error("Erreur lors de la récupération des œuvres :", error);
+    const fetchOeuvresProgressif = async () => {
+      const pageSize = 30;
+      let page = 0;
+      let hasMore = true;
+  
+      while (hasMore) {
+        try {
+          const res = await fetch(`${apiUrl}/api/oeuvres?populate=couverture&pagination[start]=${page * pageSize}&pagination[limit]=${pageSize}`);
+          const data = await res.json();
+          const results = data.data || [];
+  
+          if (results.length === 0) {
+            hasMore = false;
+            break;
+          }
+  
+          for (const oeuvre of results) {
+            setOeuvres(prev => [...prev, oeuvre]);
+            await new Promise((r) => setTimeout(r, 0)); // Forcer le re-render à chaque ajout
+          }
+  
+          page++;
+        } catch (error) {
+          console.error("Erreur lors du chargement progressif :", error);
+          hasMore = false;
+        }
       }
     };
-
-    fetchOeuvres();
+  
+    setOeuvres([]); // vide d'abord
+    fetchOeuvresProgressif();
   }, []);
+  
 
 
   const handleOeuvreClick = (oeuvre) => {
