@@ -3,8 +3,27 @@ import fs from "fs";
 import path from "path";
 
 export async function GET() {
-  return NextResponse.json({ message: "✅ L'API répond correctement en GET." });
-}
+    const fs = require("fs");
+    const path = require("path");
+    const filePath = path.join(process.cwd(), "public", "data", "sorties-du-jour.json");
+  
+    try {
+      if (!fs.existsSync(filePath)) {
+        return NextResponse.json({ message: "✅ API OK mais fichier JSON inexistant." });
+      }
+  
+      const content = fs.readFileSync(filePath, "utf-8");
+      const json = JSON.parse(content);
+      return NextResponse.json({
+        message: "✅ API OK & JSON chargé",
+        total: json.length,
+        data: json,
+      });
+    } catch (e) {
+      return NextResponse.json({ error: "❌ Erreur lecture JSON", details: e.message });
+    }
+  }
+  
 
 export async function POST(req) {
   try {
