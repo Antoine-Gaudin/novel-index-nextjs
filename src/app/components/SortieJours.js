@@ -26,7 +26,7 @@ const SortieJours = () => {
 
       const today = new Date().toISOString().split("T")[0];
       const fetched = {};
-      const pageSize = 50;
+      const pageSize = 100;
       let page = 0;
       let hasMore = true;
 
