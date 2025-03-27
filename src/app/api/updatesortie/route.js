@@ -1,7 +1,13 @@
-// pages/api/update-sorties.js
-
 export default async function handler(req, res) {
-    if (req.method !== "POST") return res.status(405).end("Méthode non autorisée");
+    // ✅ GET temporaire pour tester l'accès
+    if (req.method === "GET") {
+      return res.status(200).json({ message: "✅ L'API répond au GET correctement !" });
+    }
+  
+    // ✅ POST pour traitement Webhook
+    if (req.method !== "POST") {
+      return res.status(405).end("Méthode non autorisée");
+    }
   
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     const today = new Date().toISOString().split("T")[0];
@@ -45,17 +51,17 @@ export default async function handler(req, res) {
   
       const oeuvres = result.data.oeuvres.filter(o => o.chapitres?.length > 0);
   
-      // 💾 Sauvegarder localement dans /public/data/
+      // 💾 Écrire dans /public/data/sorties-du-jour.json
       const fs = require("fs");
       const path = require("path");
       const filePath = path.join(process.cwd(), "public", "data", "sorties-du-jour.json");
   
       fs.writeFileSync(filePath, JSON.stringify(oeuvres, null, 2), "utf-8");
   
-      res.status(200).json({ message: "Fichier mis à jour avec succès", total: oeuvres.length });
+      return res.status(200).json({ message: "Fichier mis à jour avec succès", total: oeuvres.length });
     } catch (error) {
       console.error("Erreur update-sorties:", error);
-      res.status(500).json({ error: "Erreur lors de la génération du fichier" });
+      return res.status(500).json({ error: "Erreur lors de la génération du fichier" });
     }
   }
   
