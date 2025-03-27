@@ -21,10 +21,12 @@ const SortieJours = () => {
     const fetchSorties = async () => {
       try {
         const res = await fetch("/data/sorties-du-jour.json");
-        const data = await res.json();
+        const data = await res.json(); // 💥 ICI, erreur si le fichier est vide
+  
+        if (!Array.isArray(data)) throw new Error("Format de fichier invalide");
         setOeuvres(data);
-      } catch (err) {
-        console.error("Erreur JSON:", err);
+      } catch (error) {
+        console.error("Erreur lors du chargement des sorties du jour :", error);
         setError("Erreur lors du chargement des sorties du jour.");
       } finally {
         setLoading(false);
@@ -33,6 +35,7 @@ const SortieJours = () => {
   
     fetchSorties();
   }, []);
+  
   
   
 
