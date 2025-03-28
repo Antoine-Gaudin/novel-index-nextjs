@@ -215,9 +215,9 @@ export default function Home() {
                   setProgress(Math.round((successCount / data.length) * 100));
   
                   // 🌟 Pause toutes les 100 requêtes pour éviter la surcharge
-                  if (successCount % 100 === 0) {
+                  if (successCount % 80 === 0) {
                       console.log(`🛑 Pause de 2 secondes après ${successCount} requêtes...`);
-                      await new Promise(resolve => setTimeout(resolve, 2000));
+                      await new Promise(resolve => setTimeout(resolve, 4000));
                   }
               } catch (error) {
                   console.error(`❌ Erreur d'importation du chapitre ${chapter.chapitre} :`, error);

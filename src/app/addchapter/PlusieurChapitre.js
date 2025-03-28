@@ -108,8 +108,8 @@ const PlusieursChapitre = ({ user, oeuvre }) => {
         setProgress(((successCount / payloads.length) * 100).toFixed(0));
 
         // 🔹 Pause toutes les 100 requêtes
-        if (successCount % 100 === 0) {
-          await new Promise((resolve) => setTimeout(resolve, 2000)); // Pause de 2 secondes
+        if (successCount % 80 === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 5000)); // Pause de 2 secondes
         }
       }
 
