@@ -19,7 +19,7 @@ export default function RootLayout({ children }) {
         <meta name="author" content="Trad-Index" />
         <title>Novel-index</title>
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9369868670279081"
-     crossorigin="anonymous"></script>
+     crossOrigin="anonymous"></script>
       </head>
       <body className="bg-gray-900 text-white">
         <GoogleAnalytics gaMeasurementId="G-7MK34RRGND" trackPageViews />
