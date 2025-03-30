@@ -7,6 +7,7 @@ import Profil from "../components/Profil";
 import Parametre from "../components/Parametre";
 import Indexeur from "../components/Indexeur";
 import Administration from "../components/Administration"; // Importez le composant Administration
+import Bibliotheque from "../components/bibliotheque";
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
@@ -59,8 +60,10 @@ const ProfilePage = () => {
         return <Parametre user={user} />;
       case "indexeur":
         return <Indexeur user={user} />;
-      case "administration": // Nouveau cas pour l'administration
-        return <Administration user={user} />;
+        case "administration":
+          return <Administration user={user} />;
+        case "bibliotheque": // bien sans accent ici
+          return <Bibliotheque user={user} />;        
       case "profil":
       default:
         return <Profil user={user} />;
@@ -70,7 +73,7 @@ const ProfilePage = () => {
   return (
     <div className="flex flex-col md:flex-row h-full">
       {/* Navigation latérale */}
-      <div className="md:w-64 w-full bg-gray-800 text-white shadow-lg">
+      <div>
         <NavigationProfil onMenuSelect={setActiveMenu} user={user} />
       </div>
 

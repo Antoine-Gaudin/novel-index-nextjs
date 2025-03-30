@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-
+import { motion } from "framer-motion";
 const ConstructeurUrl = ({ user, oeuvre }) => {
   const [startTitle, setStartTitle] = useState("");
   const [endTitle, setEndTitle] = useState("");
@@ -51,12 +51,18 @@ const ConstructeurUrl = ({ user, oeuvre }) => {
   };
 
   return (
-    <div className="mt-6 p-4 bg-gray-700 rounded-lg shadow-lg">
-      <h2 className="text-xl font-bold mb-4">Constructeur d'URL</h2>
-      <div className="space-y-4">
-        {/* Champ pour le titre de début */}
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="mt-8 p-6 bg-gray-800 rounded-xl shadow-lg space-y-6"
+    >
+      <h2 className="text-2xl font-bold text-white text-center">🛠️ Constructeur d'URL</h2>
+  
+      {/* Début / Fin */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="startTitle" className="block text-sm font-medium">
+          <label htmlFor="startTitle" className="block text-sm font-semibold mb-1">
             Titre de début
           </label>
           <input
@@ -64,15 +70,14 @@ const ConstructeurUrl = ({ user, oeuvre }) => {
             id="startTitle"
             value={startTitle}
             onChange={(e) => setStartTitle(e.target.value)}
-            className="mt-1 block w-full p-2 bg-gray-800 border border-gray-600 rounded-lg"
+            className="w-full p-2 bg-gray-900 border border-gray-700 rounded-lg"
             placeholder="1"
             required
           />
         </div>
-
-        {/* Champ pour le titre de fin */}
+  
         <div>
-          <label htmlFor="endTitle" className="block text-sm font-medium">
+          <label htmlFor="endTitle" className="block text-sm font-semibold mb-1">
             Titre de fin
           </label>
           <input
@@ -80,55 +85,63 @@ const ConstructeurUrl = ({ user, oeuvre }) => {
             id="endTitle"
             value={endTitle}
             onChange={(e) => setEndTitle(e.target.value)}
-            className="mt-1 block w-full p-2 bg-gray-800 border border-gray-600 rounded-lg"
+            className="w-full p-2 bg-gray-900 border border-gray-700 rounded-lg"
             placeholder="10"
             required
           />
         </div>
-
-        {/* Champ pour le modèle d'URL */}
-        <div>
-          <label htmlFor="urlPattern" className="block text-sm font-medium">
-            Modèle d'URL (utilisez <code>{`{n}`}</code> pour la partie variable)
-          </label>
-          <input
-            type="text"
-            id="urlPattern"
-            value={urlPattern}
-            onChange={(e) => setUrlPattern(e.target.value)}
-            className="mt-1 block w-full p-2 bg-gray-800 border border-gray-600 rounded-lg"
-            placeholder="https://trad-index.com/nomOeuvre/Chapitre/{n}"
-            required
-          />
-        </div>
-
-        {/* Champ pour le tome (optionnel) */}
-        <div>
-          <label htmlFor="tome" className="block text-sm font-medium">
-            Tome (optionnel)
-          </label>
-          <input
-            type="text"
-            id="tome"
-            value={tome}
-            onChange={(e) => setTome(e.target.value)}
-            className="mt-1 block w-full p-2 bg-gray-800 border border-gray-600 rounded-lg"
-            placeholder="Tome 1"
-          />
-        </div>
-
-        {/* Bouton pour générer les chapitres */}
-        <button
-          onClick={handleGenerate}
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white font-bold"
+      </div>
+  
+      {/* Pattern URL */}
+      <div>
+        <label htmlFor="urlPattern" className="block text-sm font-semibold mb-1">
+          Modèle d'URL <span className="text-gray-400">(utilisez <code>{`{n}`}</code>)</span>
+        </label>
+        <input
+          type="text"
+          id="urlPattern"
+          value={urlPattern}
+          onChange={(e) => setUrlPattern(e.target.value)}
+          className="w-full p-2 bg-gray-900 border border-gray-700 rounded-lg"
+          placeholder="https://trad-index.com/nomOeuvre/Chapitre/{n}"
+          required
+        />
+      </div>
+  
+      {/* Tome (optionnel) */}
+      <div>
+        <label htmlFor="tome" className="block text-sm font-semibold mb-1">
+          Tome <span className="text-gray-400">(optionnel)</span>
+        </label>
+        <input
+          type="text"
+          id="tome"
+          value={tome}
+          onChange={(e) => setTome(e.target.value)}
+          className="w-full p-2 bg-gray-900 border border-gray-700 rounded-lg"
+          placeholder="Tome 1"
+        />
+      </div>
+  
+      {/* Générer */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={handleGenerate}
+        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white font-bold transition"
+      >
+        Générer les chapitres
+      </motion.button>
+  
+      {/* Résultat généré */}
+      {generatedChapters && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-4"
         >
-          Générer les chapitres
-        </button>
-
-        {/* Zone pour afficher les chapitres générés */}
-        {generatedChapters && (
-          <div className="mt-6">
-            <label htmlFor="generatedChapters" className="block text-sm font-medium">
+          <div>
+            <label htmlFor="generatedChapters" className="block text-sm font-semibold mb-1">
               Chapitres générés
             </label>
             <textarea
@@ -136,24 +149,25 @@ const ConstructeurUrl = ({ user, oeuvre }) => {
               value={generatedChapters}
               readOnly
               rows={10}
-              className="mt-1 block w-full p-2 bg-gray-800 border border-gray-600 rounded-lg"
+              className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white"
             />
-
-            {/* Bouton pour copier le contenu */}
-            <button
-              onClick={handleCopy}
-              className="w-full py-3 mt-3 bg-green-600 hover:bg-green-700 rounded-lg text-white font-bold"
-            >
-              Copier les chapitres
-            </button>
-            {copyMessage && (
-              <p className="mt-2 text-center text-yellow-400">{copyMessage}</p>
-            )}
           </div>
-        )}
-      </div>
-    </div>
+  
+          <button
+            onClick={handleCopy}
+            className="w-full py-3 bg-green-600 hover:bg-green-700 rounded-lg text-white font-bold"
+          >
+            Copier les chapitres
+          </button>
+  
+          {copyMessage && (
+            <p className="text-center text-yellow-400 text-sm">{copyMessage}</p>
+          )}
+        </motion.div>
+      )}
+    </motion.div>
   );
+  
 };
 
 export default ConstructeurUrl;

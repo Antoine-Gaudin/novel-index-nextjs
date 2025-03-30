@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import axios from "axios";
+import { motion } from "framer-motion";
 
 const RemonterInfo = ({ user }) => {
   const [formData, setFormData] = useState({
@@ -68,15 +69,24 @@ const RemonterInfo = ({ user }) => {
     }
   };
 
-  return (
-    <div className="w-full max-w-2xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg text-white">
-      <h1 className="text-2xl font-bold mb-6 text-center">Remonter une information (Chapitre)</h1>
-      {message && <p className="mb-4 text-center text-yellow-400">{message}</p>}
 
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="w-full max-w-2xl mx-auto bg-gray-800 p-6 rounded-xl shadow-xl text-white space-y-8"
+    >
+      <h1 className="text-3xl font-bold text-center">📢 Remonter une information</h1>
+  
+      {message && (
+        <p className="text-center text-yellow-400 text-sm">{message}</p>
+      )}
+  
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Titre */}
+        {/* 📝 Titre */}
         <div>
-          <label htmlFor="titre" className="block text-sm font-medium">
+          <label htmlFor="titre" className="block text-sm font-semibold mb-1">
             Titre de l'information
           </label>
           <input
@@ -85,15 +95,15 @@ const RemonterInfo = ({ user }) => {
             name="titre"
             value={formData.titre}
             onChange={handleChange}
-            className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
-            placeholder="Entrez le titre"
+            className="block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
+            placeholder="Entrez un titre clair"
             required
           />
         </div>
-
-        {/* Contenu */}
+  
+        {/* 📄 Contenu */}
         <div>
-          <label htmlFor="contenu" className="block text-sm font-medium">
+          <label htmlFor="contenu" className="block text-sm font-semibold mb-1">
             Contenu
           </label>
           <textarea
@@ -102,37 +112,38 @@ const RemonterInfo = ({ user }) => {
             value={formData.contenu}
             onChange={handleChange}
             rows={8}
-            className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
-            placeholder="Décrivez le problème ou l'information que vous souhaitez remonter"
+            className="block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
+            placeholder="Décrivez précisément le problème ou l'information à transmettre"
             required
           />
         </div>
-
-        {/* Signalement */}
-        <div className="flex items-center space-x-4">
+  
+        {/* 🚨 Signalement Urgent */}
+        <div className="flex items-center space-x-3">
           <input
             type="checkbox"
             id="signalement"
             name="signalement"
             checked={formData.signalement}
             onChange={handleChange}
-            className="h-5 w-5"
+            className="h-5 w-5 text-indigo-600"
           />
           <label htmlFor="signalement" className="text-sm">
-            Marquer comme signalement urgent
+            Marquer comme signalement urgent 🚨
           </label>
         </div>
-
-        {/* Bouton Soumettre */}
+  
+        {/* 📤 Soumettre */}
         <button
           type="submit"
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white font-bold"
+          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white font-bold transition"
         >
           Soumettre l'information
         </button>
       </form>
-    </div>
+    </motion.div>
   );
+  
 };
 
 export default RemonterInfo;

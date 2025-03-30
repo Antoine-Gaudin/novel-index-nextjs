@@ -21,20 +21,15 @@ const IndexeurChapitre = ({ user }) => {
   }, [user]);
 
   const handleSearch = async () => {
-    if (searchTerm.trim() === "") {
-      console.log("Recherche ignorée : champ vide.");
-      return;
-    }
+    if (searchTerm.trim() === "") return;
 
     setLoading(true);
     try {
-      const jwt = localStorage.getItem("jwt") || Cookies.get("jwt");
+      const jwt = localStorage.getItem("jwt");
       const response = await axios.get(
         `https://novel-index-strapi.onrender.com/api/oeuvres?populate=couverture&filters[titre][$containsi]=${searchTerm}`,
         {
-          headers: {
-            Authorization: `Bearer ${jwt}`,
-          },
+          headers: { Authorization: `Bearer ${jwt}` },
         }
       );
 
@@ -47,9 +42,7 @@ const IndexeurChapitre = ({ user }) => {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
+    if (e.key === "Enter") handleSearch();
   };
 
   const renderContent = () => {
@@ -64,81 +57,85 @@ const IndexeurChapitre = ({ user }) => {
         return <RemonterInfo user={user} oeuvre={selectedOeuvre} />;
       default:
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              onClick={() => setActiveSection("OneChapitre")}
-              className="p-4 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700"
-            >
-              Ajouter un chapitre
-            </button>
-            <button
-              onClick={() => setActiveSection("PlusieursChapitre")}
-              className="p-4 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700"
-            >
-              Ajouter plusieurs chapitres
-            </button>
-            <button
-              onClick={() => setActiveSection("InfoChapitre")}
-              className="p-4 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700"
-            >
-              Info Chapitre
-            </button>
-            <button
-              onClick={() => setActiveSection("RemonterInfo")}
-              className="p-4 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700"
-            >
-              Remonter une information
-            </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            {[
+              {
+                key: "OneChapitre",
+                label: "➕ Ajouter un chapitre",
+              },
+              {
+                key: "PlusieursChapitre",
+                label: "📚 Ajouter plusieurs chapitres",
+              },
+              {
+                key: "InfoChapitre",
+                label: "ℹ️ Infos chapitre",
+              },
+              {
+                key: "RemonterInfo",
+                label: "🚩 Remonter une information",
+              },
+            ].map((btn) => (
+              <button
+                key={btn.key}
+                onClick={() => setActiveSection(btn.key)}
+                className="bg-indigo-600 hover:bg-indigo-700 transition text-white rounded-xl p-4 shadow text-lg font-medium"
+              >
+                {btn.label}
+              </button>
+            ))}
           </div>
         );
     }
   };
 
   return (
-    <div className="w-full max-w-4xl bg-gray-800 p-6 rounded-lg shadow-lg">
-      <h1 className="text-3xl font-bold mb-6 text-center">Indexer des Chapitres</h1>
+    <div className="w-full max-w-5xl mx-auto bg-gray-900 p-8 rounded-2xl text-white">
+      <h1 className="text-3xl font-bold mb-8 text-center">📘 Indexer des Chapitres</h1>
 
       {!selectedOeuvre && (
         <>
           {/* Barre de recherche */}
-          <div className="flex items-center mb-6">
+          <div className="flex mb-6">
             <input
               type="text"
-              placeholder="Recherchez une œuvre par son titre pour ajouter ou gérer ses chapitres"
+              placeholder="🔍 Rechercher une œuvre par son titre..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleKeyDown} // Déclenche la recherche en appuyant sur Entrée
-              className="flex-grow p-2 bg-gray-700 text-white border border-gray-600 rounded-l-lg focus:outline-none"
+              onKeyDown={handleKeyDown}
+              className="flex-grow p-3 bg-gray-800 border border-gray-700 rounded-l-xl focus:outline-none text-sm"
             />
             <button
               onClick={handleSearch}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-r-lg hover:bg-indigo-700"
               disabled={loading}
+              className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 transition rounded-r-xl font-semibold"
             >
               {loading ? "Recherche..." : "Rechercher"}
             </button>
           </div>
 
-          {/* Résultats */}
+          {/* Résultats de recherche */}
           <div className="space-y-4">
             {results.length > 0 ? (
               results.map((oeuvre) => (
                 <div
                   key={oeuvre.id}
-                  className="flex items-center bg-gray-700 p-4 rounded-lg shadow-md cursor-pointer hover:bg-gray-600 transition"
                   onClick={() => setSelectedOeuvre(oeuvre)}
+                  className="flex items-center bg-gray-800 p-4 rounded-xl shadow hover:bg-gray-700 cursor-pointer transition"
                 >
                   {oeuvre.couverture?.url ? (
                     <img
-                      src={`${oeuvre.couverture.url}`}
+                      src={oeuvre.couverture.url}
                       alt={oeuvre.titre}
-                      className="w-16 h-16 rounded-lg mr-4 object-cover"
+                      className="w-16 h-20 rounded-lg object-cover mr-4"
                     />
                   ) : (
-                    <div className="w-16 h-16 bg-gray-600 rounded-lg mr-4"></div>
+                    <div className="w-16 h-20 bg-gray-600 rounded-lg mr-4 flex items-center justify-center text-gray-400">
+                      📄
+                    </div>
                   )}
                   <div>
-                    <h2 className="text-lg font-semibold text-white">{oeuvre.titre}</h2>
+                    <h2 className="text-lg font-semibold">{oeuvre.titre}</h2>
                     <p className="text-sm text-gray-400">
                       {oeuvre.titrealt || "Pas de titre alternatif"}
                     </p>
@@ -146,7 +143,7 @@ const IndexeurChapitre = ({ user }) => {
                 </div>
               ))
             ) : (
-              <p className="text-sm text-gray-400">
+              <p className="text-center text-gray-500">
                 {loading ? "Recherche en cours..." : "Aucun résultat trouvé."}
               </p>
             )}
@@ -154,22 +151,23 @@ const IndexeurChapitre = ({ user }) => {
         </>
       )}
 
-      {/* Afficher les options pour l'œuvre sélectionnée */}
       {selectedOeuvre && (
         <>
-          <h2 className="text-2xl font-bold text-white mb-4 text-center">
+          <h2 className="text-2xl font-bold mb-6 text-center">
             {selectedOeuvre.titre}
           </h2>
+
           {renderContent()}
-          <div className="mt-6 text-center">
+
+          <div className="mt-8 text-center">
             <button
               onClick={() => {
                 setSelectedOeuvre(null);
                 setActiveSection("default");
               }}
-              className="p-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition"
             >
-              Retour à la recherche
+              ⬅️ Retour à la recherche
             </button>
           </div>
         </>

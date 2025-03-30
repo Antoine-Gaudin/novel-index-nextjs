@@ -146,44 +146,33 @@ const IndexeurTeams = ({ user }) => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg text-white">
-      <h1 className="text-2xl font-bold mb-6 text-center">Ajouter une Team</h1>
-      {message && <p className="mb-4 text-center text-yellow-400">{message}</p>}
+    <div className="w-full max-w-4xl mx-auto bg-gray-900 p-8 rounded-2xl text-white space-y-6">
+      <h1 className="text-3xl font-bold text-center mb-2">👥 Ajouter une Team</h1>
+  
+      {message && (
+        <p className="text-center text-yellow-400 font-medium mb-4">{message}</p>
+      )}
+  
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Titre */}
-        <div>
-          <label htmlFor="titre" className="block text-sm font-medium">
-            Titre
-          </label>
-          <input
-            type="text"
-            id="titre"
-            name="titre"
-            value={formData.titre}
-            onChange={handleInputChange}
-            className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
-            required
-          />
-        </div>
-
-        {/* Description */}
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium">
-            Description
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleInputChange}
-            rows={4}
-            className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
-          />
-        </div>
-
-        {/* État */}
-        <div>
-          <label htmlFor="etat" className="inline-flex items-center">
+  
+        {/* 📝 Informations générales */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="titre" className="block text-sm font-semibold mb-1">
+              Titre de la Team
+            </label>
+            <input
+              type="text"
+              id="titre"
+              name="titre"
+              value={formData.titre}
+              onChange={handleInputChange}
+              className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg"
+              required
+            />
+          </div>
+  
+          <div className="flex items-center mt-6">
             <input
               type="checkbox"
               id="etat"
@@ -192,35 +181,72 @@ const IndexeurTeams = ({ user }) => {
               onChange={handleInputChange}
               className="mr-2"
             />
-            Actif ?
-          </label>
+            <label htmlFor="etat" className="text-sm text-gray-300">
+              Cette team est elle active ?
+            </label>
+          </div>
         </div>
-
-        {/* Couverture */}
+  
+        {/* 🖋️ Description */}
         <div>
-          <label htmlFor="couverture" className="block text-sm font-medium">
-            Couverture
+          <label htmlFor="description" className="block text-sm font-semibold mb-1">
+            Description
           </label>
-          <input
-            type="file"
-            id="couverture"
-            name="couverture"
-            onChange={handleFileChange}
-            className="mt-1 block w-full text-gray-300 bg-gray-700 border border-gray-600 rounded-lg"
+          <textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleInputChange}
+            rows={4}
+            className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg"
           />
         </div>
-
-        {/* Ajout des liens associés */}
+  
         <div>
-          <h2 className="text-lg font-bold mb-2">Liens associés</h2>
-          <div className="flex items-center space-x-4">
+  <label htmlFor="couverture" className="block text-sm font-semibold mb-2">
+    🖼️ Image de couverture
+  </label>
+
+  <div className="relative border-2 border-dashed border-gray-600 bg-gray-800 rounded-xl p-6 flex flex-col items-center justify-center hover:border-indigo-500 transition-all duration-200">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-10 w-10 text-indigo-400 mb-2"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M7 16V4m0 0L3 8m4-4l4 4M21 12v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8"
+      />
+    </svg>
+    <p className="text-sm text-gray-400 mb-1 text-center">
+      Glissez-déposez une image ou cliquez pour sélectionner un fichier
+    </p>
+    <input
+      type="file"
+      id="couverture"
+      name="couverture"
+      onChange={handleFileChange}
+      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+    />
+  </div>
+</div>
+
+  
+        {/* 🔗 Liens associés */}
+        <div>
+          <h2 className="text-lg font-bold mb-2">🔗 Liens associés</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <input
               type="text"
               name="titre"
               value={newLien.titre}
               onChange={handleNewLienChange}
               placeholder="Titre du lien"
-              className="flex-1 p-2 bg-gray-700 border border-gray-600 rounded-lg"
+              className="p-2 bg-gray-800 border border-gray-700 rounded-lg"
             />
             <input
               type="text"
@@ -228,29 +254,39 @@ const IndexeurTeams = ({ user }) => {
               value={newLien.url}
               onChange={handleNewLienChange}
               placeholder="URL"
-              className="flex-1 p-2 bg-gray-700 border border-gray-600 rounded-lg"
+              className="p-2 bg-gray-800 border border-gray-700 rounded-lg"
             />
             <button
               type="button"
               onClick={handleAddLien}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white font-bold"
+              className="bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg px-4 py-2"
             >
-              Ajouter
+              ➕ Ajouter
             </button>
           </div>
+  
+          {/* Liste des liens */}
           <ul className="mt-4 space-y-2">
             {formData.teamliens.map((lien, index) => (
               <li
                 key={index}
-                className="flex items-center justify-between p-2 bg-gray-700 rounded-lg"
+                className="flex justify-between items-center bg-gray-800 p-3 rounded-lg"
               >
-                <span>
-                  {lien.titre} - {lien.url}
+                <span className="text-sm">
+                  <span className="font-semibold">{lien.titre}</span> —{" "}
+                  <a
+                    href={lien.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-400 hover:underline"
+                  >
+                    {lien.url}
+                  </a>
                 </span>
                 <button
                   type="button"
                   onClick={() => handleRemoveLien(index)}
-                  className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-lg text-white font-bold"
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1 rounded"
                 >
                   Supprimer
                 </button>
@@ -258,17 +294,18 @@ const IndexeurTeams = ({ user }) => {
             ))}
           </ul>
         </div>
-
-        {/* Soumettre */}
+  
+        {/* ✅ Soumission */}
         <button
           type="submit"
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white font-bold"
+          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white font-bold text-lg"
         >
-          Ajouter la Team
+          ✅ Ajouter la Team
         </button>
       </form>
     </div>
   );
+  
 };
 
 export default IndexeurTeams;

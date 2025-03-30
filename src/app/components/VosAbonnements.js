@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 
-const Profil = ({ user }) => {
+const VosAbonnements = ({ user }) => {
   const [abonnements, setAbonnements] = useState([]);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
@@ -39,46 +39,23 @@ const Profil = ({ user }) => {
     fetchAbonnements();
   }, [user.documentId]);
 
-  const isToday = (dateString) => {
-    const today = new Date();
-    const date = new Date(dateString);
-    return (
-      date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-    );
-  };
-
-  const abonnementsDuJour = abonnements.filter((a) => {
-    const chapitres = a.chapitres || [];
-    return chapitres.some((ch) => isToday(ch.createdAt));
-  });
-
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white">
-          📅 Sorties du jour
-        </h1>
-        <p className="text-gray-400 mt-2">
-          Voici les œuvres que vous suivez avec un nouveau chapitre aujourd’hui.
-        </p>
-      </div>
-
+    <div className="space-y-8">
       <AnimatePresence mode="wait">
         <motion.div
+          key="abonnements"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.3 }}
           className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3"
         >
-          {abonnementsDuJour.length === 0 ? (
+          {abonnements.length === 0 ? (
             <p className="text-center text-gray-400 col-span-full">
-              Aucune sortie aujourd’hui.
+              Aucun abonnement trouvé.
             </p>
           ) : (
-            abonnementsDuJour.map((abonnement) => {
+            abonnements.map((abonnement) => {
               const chapitres = abonnement.chapitres || [];
               const lastCheckedDate = new Date(abonnement.lastChecked);
               const nouveauxChapitres = chapitres.filter(
@@ -116,16 +93,12 @@ const Profil = ({ user }) => {
                     <h2 className="text-lg font-semibold text-white">
                       {oeuvre?.titre || "Sans titre"}
                     </h2>
-
                     <p className="text-sm text-gray-400">
                       Dernier accès :{" "}
                       {abonnement.lastChecked
-                        ? new Date(abonnement.lastChecked).toLocaleString(
-                            "fr-FR"
-                          )
+                        ? new Date(abonnement.lastChecked).toLocaleString("fr-FR")
                         : "Jamais"}
                     </p>
-
                     {nbNouveaux > 0 ? (
                       <p className="text-sm text-green-400 font-semibold">
                         📈 {nbNouveaux} nouveau
@@ -148,4 +121,4 @@ const Profil = ({ user }) => {
   );
 };
 
-export default Profil;
+export default VosAbonnements;

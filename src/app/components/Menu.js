@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 
@@ -49,33 +50,35 @@ const Menu = () => {
         >
           Novel-index
         </h1>
+
         <ul className="hidden md:flex space-x-4 items-center">
           <li>
-            <a href="/" className="text-white font-bold hover:text-gray-400 transition duration-300">
+            <Link href="/" className="text-white font-bold hover:text-gray-400 transition duration-300">
               Accueil
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/Oeuvres" className="text-white font-bold hover:text-gray-400 transition duration-300">
+            <Link href="/Oeuvres" className="text-white font-bold hover:text-gray-400 transition duration-300">
               Œuvres
-            </a>
+            </Link>
           </li>
+
           {!isLoggedIn ? (
             <>
               <li>
-                <a href="/Inscription" className="text-white font-bold hover:text-gray-400 transition duration-300">
+                <Link href="/Inscription" className="text-white font-bold hover:text-gray-400 transition duration-300">
                   Inscription
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/Connexion" className="text-white font-bold hover:text-gray-400 transition duration-300">
+                <Link href="/Connexion" className="text-white font-bold hover:text-gray-400 transition duration-300">
                   Connexion
-                </a>
+                </Link>
               </li>
             </>
           ) : (
             <li>
-              <a href="/Profil" className="block w-10 h-10 rounded-full overflow-hidden border-2 border-white hover:border-gray-400 transition duration-300">
+              <Link href="/Profil" className="block w-10 h-10 rounded-full overflow-hidden border-2 border-white hover:border-gray-400 transition duration-300">
                 {userProfilePicture ? (
                   <img src={userProfilePicture} alt="Profil" className="w-full h-full object-cover" />
                 ) : (
@@ -92,11 +95,15 @@ const Menu = () => {
                     </span>
                   </div>
                 )}
-              </a>
+              </Link>
             </li>
           )}
         </ul>
-        <button className="md:hidden text-white focus:outline-none" onClick={() => setMenuOpen(!menuOpen)}>
+
+        <button
+          className="md:hidden text-white focus:outline-none"
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
           {menuOpen ? "✖" : "☰"}
         </button>
       </nav>
@@ -105,31 +112,31 @@ const Menu = () => {
       {menuOpen && (
         <ul className="md:hidden flex flex-col space-y-2 mt-2 px-4">
           <li>
-            <a href="/" className="block text-white font-bold hover:text-gray-400 transition duration-300">
+            <Link href="/" className="block text-white font-bold hover:text-gray-400 transition duration-300">
               Accueil
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/Oeuvres" className="block text-white font-bold hover:text-gray-400 transition duration-300">
+            <Link href="/Oeuvres" className="block text-white font-bold hover:text-gray-400 transition duration-300">
               Œuvres
-            </a>
+            </Link>
           </li>
           {!isLoggedIn ? (
             <>
               <li>
-                <a href="/Inscription" className="block text-white font-bold hover:text-gray-400 transition duration-300">
+                <Link href="/Inscription" className="block text-white font-bold hover:text-gray-400 transition duration-300">
                   Inscription
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/Connexion" className="block text-white font-bold hover:text-gray-400 transition duration-300">
+                <Link href="/Connexion" className="block text-white font-bold hover:text-gray-400 transition duration-300">
                   Connexion
-                </a>
+                </Link>
               </li>
             </>
           ) : (
             <li>
-              <a href="/Profil" className="block w-10 h-10 rounded-full overflow-hidden border-2 border-white hover:border-gray-400 transition duration-300">
+              <Link href="/Profil" className="block w-10 h-10 rounded-full overflow-hidden border-2 border-white hover:border-gray-400 transition duration-300">
                 {userProfilePicture ? (
                   <img src={userProfilePicture} alt="Profil" className="w-full h-full object-cover" />
                 ) : (
@@ -137,7 +144,7 @@ const Menu = () => {
                     <span className="text-sm text-gray-400">Aucune image</span>
                   </div>
                 )}
-              </a>
+              </Link>
             </li>
           )}
         </ul>

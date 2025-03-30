@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Cookies from "js-cookie";
-
+import { motion } from "framer-motion";
 const Parametre = ({ user }) => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -120,82 +120,94 @@ const Parametre = ({ user }) => {
   };
   
 
+
   return (
-    <div className="w-full max-w-md bg-gray-800 p-6 rounded-lg shadow-lg">
-      <h1 className="text-2xl font-bold mb-6 text-center">Paramètres</h1>
-      <div className="text-sm mb-4">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="w-full max-w-md mx-auto bg-gray-900 p-6 rounded-xl shadow-lg text-white space-y-6"
+    >
+      <h1 className="text-3xl font-bold text-center">⚙️ Paramètres</h1>
+  
+      {/* 👤 Infos utilisateur */}
+      <div className="bg-gray-800 p-4 rounded-lg space-y-2 text-sm">
         <p>
-          <strong>Nom d'utilisateur :</strong> {user.username}
+          <span className="font-semibold text-gray-300">Nom d'utilisateur :</span>{" "}
+          {user.username}
         </p>
         <p>
-          <strong>Email :</strong> {user.email}
+          <span className="font-semibold text-gray-300">Email :</span> {user.email}
         </p>
-        <div className="mt-4">
-          <strong>Restreint :</strong>{" "}
+        <div className="mt-2">
+          <span className="font-semibold text-gray-300">Restreint :</span>{" "}
           <span
-            className={`py-1 px-3 rounded ${
-              user.restreint ? "bg-red-600 text-white" : "bg-green-600 text-white"
+            className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+              user.restreint ? "bg-red-600" : "bg-green-600"
             }`}
           >
             {user.restreint ? "Oui (compte restreint)" : "Non (aucune restriction)"}
           </span>
         </div>
       </div>
-      {Object.keys(user)
-        .filter(
-          (key) =>
-            typeof user[key] === "boolean" &&
-            key !== "admin" &&
-            key !== "confirmed" &&
-            key !== "blocked" &&
-            key !== "restreint"
-        )
-        .map((key) => (
-          <div key={key} className="mb-4">
-            <div className="flex justify-between items-center mb-1">
-              <span className="capitalize">{key} :</span>
+  
+      {/* 🔄 Boutons de bascule */}
+      <div className="space-y-4">
+        {Object.keys(user)
+          .filter(
+            (key) =>
+              typeof user[key] === "boolean" &&
+              !["admin", "confirmed", "blocked", "restreint"].includes(key)
+          )
+          .map((key) => (
+            <div key={key} className="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
+              <span className="capitalize font-medium">{key}</span>
               <button
                 onClick={() => handleToggle(key)}
                 disabled={loading || user.restreint}
-                className={`py-1 px-3 rounded ${
+                className={`px-4 py-1 rounded-md text-sm font-semibold transition ${
                   user[key]
                     ? "bg-green-600 hover:bg-green-700"
                     : "bg-red-600 hover:bg-red-700"
-                } ${
-                  user.restreint
-                    ? "opacity-50 cursor-not-allowed"
-                    : "cursor-pointer"
-                } text-white`}
+                } ${user.restreint ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 {user[key] ? "Actif" : "Inactif"}
               </button>
             </div>
-          </div>
-        ))}
+          ))}
+      </div>
+  
+      {/* 📸 Changer la photo de profil */}
       <form
         onSubmit={handleProfilePictureSubmit}
-        className="mt-6 border-t border-gray-700 pt-4"
+        className="bg-gray-800 p-4 rounded-lg space-y-4 border-t border-gray-700 mt-6"
       >
-        <h2 className="text-lg font-bold mb-4">Changer la photo de profil</h2>
+        <h2 className="text-lg font-semibold">Changer la photo de profil</h2>
         <input
           type="file"
           accept="image/*"
           onChange={handleFileChange}
-          className="block w-full text-white bg-gray-700 border border-gray-600 rounded p-2 mb-4"
+          className="block w-full text-sm text-white bg-gray-700 border border-gray-600 rounded-lg p-2"
         />
         <button
           type="submit"
-          className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 rounded text-white"
+          className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition"
         >
-          Télécharger
+          📤 Télécharger
         </button>
       </form>
+  
+      {/* 📝 Feedback */}
       {feedbackMessage && (
-        <p className="mt-4 text-green-500 text-center">{feedbackMessage}</p>
+        <p className="mt-2 text-green-400 text-sm text-center">{feedbackMessage}</p>
       )}
-      {error && <p className="mt-4 text-red-500 text-center">{error}</p>}
-    </div>
+      {error && (
+        <p className="mt-2 text-red-500 text-sm text-center">{error}</p>
+      )}
+    </motion.div>
   );
+  
+  
 };
 
 export default Parametre;

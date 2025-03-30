@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 const NavigationProfil = ({ onMenuSelect, user }) => {
   const router = useRouter();
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // État pour ouvrir/fermer le menu
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = () => {
     Cookies.remove("jwt");
@@ -16,80 +16,79 @@ const NavigationProfil = ({ onMenuSelect, user }) => {
 
   return (
     <div className="relative">
-      {/* Bouton pour ouvrir/fermer le menu (pour petits écrans) */}
-      <button
-        className="md:hidden bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg focus:outline-none"
-        onClick={() => setIsMenuOpen(!isMenuOpen)}
-      >
-        {isMenuOpen ? "Fermer Menu" : "Ouvrir Menu"}
-      </button>
+      {/* 🔘 Toggle mobile menu */}
+      <div className="md:hidden flex justify-end mb-4">
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg shadow transition duration-200"
+        >
+          {isMenuOpen ? "✖ Fermer" : "☰ Menu"}
+        </button>
+      </div>
 
-      {/* Menu principal */}
+      {/* 📋 Sidebar */}
       <aside
-        className={`w-64 h-[40rem] bg-gray-800 text-white shadow-lg md:block ${
-          isMenuOpen ? "block" : "hidden"
+        className={`w-full md:w-64 bg-gray-900 text-white shadow-xl rounded-lg overflow-hidden md:block transition-all duration-300 ${
+          isMenuOpen ? "block" : "hidden md:block"
         }`}
       >
-        <div className="p-4 text-center border-b border-gray-700">
-          <h2 className="text-lg font-bold">Menu Profil</h2>
+        {/* 🧑‍💼 Titre */}
+        <div className="bg-gray-800 py-4 px-6 border-b border-gray-700">
+          <h2 className="text-xl font-semibold text-center">🎛️ Menu Profil</h2>
         </div>
-        <nav className="mt-4">
-          <ul className="space-y-2 px-4">
-            {/* Profil */}
-            <li>
-              <button
-                className="block py-2 px-4 rounded hover:bg-gray-700 transition-colors w-full text-left"
-                onClick={() => onMenuSelect("profil")}
-              >
-                Profil
-              </button>
-            </li>
 
-            {/* Section dynamique Indexeur */}
-            {user && (user.indexeur || user.proprietaire) && (
-              <li>
-                <button
-                  className="block py-2 px-4 rounded hover:bg-gray-700 transition-colors w-full text-left"
-                  onClick={() => onMenuSelect("indexeur")}
-                >
-                  Indexeur
-                </button>
-              </li>
-            )}
+        {/* 🔽 Navigation */}
+        <nav className="p-4 space-y-2">
+  <button
+    onClick={() => onMenuSelect("profil")}
+    className="w-full text-left px-4 py-2 rounded-lg hover:bg-indigo-600 transition"
+  >
+    👤 Profil
+  </button>
 
-            {/* Administration (si l'utilisateur est admin) */}
-            {user && user.admin && (
-              <li>
-                <button
-                  className="block py-2 px-4 rounded hover:bg-gray-700 transition-colors w-full text-left"
-                  onClick={() => onMenuSelect("administration")}
-                >
-                  Administration
-                </button>
-              </li>
-            )}
+  {/* Nouveau bouton Bibliothèque */}
+  <button
+    onClick={() => onMenuSelect("bibliotheque")}
+    className="w-full text-left px-4 py-2 rounded-lg hover:bg-indigo-600 transition"
+  >
+    📚 Bibliothèque
+  </button>
 
-            {/* Paramètre */}
-            <li>
-              <button
-                className="block py-2 px-4 rounded hover:bg-gray-700 transition-colors w-full text-left"
-                onClick={() => onMenuSelect("parametre")}
-              >
-                Paramètre
-              </button>
-            </li>
+  {user && (user.indexeur || user.proprietaire) && (
+    <button
+      onClick={() => onMenuSelect("indexeur")}
+      className="w-full text-left px-4 py-2 rounded-lg hover:bg-indigo-600 transition"
+    >
+      🧩 Indexeur
+    </button>
+  )}
 
-            {/* Déconnexion */}
-            <li>
-              <button
-                className="block py-2 px-4 rounded bg-red-500 hover:bg-red-600 text-white transition-colors w-full text-left"
-                onClick={handleLogout}
-              >
-                Déconnexion
-              </button>
-            </li>
-          </ul>
-        </nav>
+  {user && user.admin && (
+    <button
+      onClick={() => onMenuSelect("administration")}
+      className="w-full text-left px-4 py-2 rounded-lg hover:bg-indigo-600 transition"
+    >
+      🛠️ Administration
+    </button>
+  )}
+
+  <button
+    onClick={() => onMenuSelect("parametre")}
+    className="w-full text-left px-4 py-2 rounded-lg hover:bg-indigo-600 transition"
+  >
+    ⚙️ Paramètre
+  </button>
+
+  <hr className="border-gray-700 my-2" />
+
+  <button
+    onClick={handleLogout}
+    className="w-full text-left px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition"
+  >
+    🚪 Déconnexion
+  </button>
+</nav>
+
       </aside>
     </div>
   );

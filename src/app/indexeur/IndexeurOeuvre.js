@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import axios from "axios";
+import { motion } from "framer-motion";
 
 const IndexeurOeuvre = ({ user }) => {
   const [formData, setFormData] = useState({
@@ -20,6 +21,7 @@ const IndexeurOeuvre = ({ user }) => {
   });
 
   const [message, setMessage] = useState(null);
+  const [preview, setPreview] = useState(null);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -30,10 +32,20 @@ const IndexeurOeuvre = ({ user }) => {
   };
 
   const handleFileChange = (e) => {
-    setFormData({
-      ...formData,
-      couverture: e.target.files[0],
-    });
+    const file = e.target.files[0];
+
+    if (file) {
+      setFormData({
+        ...formData,
+        couverture: file,
+      });
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -135,32 +147,52 @@ const IndexeurOeuvre = ({ user }) => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg text-white">
-      <h1 className="text-3xl font-bold mb-6 text-center">Ajouter une œuvre</h1>
-      {message && <p className="mb-4 text-center text-yellow-400">{message}</p>}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Informations principales */}
-        <fieldset className="border border-gray-700 p-4 rounded-lg">
-          <legend className="text-lg font-semibold px-2">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3 }}
+      className="w-full max-w-4xl mx-auto bg-gray-900 p-8 rounded-2xl shadow-2xl text-white"
+    >
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        📚 Ajouter une œuvre
+      </h1>
+
+      {message && (
+        <p className="mb-4 text-center text-yellow-400 font-medium">
+          {message}
+        </p>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* 1. Infos principales */}
+        <fieldset className="border border-gray-700 p-6 rounded-xl">
+          <legend className="text-lg font-semibold px-2 text-indigo-400">
             Informations principales
           </legend>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+            {/* Titre */}
             <div>
-              <label htmlFor="titre" className="block text-sm font-medium">
-                Titre
+              <label htmlFor="titre" className="block text-sm font-medium mb-1">
+                Titre *
               </label>
               <input
                 type="text"
                 id="titre"
                 name="titre"
+                required
                 value={formData.titre}
                 onChange={handleChange}
-                className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
-                required
+                className="bg-gray-800 border border-gray-600 rounded-lg p-2 w-full"
               />
             </div>
+
+            {/* Titre alternatif */}
             <div>
-              <label htmlFor="titrealt" className="block text-sm font-medium">
+              <label
+                htmlFor="titrealt"
+                className="block text-sm font-medium mb-1"
+              >
                 Titre alternatif
               </label>
               <input
@@ -169,25 +201,35 @@ const IndexeurOeuvre = ({ user }) => {
                 name="titrealt"
                 value={formData.titrealt}
                 onChange={handleChange}
-                className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
+                className="bg-gray-800 border border-gray-600 rounded-lg p-2 w-full"
               />
             </div>
+
+            {/* Auteur */}
             <div>
-              <label htmlFor="auteur" className="block text-sm font-medium">
-                Auteur
+              <label
+                htmlFor="auteur"
+                className="block text-sm font-medium mb-1"
+              >
+                Auteur *
               </label>
               <input
                 type="text"
                 id="auteur"
                 name="auteur"
+                required
                 value={formData.auteur}
                 onChange={handleChange}
-                className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
-                required
+                className="bg-gray-800 border border-gray-600 rounded-lg p-2 w-full"
               />
             </div>
+
+            {/* Traduction */}
             <div>
-              <label htmlFor="traduction" className="block text-sm font-medium">
+              <label
+                htmlFor="traduction"
+                className="block text-sm font-medium mb-1"
+              >
                 Traduction
               </label>
               <input
@@ -196,20 +238,23 @@ const IndexeurOeuvre = ({ user }) => {
                 name="traduction"
                 value={formData.traduction}
                 onChange={handleChange}
-                className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
+                className="bg-gray-800 border border-gray-600 rounded-lg p-2 w-full"
               />
             </div>
           </div>
         </fieldset>
 
-        {/* Détails de l'œuvre */}
-        <fieldset className="border border-gray-700 p-4 rounded-lg">
-          <legend className="text-lg font-semibold px-2">
+        {/* 2. Détails */}
+        <fieldset className="border border-gray-700 p-6 rounded-xl">
+          <legend className="text-lg font-semibold px-2 text-indigo-400">
             Détails de l'œuvre
           </legend>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
             <div>
-              <label htmlFor="synopsis" className="block text-sm font-medium">
+              <label
+                htmlFor="synopsis"
+                className="block text-sm font-medium mb-1"
+              >
                 Synopsis
               </label>
               <textarea
@@ -217,12 +262,13 @@ const IndexeurOeuvre = ({ user }) => {
                 name="synopsis"
                 value={formData.synopsis}
                 onChange={handleChange}
-                className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
-                rows="3"
+                rows="4"
+                className="bg-gray-800 border border-gray-600 rounded-lg p-2 w-full"
               ></textarea>
             </div>
+
             <div>
-              <label htmlFor="annee" className="block text-sm font-medium">
+              <label htmlFor="annee" className="block text-sm font-medium mb-1">
                 Année
               </label>
               <input
@@ -231,11 +277,12 @@ const IndexeurOeuvre = ({ user }) => {
                 name="annee"
                 value={formData.annee}
                 onChange={handleChange}
-                className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
+                className="bg-gray-800 border border-gray-600 rounded-lg p-2 w-full"
               />
             </div>
+
             <div>
-              <label htmlFor="etat" className="block text-sm font-medium">
+              <label htmlFor="etat" className="block text-sm font-medium mb-1">
                 État
               </label>
               <select
@@ -243,9 +290,9 @@ const IndexeurOeuvre = ({ user }) => {
                 name="etat"
                 value={formData.etat}
                 onChange={handleChange}
-                className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
+                className="bg-gray-800 border border-gray-600 rounded-lg p-2 w-full"
               >
-                <option value="">-- Sélectionnez un état --</option>
+                <option value="">-- Sélectionnez --</option>
                 <option value="En cours">En cours</option>
                 <option value="Terminé">Terminé</option>
                 <option value="Abandonné">Abandonné</option>
@@ -254,8 +301,9 @@ const IndexeurOeuvre = ({ user }) => {
                 <option value="En attente">En attente</option>
               </select>
             </div>
+
             <div>
-              <label htmlFor="type" className="block text-sm font-medium">
+              <label htmlFor="type" className="block text-sm font-medium mb-1">
                 Type
               </label>
               <select
@@ -263,17 +311,21 @@ const IndexeurOeuvre = ({ user }) => {
                 name="type"
                 value={formData.type}
                 onChange={handleChange}
-                className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
+                className="bg-gray-800 border border-gray-600 rounded-lg p-2 w-full"
               >
-                <option value="">-- Sélectionnez un type --</option>
+                <option value="">-- Sélectionnez --</option>
                 <option value="Light novel">Light novel</option>
                 <option value="Web novel">Web novel</option>
                 <option value="Scan">Scan</option>
                 <option value="Webtoon">Webtoon</option>
               </select>
             </div>
+
             <div>
-              <label htmlFor="categorie" className="block text-sm font-medium">
+              <label
+                htmlFor="categorie"
+                className="block text-sm font-medium mb-1"
+              >
                 Catégorie
               </label>
               <select
@@ -281,9 +333,9 @@ const IndexeurOeuvre = ({ user }) => {
                 name="categorie"
                 value={formData.categorie}
                 onChange={handleChange}
-                className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
+                className="bg-gray-800 border border-gray-600 rounded-lg p-2 w-full"
               >
-                <option value="">-- Sélectionnez une catégorie --</option>
+                <option value="">-- Sélectionnez --</option>
                 <option value="Shonen">Shonen</option>
                 <option value="Seinen">Seinen</option>
                 <option value="Shojo">Shojo</option>
@@ -293,21 +345,19 @@ const IndexeurOeuvre = ({ user }) => {
           </div>
         </fieldset>
 
-        {/* Autres informations */}
-        <fieldset className="border border-gray-700 p-4 rounded-lg">
-          <legend className="text-lg font-semibold px-2">
+        {/* 3. Autres infos */}
+        <fieldset className="border border-gray-700 p-6 rounded-xl">
+          <legend className="text-lg font-semibold px-2 text-indigo-400">
             Autres informations
           </legend>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-6 mt-4">
+            {/* Licence */}
             <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                L'œuvre est-elle licenciée en France ?
+              <label className="block text-sm font-medium mb-1">
+                Œuvre licenciée en France ?
               </label>
-              <p className="text-xs text-gray-400 mb-2">
-                Activez si l'œuvre possède une licence officielle en France.
-              </p>
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-300">Non licenciée</span>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm">Non</span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -315,62 +365,95 @@ const IndexeurOeuvre = ({ user }) => {
                     checked={formData.licence === true}
                     onChange={(e) =>
                       handleChange({
-                        target: {
-                          name: "licence",
-                          value: e.target.checked,
-                        },
+                        target: { name: "licence", value: e.target.checked },
                       })
                     }
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:bg-green-500 transition-colors duration-200"></div>
-                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transform peer-checked:translate-x-full transition duration-200"></div>
+                  <div className="w-11 h-6 bg-gray-600 peer-checked:bg-green-500 rounded-full transition-all"></div>
+                  <div className="absolute w-4 h-4 bg-white rounded-full shadow left-1 top-1 transition-transform peer-checked:translate-x-full"></div>
                 </label>
-                <span className="text-sm text-gray-300">Licenciée</span>
+                <span className="text-sm">Oui</span>
               </div>
             </div>
 
+            {/* Langage */}
             <div>
-              <label htmlFor="langage" className="block text-sm font-medium">
+              <label
+                htmlFor="langage"
+                className="block text-sm font-medium mb-1"
+              >
                 Langage
               </label>
-              <p className="text-xs text-gray-400 mb-1">
-                Choisissez les langues ou traductions disponibles pour cette
-                œuvre
-              </p>
               <input
                 type="text"
                 id="langage"
                 name="langage"
                 value={formData.langage || "Français"}
                 onChange={handleChange}
-                className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-lg"
+                className="bg-gray-800 border border-gray-600 rounded-lg p-2 w-full"
               />
             </div>
 
             <div>
-              <label htmlFor="couverture" className="block text-sm font-medium">
-                Couverture
+              <label
+                htmlFor="couverture"
+                className="block text-sm font-semibold mb-2"
+              >
+                🖼️ Couverture
               </label>
-              <input
-                type="file"
-                id="couverture"
-                name="couverture"
-                onChange={handleFileChange}
-                className="mt-1 block w-full text-gray-400"
-              />
+
+              <div className="relative border-2 border-dashed border-gray-600 bg-gray-800 rounded-xl p-6 flex flex-col items-center justify-center hover:border-indigo-500 transition-all duration-200">
+                {preview ? (
+                  <img
+                    src={preview}
+                    alt="Prévisualisation"
+                    className="w-full h-auto object-cover rounded-lg"
+                  />
+                ) : (
+                  <>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-10 w-10 text-indigo-400 mb-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 16V4m0 0L3 8m4-4l4 4M21 12v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8"
+                      />
+                    </svg>
+                    <p className="text-sm text-gray-400 mb-1 text-center">
+                      Glissez-déposez une image ou cliquez pour choisir un
+                      fichier
+                    </p>
+                  </>
+                )}
+
+                <input
+                  type="file"
+                  id="couverture"
+                  name="couverture"
+                  onChange={handleFileChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  accept="image/*"
+                />
+              </div>
             </div>
           </div>
         </fieldset>
 
         <button
           type="submit"
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white font-bold"
+          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-bold text-white mt-4 transition"
         >
-          Ajouter l'œuvre
+          ✅ Ajouter l'œuvre
         </button>
       </form>
-    </div>
+    </motion.div>
   );
 };
 
