@@ -49,12 +49,13 @@ const IndexeurModification = ({ user }) => {
             <p className="text-sm text-gray-400 mb-4">
               Mettez à jour les informations des équipes de traduction.
             </p>
+             {/* 
             <button
               onClick={() => setActiveContent("teams")}
               className="w-full py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition"
             >
               Accéder à la modification
-            </button>
+            </button>*/}
           </div>
         </div>
       )}
