@@ -56,8 +56,6 @@ const AffiChapitre = ({ documentId, licence }) => {
             new Date(item.publishedAt).toISOString().split("T")[0] === today,
         }));
 
-        console.log("liste des chapitre", itemsWithNewFlag);
-
         setItems(itemsWithNewFlag);
         setFilteredItems(itemsWithNewFlag);
         setTotalPages(Math.ceil(itemsWithNewFlag.length / itemsPerPage));

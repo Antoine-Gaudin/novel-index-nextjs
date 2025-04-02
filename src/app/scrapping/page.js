@@ -25,6 +25,7 @@ const ScrappingPage = () => {
       const token = Cookies.get("jwt");
       if (!token) {
         console.log("❌ Aucun JWT trouvé dans les cookies");
+        window.location.href = "/";
         return;
       }
   
@@ -38,6 +39,12 @@ const ScrappingPage = () => {
         const data = await res.json();
         setUser(data);
         console.log("👤 Utilisateur connecté :", data);
+  
+        // ✅ Redirection si admin === false
+        if (!data.admin) {
+          console.log("🔒 Accès refusé — redirection");
+          window.location.href = "/";
+        }
       } catch (err) {
         console.error("❌ Erreur récupération utilisateur :", err);
       }
@@ -45,6 +52,7 @@ const ScrappingPage = () => {
   
     fetchUser();
   }, []);
+  
   
   useEffect(() => {
     if (!oeuvreSearch.trim()) {

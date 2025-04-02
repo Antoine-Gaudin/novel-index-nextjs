@@ -45,6 +45,21 @@ const OeuvrePage = () => {
             "content",
             data.data.synopsis || "Découvrez nos œuvres littéraires."
           );
+
+          // ✅ Ajout canonique
+          let linkCanonical = document.querySelector("link[rel='canonical']");
+          if (!linkCanonical) {
+            linkCanonical = document.createElement("link");
+            linkCanonical.setAttribute("rel", "canonical");
+            document.head.appendChild(linkCanonical);
+          }
+
+          const titreAvecTirets = data.data.titre.replace(/ /g, "-");
+
+          linkCanonical.setAttribute(
+            "href",
+            `https://novel-index.com/oeuvre/${data.data.documentId}-${titreAvecTirets}`
+          );
         }
       } catch (err) {
         console.error("Erreur lors de la récupération de l'œuvre :", err);
@@ -359,13 +374,13 @@ const OeuvrePage = () => {
         </div>
 
         <div
-  style={{ whiteSpace: "pre-wrap" }}
-  dangerouslySetInnerHTML={{
-    __html: DOMPurify.sanitize(
-      oeuvre.synopsis.replace(/\\r\\n|\\n|\\r/g, "<br>")
-    ),
-  }}
-></div>
+          style={{ whiteSpace: "pre-wrap" }}
+          dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(
+              oeuvre.synopsis.replace(/\\r\\n|\\n|\\r/g, "<br>")
+            ),
+          }}
+        ></div>
 
         {/* Chapitres et Achats */}
         <div className="p-6 space-y-4">

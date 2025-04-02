@@ -8,6 +8,7 @@ const Profil = ({ user }) => {
   const [abonnements, setAbonnements] = useState([]);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
+  
 
   useEffect(() => {
     const fetchAbonnements = async () => {

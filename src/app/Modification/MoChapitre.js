@@ -2,11 +2,18 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import FormMoChapitre from "../components/FormMoChapitre";
 
 const MoChapitre = ({ user, oeuvre }) => {
   const [chapitres, setChapitres] = useState([]);
   const [message, setMessage] = useState(null);
   const [showUrls, setShowUrls] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAllUrls, setShowAllUrls] = useState(false); // ✅ toggle global URL
+  const [bulkTome, setBulkTome] = useState("");
+  const [modifiedChapitreIds, setModifiedChapitreIds] = useState(new Set());
+  const [progress, setProgress] = useState(0);
+  const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
     const fetchChapitres = async () => {
@@ -18,9 +25,15 @@ const MoChapitre = ({ user, oeuvre }) => {
             headers: { Authorization: `Bearer ${jwt}` },
           }
         );
-        setChapitres(response.data.data.chapitres || []);
+        setChapitres(
+          (response.data.data.chapitres || []).sort((a, b) => Number(a.order) - Number(b.order))
+        );
+        
       } catch (error) {
-        console.error("Erreur lors de la récupération des chapitres :", error.response?.data || error.message);
+        console.error(
+          "Erreur lors de la récupération des chapitres :",
+          error.response?.data || error.message
+        );
         setMessage("Erreur lors de la récupération des chapitres.");
       }
     };
@@ -29,106 +42,139 @@ const MoChapitre = ({ user, oeuvre }) => {
   }, [oeuvre]);
 
   const handleChapitreChange = (index, field, value) => {
-    const updatedChapitres = [...chapitres];
-    updatedChapitres[index][field] = value;
-    setChapitres(updatedChapitres);
+    const updated = [...chapitres];
+    updated[index][field] = value;
+    setChapitres(updated);
+
+    const id = updated[index].documentId;
+    setModifiedChapitreIds((prev) => new Set(prev).add(id));
   };
 
   const toggleUrl = (index) => {
-    setShowUrls((prevState) => ({
-      ...prevState,
-      [index]: !prevState[index],
+    setShowUrls((prev) => ({
+      ...prev,
+      [index]: !prev[index],
     }));
   };
 
   const handleSaveChapitres = async () => {
     try {
       const jwt = localStorage.getItem("jwt");
-  
-      for (const chapitre of chapitres) {
-        // Filtrer les champs inutiles
+
+      const chaptersToUpdate = chapitres.filter((chap) =>
+        modifiedChapitreIds.has(chap.documentId)
+      );
+
+      if (chaptersToUpdate.length === 0) {
+        setMessage("Aucune modification à enregistrer.");
+        setStatusMessage("Aucune mise à jour nécessaire.");
+        return;
+      }
+
+      const total = chaptersToUpdate.length;
+      let successCount = 0;
+
+      for (const chapitre of chaptersToUpdate) {
         const filteredChapitre = Object.keys(chapitre)
-          .filter((key) => !["id", "documentId", "createdAt", "updatedAt"].includes(key)) // Exclure les champs spécifiques
+          .filter(
+            (key) =>
+              !["id", "documentId", "createdAt", "updatedAt"].includes(key)
+          )
           .reduce((obj, key) => {
             obj[key] = chapitre[key];
             return obj;
           }, {});
-  
-        console.log("Filtered chapitre data:", filteredChapitre);
-  
-        await axios.put(
-          `https://novel-index-strapi.onrender.com/api/chapitres/${chapitre.documentId}`, // On utilise `documentId` pour identifier le chapitre
-          { data: filteredChapitre }, // Envoyer uniquement les champs pertinents
-          {
-            headers: { Authorization: `Bearer ${jwt}` },
+
+        try {
+          await axios.put(
+            `https://novel-index-strapi.onrender.com/api/chapitres/${chapitre.documentId}`,
+            { data: filteredChapitre },
+            { headers: { Authorization: `Bearer ${jwt}` } }
+          );
+
+          successCount++;
+          // Pause automatique toutes les 80 requêtes
+          if (successCount % 80 === 0 && successCount !== total) {
+            setStatusMessage(
+              `🛑 Pause 5 sec après ${successCount} chapitres...`
+            );
+            await new Promise((r) => setTimeout(r, 5000));
+            setStatusMessage("✅ Reprise...");
           }
-        );
+          const pourcentage = Math.round((successCount / total) * 100);
+          setProgress(pourcentage);
+          setStatusMessage(
+            `💾 Enregistrement ${successCount}/${total} chapitres...`
+          );
+
+        } catch (err) {
+          console.error(`❌ Échec mise à jour chapitre ${chapitre.titre}`, err);
+          setStatusMessage(`❌ Erreur sur "${chapitre.titre}"`);
+        }
       }
-  
-      setMessage("Les chapitres ont été mis à jour.");
+
+      setMessage("✅ Tous les chapitres ont été enregistrés.");
+      setStatusMessage("✅ Terminé !");
+      setModifiedChapitreIds(new Set());
+
+
+      // Affiche encore la barre 1 seconde après la fin
+      setTimeout(() => {
+        setProgress(0);
+        setStatusMessage("");
+      }, 1500);
     } catch (error) {
-      console.error("Erreur lors de la mise à jour des chapitres :", error.response?.data || error.message);
-      setMessage("Erreur lors de la mise à jour des chapitres.");
+      console.error(
+        "🔥 Erreur globale :",
+        error.response?.data || error.message
+      );
+      setMessage("❌ Erreur lors de la mise à jour.");
+      setStatusMessage("Erreur générale.");
     }
   };
-  
+
+  const filteredChapitres = chapitres
+  .filter((chapitre) => {
+    const query = searchTerm.toLowerCase().trim();
+
+    const matchesTitre = chapitre.titre?.toLowerCase().includes(query);
+
+    const matchesOrderRange = (() => {
+      if (query.includes(".")) {
+        const [start, end] = query.split(".").map(Number);
+        return (
+          !isNaN(start) &&
+          !isNaN(end) &&
+          Number(chapitre.order) >= start &&
+          Number(chapitre.order) <= end
+        );
+      }
+      return false;
+    })();
+
+    return matchesTitre || matchesOrderRange;
+  })
+  .sort((a, b) => Number(a.order) - Number(b.order)); // 👈 ici le tri
+
 
   return (
-    <div>
-      <h3 className="text-xl font-bold mb-4">Modifier les chapitres</h3>
-      <ul className="space-y-2">
-        {chapitres.map((chapitre, index) => (
-          <li
-            key={chapitre.id}
-            className="flex justify-between items-center bg-gray-700 p-4 rounded-lg"
-          >
-            <div>
-              <label className="block text-sm font-medium">Titre</label>
-              <input
-                type="text"
-                value={chapitre.titre}
-                onChange={(e) => handleChapitreChange(index, "titre", e.target.value)}
-                className="mt-1 block w-full p-2 bg-gray-600 border border-gray-500 rounded-lg"
-              />
-            </div>
-            <div className="ml-4">
-              <label className="block text-sm font-medium">Ordre</label>
-              <input
-                type="number"
-                value={chapitre.order}
-                onChange={(e) => handleChapitreChange(index, "order", e.target.value)}
-                className="mt-1 block w-24 p-2 bg-gray-600 border border-gray-500 rounded-lg"
-              />
-            </div>
-            <button
-              onClick={() => toggleUrl(index)}
-              className="ml-4 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white font-bold"
-            >
-              Voir URL
-            </button>
-            {showUrls[index] && (
-              <div className="ml-4">
-                <label className="block text-sm font-medium">URL</label>
-                <input
-                  type="text"
-                  value={chapitre.url}
-                  onChange={(e) => handleChapitreChange(index, "url", e.target.value)}
-                  className="mt-1 block w-full p-2 bg-gray-600 border border-gray-500 rounded-lg"
-                />
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
-      <button
-        onClick={handleSaveChapitres}
-        className="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-bold"
-      >
-        Enregistrer les modifications des chapitres
-      </button>
-
-      {message && <p className="mt-4 text-center text-yellow-400">{message}</p>}
-    </div>
+    <FormMoChapitre
+    chapitres={chapitres}
+    setChapitres={setChapitres}
+    searchTerm={searchTerm}
+    setSearchTerm={setSearchTerm}
+    bulkTome={bulkTome}
+    setBulkTome={setBulkTome}
+    showAllUrls={showAllUrls}
+    setShowAllUrls={setShowAllUrls}
+    showUrls={showUrls}
+    toggleUrl={toggleUrl}
+    filteredChapitres={filteredChapitres}
+    handleChapitreChange={handleChapitreChange}
+    handleSaveChapitres={handleSaveChapitres}
+    statusMessage={statusMessage}
+    progress={progress}
+  />
   );
 };
 

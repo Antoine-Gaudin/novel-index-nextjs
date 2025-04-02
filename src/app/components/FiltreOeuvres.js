@@ -88,15 +88,16 @@ export default function FiltreOeuvres({ onFilterChange }) {
         onChange={handleChange}
         className="bg-gray-700 text-white rounded p-2"
       />
-
-      <input
-        type="text"
-        name="licence"
-        placeholder="Licence"
-        value={filtres.licence}
-        onChange={handleChange}
-        className="bg-gray-700 text-white rounded p-2"
-      />
+<select
+  name="licence"
+  value={filtres.licence}
+  onChange={handleChange}
+  className="bg-gray-700 text-white rounded p-2"
+>
+  <option value="">Toutes licences</option>
+  <option value="true">Avec licence</option>
+  <option value="false">Sans licence</option>
+</select>
 
       <input
         type="text"

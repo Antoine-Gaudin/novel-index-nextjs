@@ -11,7 +11,7 @@ const NavigationProfil = ({ onMenuSelect, user }) => {
   const handleLogout = () => {
     Cookies.remove("jwt");
     Cookies.remove("userInfo");
-    router.push("/Connexion");
+    setTimeout(() => window.location.reload(), 100); // recharge juste après la redirection
   };
 
   return (
@@ -34,7 +34,7 @@ const NavigationProfil = ({ onMenuSelect, user }) => {
       >
         {/* 🧑‍💼 Titre */}
         <div className="bg-gray-800 py-4 px-6 border-b border-gray-700">
-          <h2 className="text-xl font-semibold text-center">🎛️ Menu Profil</h2>
+          <h2 className="text-xl font-semibold text-center">Menu Profil</h2>
         </div>
 
         {/* 🔽 Navigation */}

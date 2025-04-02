@@ -23,7 +23,7 @@ const IndexeurModification = ({ user }) => {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto bg-gray-900 p-8 rounded-2xl shadow-2xl text-white space-y-8">
+    <div className="w-full max-w-5xl mx-auto bg-gray-900 p-8 rounded-2xl text-white space-y-8">
       <h1 className="text-3xl font-bold text-center">🛠️ Modification des Données</h1>
 
       {/* Menu de sélection */}

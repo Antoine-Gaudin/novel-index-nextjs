@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation"; // Utilisé pour la redirection
@@ -27,9 +28,9 @@ const LoginPage = () => {
         }
       );
 
-// Stocker le JWT dans localStorage et Cookie
-localStorage.setItem("jwt", response.data.jwt);
-Cookies.set("jwt", response.data.jwt, { expires: 7 });
+      // Stocker le JWT dans localStorage et Cookie
+      localStorage.setItem("jwt", response.data.jwt);
+      Cookies.set("jwt", response.data.jwt, { expires: 7 });
 
 
       // Récupérer les informations utilisateur
@@ -46,9 +47,8 @@ Cookies.set("jwt", response.data.jwt, { expires: 7 });
 
       // Stocker les informations utilisateur (optionnel)
       Cookies.set("userInfo", JSON.stringify(userInfo), { expires: 7 });
+      setTimeout(() => window.location.reload(), 100);
 
-      // Rediriger vers la page profil
-      router.push("/Profil");
     } catch (err) {
       console.error(err);
       setError("Identifiants invalides. Veuillez réessayer.");
