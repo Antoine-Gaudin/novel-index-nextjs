@@ -71,14 +71,20 @@ const SortieJours = () => {
                 );
                 const enrichJson = await enrichRes.json();
 
-                const enriched = {
-                  documentId: docId,
-                  titre: oeuvre.titre || "Sans titre",
-                  couverture: enrichJson.data?.couverture?.url || null,
-                  type: enrichJson.data?.type || "Type inconnu",
-                  traduction: enrichJson.data?.traduction || "Catégorie inconnue",
-                  updatedAt: enrichJson.data?.updatedAt || new Date().toISOString(), // 👈 Ajouté ici
-                };
+                const lastUpdatedChapitre = chapitres
+                .map((c) => new Date(c.updatedAt))
+                .sort((a, b) => b - a)[0]; // plus récent en premier
+              
+              const enriched = {
+                documentId: docId,
+                titre: oeuvre.titre || "Sans titre",
+                couverture: enrichJson.data?.couverture?.url || null,
+                type: enrichJson.data?.type || "Type inconnu",
+                traduction: enrichJson.data?.traduction || "Catégorie inconnue",
+                updatedAt: enrichJson.data?.updatedAt || new Date().toISOString(),
+                lastChapitreUpdate: lastUpdatedChapitre?.toISOString() || null, // 👈 nouveau champ
+              };
+              
 
                 fetched[docId] = true;
                 setOeuvres((prev) => [...prev, enriched]);
@@ -147,9 +153,12 @@ const SortieJours = () => {
     setSelectedType(type);
   };
 
-  const sortedOeuvres = [...oeuvres].sort(
-    (a, b) => new Date(a.updatedAt) - new Date(b.updatedAt)
-  );
+  const sortedOeuvres = [...oeuvres].sort((a, b) => {
+    const dateA = new Date(a.lastChapitreUpdate || a.updatedAt);
+    const dateB = new Date(b.lastChapitreUpdate || b.updatedAt);
+    return dateB - dateA;
+  });
+  
   
   const filteredOeuvres = sortedOeuvres.filter((oeuvre) => {
     if (selectedType === "Tout") return true;
@@ -159,6 +168,20 @@ const SortieJours = () => {
       return ["Scan", "Webtoon"].includes(oeuvre.type);
     return false;
   });
+
+  const getTimeAgo = (dateString) => {
+    if (!dateString) return "-";
+    const updated = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - updated;
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+  
+    if (diffMins < 60) return `${diffMins} min`;
+    const diffHours = Math.floor(diffMins / 60);
+    return `${diffHours}h`;
+  };
+  
+  
 
   return (
     <div className="bg-gray-900 text-white p-[1rem]">
@@ -249,6 +272,10 @@ const SortieJours = () => {
       <span className="bg-black bg-opacity-70 text-white px-2 py-0.5 text-xs sm:text-sm rounded">
         {oeuvre.traduction || "Traduction inconnue"}
       </span>
+      <span className="bg-black bg-opacity-70 text-white px-2 py-0.5 text-xs sm:text-sm rounded">
+  {getTimeAgo(oeuvre.lastChapitreUpdate)}
+</span>
+
     </div>
     <p className="font-bold text-sm sm:text-base md:text-lg text-white truncate">
       {oeuvre.titre || "Titre non disponible"}

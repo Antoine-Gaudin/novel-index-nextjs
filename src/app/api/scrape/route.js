@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 
+// Fonction pour introduire un délai
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 export async function POST(req) {
     console.log("📥 Requête reçue dans /api/scrape");
   
@@ -13,6 +16,11 @@ export async function POST(req) {
         return NextResponse.json({ message: "URL manquante." }, { status: 400 });
       }
   
+      // Ajouter un délai de 2 à 3 secondes (choisir entre 2000ms et 3000ms)
+      console.log("⌛ Attente de 2 à 3 secondes avant de scrapper...");
+      await delay(Math.floor(Math.random() * 1000) + 2000);  // Délai aléatoire entre 2000ms et 3000ms
+  
+      // Récupération du HTML de l'URL
       const response = await fetch(url);
       const html = await response.text();
   
@@ -35,5 +43,4 @@ export async function POST(req) {
         { status: 500 }
       );
     }
-  }
-  
+}

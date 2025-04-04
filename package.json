@@ -20,6 +20,7 @@
     "next-sitemap": "^4.2.3",
     "nextjs-google-analytics": "^2.3.7",
     "node-fetch": "^2.7.0",
+    "puppeteer": "^24.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "swiper": "^11.2.1"

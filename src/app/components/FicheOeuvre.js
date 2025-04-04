@@ -26,7 +26,7 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
 
         // Trier les chapitres
         const sortedChapitres = data.data.chapitres.sort(
-          (a, b) => a.order - b.order
+          (a, b) => b.order - a.order
         );
         setChapitres(sortedChapitres);
 
