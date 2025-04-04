@@ -14,40 +14,52 @@ const AffiChapitre = ({ documentId, licence }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [pageJump, setPageJump] = useState("");
 
+  console.log("🧱 COMPONENT RENDERED — AffiChapitre", documentId);
+
+
   useEffect(() => {
     const fetchData = async () => {
+      console.log("📡 FETCH lancé — documentId:", documentId, "licence:", licence);
+      
       try {
-        // Construire l'URL en fonction de la licence
         const url = licence
-          ? `${apiUrl}/api/oeuvres/${documentId}?populate=achatlivres`
-          : `${apiUrl}/api/oeuvres/${documentId}?populate=chapitres`;
-
+          ? `${apiUrl}/api/oeuvres?filters[documentId][$eq]=${documentId}&populate=achatlivres`
+          : `${apiUrl}/api/oeuvres?filters[documentId][$eq]=${documentId}&populate=chapitres`;
+  
         const res = await fetch(url);
         const data = await res.json();
-
-        // Stocker les chapitres ou les achats
+  
+        const oeuvre = data.data?.[0];
+        console.log("📦 Données récupérées :", oeuvre);
+  
+        if (!oeuvre) {
+          console.warn("⛔ Aucune œuvre trouvée !");
+          setItems([]);
+          setFilteredItems([]);
+          setTotalPages(1);
+          return;
+        }
+  
         const fetchedItems = licence
-          ? data.data.achatlivres.map((achat) => ({
+          ? (oeuvre.achatlivres || []).map((achat) => ({
               id: achat.id,
               titre: achat.titre,
-              url: achat.url, // URL de redirection
+              url: achat.url,
               tome: achat.tome,
               publishedAt: achat.publishedAt,
-              order: achat.order || 0, // Ajouter un `order` par défaut si absent
+              order: achat.order || 0,
             }))
-          : data.data.chapitres.map((chapitre) => ({
+          : (oeuvre.chapitres || []).map((chapitre) => ({
               id: chapitre.id,
               titre: chapitre.titre,
-              url: chapitre.url, // URL de redirection
+              url: chapitre.url,
               tome: chapitre.tome,
               publishedAt: chapitre.publishedAt,
-              order: chapitre.order || 0, // Ajouter un `order` par défaut si absent
+              order: chapitre.order || 0,
             }));
-
-        // Tri par `order` décroissant
+  
         const sortedItems = fetchedItems.sort((a, b) => b.order - a.order);
-
-        // Ajouter un indicateur "Nouveau" pour les chapitres sortis aujourd'hui
+  
         const today = new Date().toISOString().split("T")[0];
         const itemsWithNewFlag = sortedItems.map((item) => ({
           ...item,
@@ -55,7 +67,8 @@ const AffiChapitre = ({ documentId, licence }) => {
             item.publishedAt &&
             new Date(item.publishedAt).toISOString().split("T")[0] === today,
         }));
-
+  
+        console.log("✅ DATA READY — Nombre d'items:", itemsWithNewFlag.length);
         setItems(itemsWithNewFlag);
         setFilteredItems(itemsWithNewFlag);
         setTotalPages(Math.ceil(itemsWithNewFlag.length / itemsPerPage));
@@ -64,11 +77,15 @@ const AffiChapitre = ({ documentId, licence }) => {
         setError("Impossible de charger les données.");
       }
     };
-
+  
     if (documentId) {
       fetchData();
+    } else {
+      console.warn("⚠️ Aucun documentId reçu !");
     }
   }, [documentId, licence]);
+  
+  
 
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
@@ -152,8 +169,7 @@ const AffiChapitre = ({ documentId, licence }) => {
       setCurrentPage(pageNum);
     }
   };
-  
-
+  console.log("🔁 RENDER affichage final — Chapitres visibles :", filteredItems.length);
 
   return (
     <div className="space-y-6">
@@ -188,7 +204,7 @@ const AffiChapitre = ({ documentId, licence }) => {
                 </span>
                 {item.tome && (
                   <span className="text-sm text-blue-400 mt-1">
-                    Tome {item.tome}
+                    {item.tome.toLowerCase().startsWith('tome') ? item.tome : `Tome ${item.tome}`}
                   </span>
                 )}
                 {item.isNew && (
