@@ -31,6 +31,7 @@ const Commentaire = ({ oeuvre }) => {
           },
         });
         const data = await res.json();
+        console.log("donnée utilisateur complète",data)
         setUser(data);
       } catch (err) {
         console.error("Erreur lors de la récupération des informations utilisateur :", err);
@@ -39,6 +40,8 @@ const Commentaire = ({ oeuvre }) => {
 
     fetchUser();
   }, []);
+
+
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -54,7 +57,7 @@ const Commentaire = ({ oeuvre }) => {
             commentaire: comment.commentaire,
             user: {
               username: user?.username || "Utilisateur inconnu",
-              profil: user?.profil?.formats?.small?.url || null, // Récupérer l'image au format "small"
+              profil: user?.profil?.url || null, // Récupérer l'image au format "small"
             },
           };
         });
@@ -109,7 +112,7 @@ const Commentaire = ({ oeuvre }) => {
           data: {
             commentaire: newComment,
             users_permissions_users: user.id,
-            oeuvres: oeuvre.id,
+            oeuvres: [oeuvre.documentId],
           },
         }),
       });
@@ -161,6 +164,9 @@ const handleNextPage = () => {
   };
   
 
+
+console.log(currentComments)
+
   return (
     <div className="bg-gray-900 text-white p-6 rounded-lg shadow-lg space-y-6">
       <h2 className="text-2xl font-bold">Commentaires</h2>
@@ -176,7 +182,7 @@ const handleNextPage = () => {
                   {/* Afficher la photo de profil de l'utilisateur */}
                   {user.profil ? (
                     <img
-                      src={`${apiUrl}${user.profil}`}
+                      src={`${user.profil}`}
                       alt={`${user.username}'s profile`}
                       className="w-12 h-12 rounded-full object-cover"
                     />

@@ -15,29 +15,29 @@ const MoChapitre = ({ user, oeuvre }) => {
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState("");
 
-  useEffect(() => {
-    const fetchChapitres = async () => {
-      try {
-        const jwt = localStorage.getItem("jwt");
-        const response = await axios.get(
-          `https://novel-index-strapi.onrender.com/api/oeuvres/${oeuvre.documentId}?populate=chapitres`,
-          {
-            headers: { Authorization: `Bearer ${jwt}` },
-          }
-        );
-        setChapitres(
-          (response.data.data.chapitres || []).sort((a, b) => Number(a.order) - Number(b.order))
-        );
-        
-      } catch (error) {
-        console.error(
-          "Erreur lors de la récupération des chapitres :",
-          error.response?.data || error.message
-        );
-        setMessage("Erreur lors de la récupération des chapitres.");
-      }
-    };
+  const fetchChapitres = async () => {
+    try {
+      const jwt = localStorage.getItem("jwt");
+      const response = await axios.get(
+        `https://novel-index-strapi.onrender.com/api/oeuvres/${oeuvre.documentId}?populate=chapitres`,
+        {
+          headers: { Authorization: `Bearer ${jwt}` },
+        }
+      );
+      setChapitres(
+        (response.data.data.chapitres || []).sort((a, b) => Number(a.order) - Number(b.order))
+      );
+      
+    } catch (error) {
+      console.error(
+        "Erreur lors de la récupération des chapitres :",
+        error.response?.data || error.message
+      );
+      setMessage("Erreur lors de la récupération des chapitres.");
+    }
+  };
 
+  useEffect(() => {
     fetchChapitres();
   }, [oeuvre]);
 
@@ -61,9 +61,21 @@ const MoChapitre = ({ user, oeuvre }) => {
     try {
       const jwt = localStorage.getItem("jwt");
 
-      const chaptersToUpdate = chapitres.filter((chap) =>
-        modifiedChapitreIds.has(chap.documentId)
-      );
+// 🔁 Force un ordre croissant à partir de 1 (ou 0 si tu préfères)
+const reorderedChapitres = [...chapitres]
+  .sort((a, b) => Number(a.order) - Number(b.order))
+  .map((chap, index) => ({
+    ...chap,
+    order: index + 1, // <- ordres stricts 1, 2, 3, ...
+  }));
+
+setChapitres(reorderedChapitres);
+
+// Ensuite, sélectionne les modifiés
+const chaptersToUpdate = reorderedChapitres.filter((chap) =>
+  modifiedChapitreIds.has(chap.documentId)
+);
+
 
       if (chaptersToUpdate.length === 0) {
         setMessage("Aucune modification à enregistrer.");
@@ -118,6 +130,9 @@ const MoChapitre = ({ user, oeuvre }) => {
       setModifiedChapitreIds(new Set());
 
 
+// 🔁 Re-fetch les chapitres mis à jour
+await fetchChapitres();
+
       // Affiche encore la barre 1 seconde après la fin
       setTimeout(() => {
         setProgress(0);
@@ -154,7 +169,6 @@ const MoChapitre = ({ user, oeuvre }) => {
 
     return matchesTitre || matchesOrderRange;
   })
-  .sort((a, b) => Number(a.order) - Number(b.order)); // 👈 ici le tri
 
 
   return (

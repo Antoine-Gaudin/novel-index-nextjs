@@ -80,6 +80,24 @@ const FormMoChapitre = ({
           {showAllUrls ? "Masquer tous les URL" : "Afficher tous les URL"}
         </button>
       </div>
+
+
+      <button
+  onClick={() => {
+    const reset = chapitres.map((chap, index) => ({
+      ...chap,
+      order: index + 1,
+    }));
+    setChapitres(reset);
+  }}
+  className="w-full mt-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg text-white font-bold transition"
+>
+  🔄 Réinitialiser les ordres (1, 2, 3…)
+</button>
+
+
+
+
       {/* Bouton save */}
       <button
         onClick={handleSaveChapitres}

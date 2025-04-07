@@ -7,7 +7,7 @@ const Genre = ({ selectedOeuvre }) => {
   const [genres, setGenres] = useState([]);
   const [newGenre, setNewGenre] = useState("");
   const [message, setMessage] = useState(null);
-
+ console.log("récupération de l'oeuvre",selectedOeuvre)
   const fetchGenres = async () => {
     try {
       const jwt = localStorage.getItem("jwt");
@@ -33,7 +33,7 @@ const Genre = ({ selectedOeuvre }) => {
 
       console.log("Données envoyées pour le genre :", {
         titre: newGenre,
-        oeuvre: [selectedOeuvre.documentId],
+        oeuvres: [selectedOeuvre.documentId],
       });
 
       const response = await axios.post(
@@ -41,8 +41,8 @@ const Genre = ({ selectedOeuvre }) => {
         {
           data: {
             titre: newGenre,
-            oeuvre: [selectedOeuvre.documentId], // Format tableau
-          },
+            oeuvres: [selectedOeuvre.documentId], // ✅ pluriel ici !
+          }          
         },
         {
           headers: { Authorization: `Bearer ${jwt}` },

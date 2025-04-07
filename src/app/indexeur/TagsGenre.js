@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Genre from "./Genre";
 import Tag from "./Tag";
 import axios from "axios";
+import AjoutType from "../components/AjoutType";
 
 const TagsGenre = () => {
   const [activeSection, setActiveSection] = useState(null);
@@ -24,7 +25,7 @@ const TagsGenre = () => {
       }
 
       const response = await axios.get(
-        `https://novel-index-strapi.onrender.com/api/oeuvres?filters[titre][$contains]=${searchTerm}`,
+        `https://novel-index-strapi.onrender.com/api/oeuvres?filters[titre][$contains]=${searchTerm}&populate=couverture`,
         {
           headers: { Authorization: `Bearer ${jwt}` },
         }
@@ -33,7 +34,10 @@ const TagsGenre = () => {
       setOeuvres(response.data.data || []);
       setMessage(null);
     } catch (error) {
-      console.error("Erreur lors de la recherche des œuvres :", error.response?.data || error.message);
+      console.error(
+        "Erreur lors de la recherche des œuvres :",
+        error.response?.data || error.message
+      );
       setMessage("Erreur lors de la recherche des œuvres.");
     }
   };
@@ -77,9 +81,22 @@ const TagsGenre = () => {
               {oeuvres.map((oeuvre) => (
                 <li
                   key={oeuvre.documentId}
-                  className="p-2 bg-gray-700 rounded-lg flex justify-between items-center"
+                  className="p-2 bg-gray-700 rounded-lg flex items-center justify-between gap-4"
                 >
-                  <span>{oeuvre.titre}</span>
+                  <div className="flex items-center gap-4">
+                    {oeuvre.couverture?.url ? (
+                      <img
+                        src={oeuvre.couverture.url}
+                        alt={oeuvre.titre}
+                        className="w-16 h-24 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-16 h-24 bg-gray-600 rounded flex items-center justify-center text-xs text-white">
+                        No Cover
+                      </div>
+                    )}
+                    <span className="font-medium">{oeuvre.titre}</span>
+                  </div>
                   <button
                     onClick={() => handleSelectOeuvre(oeuvre)}
                     className="px-4 py-1 bg-green-600 hover:bg-green-700 rounded-lg text-white font-bold"
@@ -102,26 +119,25 @@ const TagsGenre = () => {
         return <Tag selectedOeuvre={selectedOeuvre} />;
       default:
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gray-700 p-4 rounded-lg shadow-md">
-              <h2 className="text-xl font-semibold mb-2">Modifier les Genres</h2>
-              <button
-                className="mt-4 w-full py-2 bg-indigo-600 hover:bg-indigo-700 rounded text-white"
-                onClick={() => setActiveSection("Genre")}
+          <div className="bg-gray-700 p-4 rounded-lg shadow-md space-y-4">
+            <h2 className="text-xl font-semibold">
+              Ajouter un tag ou un genre
+            </h2>
+
+            <div>
+              <label className="block mb-1">Type</label>
+              <select
+                value={activeSection}
+                onChange={(e) => setActiveSection(e.target.value)}
+                className="w-full p-2 rounded bg-gray-800 text-white"
               >
-                Modifier Genres
-              </button>
+                <option value="">Choisir un type</option>
+                <option value="Tag">Tag</option>
+                <option value="Genre">Genre</option>
+              </select>
             </div>
 
-            <div className="bg-gray-700 p-4 rounded-lg shadow-md">
-              <h2 className="text-xl font-semibold mb-2">Modifier les Tags</h2>
-              <button
-                className="mt-4 w-full py-2 bg-indigo-600 hover:bg-indigo-700 rounded text-white"
-                onClick={() => setActiveSection("Tag")}
-              >
-                Modifier Tags
-              </button>
-            </div>
+            <AjoutType type={activeSection} selectedOeuvre={selectedOeuvre} />
           </div>
         );
     }
