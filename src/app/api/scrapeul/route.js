@@ -17,14 +17,29 @@ export async function POST(req) {
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-    // Récupérer tout le contenu HTML de la page
-    const pageContent = await page.content();
-    console.log("🎯 Contenu complet de la page : ", pageContent);
+    // Attendre que les éléments <li> avec la classe 'chapter-item' soient visibles
+    await page.waitForSelector('li.chapter-item', { timeout: 5000 });  // Attendre 5 secondes maximum
 
-    // Retourner tout le HTML récupéré (optionnel si tu veux l'analyser)
+    // Récupérer tous les éléments <li> avec la classe 'chapter-item'
+    const chapterItems = await page.evaluate(() => {
+      const items = [];
+      // Sélectionner tous les éléments <li> avec la classe 'chapter-item'
+      const liElements = document.querySelectorAll('li.chapter-item');
+      liElements.forEach((li) => {
+        items.push({
+          text: li.textContent.trim(),
+        });
+      });
+      return items;
+    });
+
+    // Afficher les résultats dans la console
+    console.log("🎯 Résultats du scraping : ", chapterItems);
+
     await browser.close();
 
-    return NextResponse.json({ message: "Scraping réussi", content: pageContent });
+    // Réponse pour indiquer que l'API a bien exécuté le scraping
+    return NextResponse.json({ message: "Scraping réussi", data: chapterItems });
 
   } catch (error) {
     console.error("❌ Erreur de scraping :", error);

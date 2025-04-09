@@ -18,12 +18,14 @@ const OeuvrePage = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionId, setSubscriptionId] = useState(null);
+  const [showAllTags, setShowAllTags] = useState(false);
+  const [showAllGenres, setShowAllGenres] = useState(false);
 
   useEffect(() => {
     const fetchOeuvre = async () => {
       try {
         const res = await fetch(
-          `${apiUrl}/api/oeuvres/${documentId}?populate=couverture`
+          `${apiUrl}/api/oeuvres/${documentId}?populate[0]=couverture&populate[1]=tags&populate[2]=genres`
         );
         if (!res.ok) throw new Error("Erreur API");
         const data = await res.json();
@@ -227,6 +229,16 @@ const OeuvrePage = () => {
     setSelectedChapter(null);
   };
 
+  // 🔁 Fonction à placer tout en haut ou à sortir dans un utils
+const slugify = (str) =>
+  str
+    .toLowerCase()
+    .normalize("NFD") // retire accents
+    .replace(/[\u0300-\u036f]/g, "") // encore accents
+    .replace(/[^a-z0-9]+/g, "-") // espaces → tirets
+    .replace(/^-+|-+$/g, ""); // trim
+
+
   return (
     <div className="bg-gray-900 text-white min-h-screen">
       {/* Bannière */}
@@ -381,6 +393,76 @@ const OeuvrePage = () => {
             ),
           }}
         ></div>
+
+{/* Tags & Genres séparés avec styles */}
+<div className="space-y-4">
+  {/* GENRES */}
+  {oeuvre.genres?.length > 0 && (
+    <div>
+      <h3 className="text-lg font-semibold mb-2 text-pink-400">📚 Genres</h3>
+      <div className="flex flex-wrap gap-2">
+        {(showAllGenres ? oeuvre.genres : oeuvre.genres.slice(0, 15)).map((genre, idx) => (
+          <span
+            key={`genre-${idx}`}
+            onClick={() =>
+              window.open(`/tags-genres/genre/${slugify(genre.titre)}`, "_blank")
+            }
+            className="cursor-pointer bg-pink-600 hover:bg-pink-500 text-white px-3 py-1 rounded-full text-sm transition"
+            title={genre.description}
+          >
+            {genre.titre}
+          </span>
+        ))}
+      </div>
+      {oeuvre.genres.length > 15 && (
+        <div className="mt-2">
+          <button
+            onClick={() => setShowAllGenres((prev) => !prev)}
+            className="text-pink-300 hover:underline text-sm"
+          >
+            {showAllGenres ? "Réduire" : "Voir tous les genres"}
+          </button>
+        </div>
+      )}
+    </div>
+  )}
+
+  {/* TAGS */}
+  {oeuvre.tags?.length > 0 && (
+    <div>
+      <h3 className="text-lg font-semibold mb-2 text-indigo-400">🏷 Tags</h3>
+      <div className="flex flex-wrap gap-2">
+        {(showAllTags ? oeuvre.tags : oeuvre.tags.slice(0, 15)).map((tag, idx) => (
+          <span
+            key={`tag-${idx}`}
+            onClick={() =>
+              window.open(`/tags-genres/tag/${slugify(tag.titre)}`, "_blank")
+            }
+            className="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-full text-sm transition"
+            title={tag.description}
+          >
+            {tag.titre}
+          </span>
+        ))}
+      </div>
+      {oeuvre.tags.length > 15 && (
+        <div className="mt-2">
+          <button
+            onClick={() => setShowAllTags((prev) => !prev)}
+            className="text-indigo-300 hover:underline text-sm"
+          >
+            {showAllTags ? "Réduire" : "Voir tous les tags"}
+          </button>
+        </div>
+      )}
+    </div>
+  )}
+</div>
+
+
+
+
+
 
         {/* Chapitres et Achats */}
         <div className="p-6 space-y-4">

@@ -14,19 +14,31 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
   const [oeuvreDetails, setOeuvreDetails] = useState(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionId, setSubscriptionId] = useState(null);
+// Slugify propre
+const slugify = (str) =>
+  str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+// State pour voir + tags/genres
+const [showAllGenres, setShowAllGenres] = useState(false);
+const [showAllTags, setShowAllTags] = useState(false);
 
   useEffect(() => {
     const fetchChapitres = async () => {
       try {
         const res = await fetch(
-          `${apiUrl}/api/oeuvres/${oeuvre.documentId}?populate=chapitres`
+          `${apiUrl}/api/oeuvres/${oeuvre.documentId}?populate[0]=chapitres&populate[1]=tags&populate[2]=genres`
         );
         if (!res.ok) throw new Error("Erreur API");
         const data = await res.json();
 
         // Trier les chapitres
         const sortedChapitres = data.data.chapitres.sort(
-          (a, b) => b.order - a.order
+          (a, b) => a.order - b.order
         );
         setChapitres(sortedChapitres);
 
@@ -372,15 +384,100 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
                   )}
                 </div>
                 <div
-  style={{ whiteSpace: "pre-wrap" }}
-  dangerouslySetInnerHTML={{
-    __html: DOMPurify.sanitize(
-      typeof oeuvreDetails?.synopsis === "string"
-        ? oeuvreDetails.synopsis.replace(/\\r\\n|\\n|\\r/g, "<br>")
-        : ""
-    ),
-  }}
-></div>
+                  style={{ whiteSpace: "pre-wrap" }}
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(
+                      typeof oeuvreDetails?.synopsis === "string"
+                        ? oeuvreDetails.synopsis.replace(
+                            /\\r\\n|\\n|\\r/g,
+                            "<br>"
+                          )
+                        : ""
+                    ),
+                  }}
+                ></div>
+
+ {/* Tags & Genres séparés avec styles */}
+<div className="space-y-4">
+  {/* GENRES */}
+  {oeuvreDetails?.genres?.length > 0 && (
+    <div>
+      <h3 className="text-lg font-semibold mb-2 text-pink-400">
+        📚 Genres
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {(showAllGenres
+          ? oeuvreDetails.genres
+          : oeuvreDetails.genres.slice(0, 15)
+        ).map((genre, idx) => (
+          <span
+            key={`genre-${idx}`}
+            onClick={() =>
+              window.open(
+                `/tags-genres/genre/${slugify(genre.titre)}`,
+                "_blank"
+              )
+            }
+            className="cursor-pointer bg-pink-600 hover:bg-pink-500 text-white px-3 py-1 rounded-full text-sm transition"
+            title={genre.description}
+          >
+            {genre.titre}
+          </span>
+        ))}
+      </div>
+      {oeuvreDetails.genres.length > 15 && (
+        <div className="mt-2">
+          <button
+            onClick={() => setShowAllGenres((prev) => !prev)}
+            className="text-pink-300 hover:underline text-sm"
+          >
+            {showAllGenres ? "Réduire" : "Voir tous les genres"}
+          </button>
+        </div>
+      )}
+    </div>
+  )}
+
+  {/* TAGS */}
+  {oeuvreDetails?.tags?.length > 0 && (
+    <div>
+      <h3 className="text-lg font-semibold mb-2 text-indigo-400">
+        🏷 Tags
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {(showAllTags
+          ? oeuvreDetails.tags
+          : oeuvreDetails.tags.slice(0, 15)
+        ).map((tag, idx) => (
+          <span
+            key={`tag-${idx}`}
+            onClick={() =>
+              window.open(
+                `/tags-genres/tag/${slugify(tag.titre)}`,
+                "_blank"
+              )
+            }
+            className="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-full text-sm transition"
+            title={tag.description}
+          >
+            {tag.titre}
+          </span>
+        ))}
+      </div>
+      {oeuvreDetails.tags.length > 15 && (
+        <div className="mt-2">
+          <button
+            onClick={() => setShowAllTags((prev) => !prev)}
+            className="text-indigo-300 hover:underline text-sm"
+          >
+            {showAllTags ? "Réduire" : "Voir tous les tags"}
+          </button>
+        </div>
+      )}
+    </div>
+  )}
+</div>
+
 
                 {/* Fenêtre Pop-up de confirmation */}
                 {selectedChapter && (

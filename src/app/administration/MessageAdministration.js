@@ -103,7 +103,7 @@ const MessageAdministration = () => {
             Retour à la liste
           </button>
           <h3 className="text-xl font-bold">{selectedMessage.titre}</h3>
-          <p className="text-sm text-gray-400">{selectedMessage.contenu}</p>
+          <p className="text-sm text-gray-400 whitespace-pre-line">{selectedMessage.contenu}</p>
           <div className="text-sm text-gray-400">
             <p>Origine : {selectedMessage.origine}</p>
             <p>

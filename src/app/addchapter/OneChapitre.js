@@ -70,11 +70,6 @@ const OneChapitre = ({ user, oeuvre }) => {
         return;
       }
 
-      console.log("Début de la soumission...");
-      console.log("Utilisateur :", user);
-      console.log("Œuvre :", oeuvre);
-      console.log("Données du formulaire :", formData);
-
       // Contrôle du nom de domaine uniquement si nomdomaine est défini
       if (oeuvre.nomdomaine) {
         const urlParts = formData.url.split("/"); // Découper l'URL en parties

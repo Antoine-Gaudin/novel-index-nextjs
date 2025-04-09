@@ -75,20 +75,18 @@ export async function GET(req) {
     });
 
     // 3. Récupère les chapitres existants pour chaque œuvre matched
-    const completedRows = [];
-
-    for (const row of matchedRows) {
-      if (!row.matchedOeuvre) {
-        completedRows.push({ ...row, fullOeuvre: null });
-        continue;
-      }
-
-      const res = await fetch(
-        `https://novel-index-strapi.onrender.com/api/oeuvres/${row.matchedOeuvre.documentId}?populate=chapitres`
-      );
-      const data = await res.json();
-      completedRows.push({ ...row, fullOeuvre: data });
-    }
+    const completedRows = await Promise.all(
+      matchedRows.map(async (row) => {
+        if (!row.matchedOeuvre) return { ...row, fullOeuvre: null };
+    
+        const res = await fetch(
+          `https://novel-index-strapi.onrender.com/api/oeuvres/${row.matchedOeuvre.documentId}?populate=chapitres`
+        );
+        const data = await res.json();
+        return { ...row, fullOeuvre: data };
+      })
+    );
+    
 
     // 4. Traitement de l’ajout des chapitres
     const grouped = {};
@@ -122,14 +120,16 @@ export async function GET(req) {
       // 🔁 Trie les chapitres par date
       group.chapitresScrapes.sort((a, b) => new Date(a.date) - new Date(b.date));
 
+      const requests = [];
+
       for (const chap of group.chapitresScrapes) {
         if (existingUrls.includes(chap.url)) {
           log.push(`⚠️ [${group.titre}] "${chap.titre}" déjà existant`);
           continue;
         }
-
+      
         currentOrder++;
-
+      
         const payload = {
           data: {
             titre: chap.titre,
@@ -138,19 +138,24 @@ export async function GET(req) {
             oeuvres: oeuvreId,
           },
         };
-
-        const res = await fetch('https://novel-index-strapi.onrender.com/api/chapitres', {
+      
+        const req = fetch('https://novel-index-strapi.onrender.com/api/chapitres', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
+        }).then((res) => {
+          if (res.ok) {
+            log.push(`✅ [${group.titre}] "${chap.titre}" ajouté (order ${currentOrder})`);
+          } else {
+            log.push(`❌ Échec ajout "${chap.titre}" (${res.status})`);
+          }
         });
-
-        if (res.ok) {
-          log.push(`✅ [${group.titre}] "${chap.titre}" ajouté (order ${currentOrder})`);
-        } else {
-          log.push(`❌ Échec ajout "${chap.titre}" (${res.status})`);
-        }
+      
+        requests.push(req);
       }
+      
+      await Promise.all(requests);
+      
     }
 
     // 5. Ajoute dans la table administration
