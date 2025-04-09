@@ -16,6 +16,34 @@ export default function Oeuvres() {
   const [pageJump, setPageJump] = useState("");
   const [filtrerNouveautes, setFiltrerNouveautes] = useState(false);
 
+
+  useEffect(() => {
+    // 🏷️ Définir le titre de la page
+    document.title = "Toutes les œuvres disponibles | Novel-Index";
+  
+    // 📝 Définir la meta description
+    let metaDescription = document.querySelector("meta[name='description']");
+    if (!metaDescription) {
+      metaDescription = document.createElement("meta");
+      metaDescription.name = "description";
+      document.head.appendChild(metaDescription);
+    }
+    metaDescription.setAttribute(
+      "content",
+      "Découvrez toutes les œuvres indexées sur Novel-Index : webnovels, light novels, manhwa, manga et plus encore, classés par genre, langue et statut."
+    );
+  
+    // 🔗 Canonical pour cette page
+    let linkCanonical = document.querySelector("link[rel='canonical']");
+    if (!linkCanonical) {
+      linkCanonical = document.createElement("link");
+      linkCanonical.setAttribute("rel", "canonical");
+      document.head.appendChild(linkCanonical);
+    }
+    linkCanonical.setAttribute("href", "https://novel-index.com/Oeuvres");
+  }, []);
+  
+
   const fetchOeuvres = async () => {
     setLoading(true);
     try {
