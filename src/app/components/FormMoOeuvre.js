@@ -14,11 +14,14 @@ const FormMoOeuvre = ({
   return (
     <div className="w-full bg-gray-900 p-6 rounded-2xl shadow-2xl text-white">
       <h3 className="text-2xl font-bold mb-6 text-center">
-        ✏️ Modifier l'œuvre : <span className="text-indigo-400">{oeuvre.titre}</span>
+        ✏️ Modifier l'œuvre :{" "}
+        <span className="text-indigo-400">{oeuvre.titre}</span>
       </h3>
 
       {message && (
-        <p className="mb-4 text-center text-yellow-400 font-medium">{message}</p>
+        <p className="mb-4 text-center text-yellow-400 font-medium">
+          {message}
+        </p>
       )}
 
       <form className="space-y-8">
@@ -30,7 +33,10 @@ const FormMoOeuvre = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
             {["titre", "titrealt", "auteur", "traduction"].map((field) => (
               <div key={field}>
-                <label htmlFor={field} className="block text-sm font-medium mb-1">
+                <label
+                  htmlFor={field}
+                  className="block text-sm font-medium mb-1"
+                >
                   {field.charAt(0).toUpperCase() + field.slice(1)}
                 </label>
                 <input
@@ -54,7 +60,10 @@ const FormMoOeuvre = ({
           </legend>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
             <div className="md:col-span-2">
-              <label htmlFor="synopsis" className="block text-sm font-medium mb-1">
+              <label
+                htmlFor="synopsis"
+                className="block text-sm font-medium mb-1"
+              >
                 Synopsis
               </label>
               <textarea
@@ -69,7 +78,10 @@ const FormMoOeuvre = ({
 
             {["annee", "etat", "type", "categorie"].map((field) => (
               <div key={field}>
-                <label htmlFor={field} className="block text-sm font-medium mb-1">
+                <label
+                  htmlFor={field}
+                  className="block text-sm font-medium mb-1"
+                >
                   {field.charAt(0).toUpperCase() + field.slice(1)}
                 </label>
                 {["etat", "type", "categorie"].includes(field) ? (
@@ -82,16 +94,31 @@ const FormMoOeuvre = ({
                   >
                     <option value="">-- Sélectionnez --</option>
                     {field === "etat" &&
-                      ["En cours", "Terminé", "Abandonné", "Libre", "En pause", "En attente"].map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
+                      [
+                        "En cours",
+                        "Terminé",
+                        "Abandonné",
+                        "Libre",
+                        "En pause",
+                        "En attente",
+                      ].map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
                       ))}
                     {field === "type" &&
-                      ["Light novel", "Web novel", "Scan", "Webtoon"].map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
+                      ["Light novel", "Web novel", "Scan", "Webtoon"].map(
+                        (opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        )
+                      )}
                     {field === "categorie" &&
                       ["Shonen", "Seinen", "Shojo", "Isekai"].map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
                       ))}
                   </select>
                 ) : (
@@ -127,13 +154,10 @@ const FormMoOeuvre = ({
                   type="checkbox"
                   name="licence"
                   checked={oeuvreData.licence === true}
-                  onChange={(e) =>
-                    handleOeuvreChange({
-                      target: { name: "licence", value: e.target.checked },
-                    })
-                  }
+                  onChange={handleOeuvreChange}
                   className="sr-only peer"
                 />
+
                 <div className="w-11 h-6 bg-gray-600 peer-checked:bg-green-500 rounded-full transition-all"></div>
                 <div className="absolute w-4 h-4 bg-white rounded-full shadow left-1 top-1 transition-transform peer-checked:translate-x-full"></div>
               </label>
@@ -158,7 +182,10 @@ const FormMoOeuvre = ({
 
           {/* Couverture */}
           <div>
-            <label htmlFor="couverture" className="block text-sm font-semibold mb-2">
+            <label
+              htmlFor="couverture"
+              className="block text-sm font-semibold mb-2"
+            >
               🖼️ Couverture
             </label>
 
@@ -216,4 +243,3 @@ const FormMoOeuvre = ({
 };
 
 export default FormMoOeuvre;
-

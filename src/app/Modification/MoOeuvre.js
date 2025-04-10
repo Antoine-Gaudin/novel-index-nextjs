@@ -46,9 +46,20 @@ const MoOeuvre = ({ user, oeuvre }) => {
   
 
   const handleOeuvreChange = (e) => {
-    const { name, value } = e.target;
-    setOeuvreData({ ...oeuvreData, [name]: value });
+    const { name, value, type, checked } = e.target;
+  
+    let parsedValue = value;
+  
+    if (type === "checkbox") {
+      parsedValue = checked; // donc true ou false, pas de string
+    }
+  
+    setOeuvreData((prev) => ({
+      ...prev,
+      [name]: parsedValue,
+    }));
   };
+  
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -106,9 +117,16 @@ const MoOeuvre = ({ user, oeuvre }) => {
           return obj;
         }, {});
   
-      Object.entries(filteredOeuvreData).forEach(([key, value]) => {
-        formData.append(`data[${key}]`, value);
-      });
+        Object.entries(filteredOeuvreData).forEach(([key, value]) => {
+          if (key === "licence") {
+            //  si null/undefined → on met false
+            const finalBool = value === true ? "true" : "false";
+            formData.append(`data[${key}]`, finalBool);
+          } else {
+            formData.append(`data[${key}]`, value ?? "");
+          }
+        });
+        
   
       // 4. Envoi PUT final avec image liée
       await axios.put(

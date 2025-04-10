@@ -22,6 +22,11 @@ const Menu = () => {
 
   const debounceTimeout = useRef(null);
 
+
+  
+  
+
+
   useEffect(() => {
     if (!searchText.trim()) {
       setSearchResults([]);
