@@ -1,329 +1,295 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import Cookies from "js-cookie";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import SearchModal from "./SearchModal";
+import { FiHome, FiBook, FiSearch, FiUser, FiUserPlus, FiLogIn, FiMenu, FiX } from "react-icons/fi";
 
 const Menu = () => {
   const [hasMounted, setHasMounted] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userProfilePicture, setUserProfilePicture] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [usernameInitial, setUsernameInitial] = useState("?");
-
-  const [searchText, setSearchText] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const router = useRouter();
+  const pathname = usePathname();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-  const debounceTimeout = useRef(null);
-
-
-  
-  
-
-
-  useEffect(() => {
-    if (!searchText.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    clearTimeout(debounceTimeout.current);
-
-    debounceTimeout.current = setTimeout(() => {
-      handleSearch();
-    }, 400); // ⏱️ délai de 400ms après le dernier caractère tapé
-
-    return () => clearTimeout(debounceTimeout.current);
-  }, [searchText]);
+  const { isLoggedIn, user, jwt, isLoading, usernameInitial } = useAuth();
 
   useEffect(() => {
     setHasMounted(true);
+    
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Fetch profile picture when user/jwt changes
   useEffect(() => {
-    const jwt = Cookies.get("jwt");
-    setIsLoggedIn(!!jwt);
+    if (!jwt || !user) {
+      setUserProfilePicture(null);
+      return;
+    }
 
-    if (jwt) {
+    const fetchUserProfile = async () => {
       try {
-        const userInfo = JSON.parse(Cookies.get("userInfo"));
-        const initial = userInfo?.username?.[0]?.toUpperCase();
-        if (initial) setUsernameInitial(initial);
-      } catch {
-        setUsernameInitial("?");
-      }
-
-      const fetchUserProfile = async () => {
-        try {
-          const response = await fetch(
-            "https://novel-index-strapi.onrender.com/api/users/me?populate=profil",
-            {
-              headers: { Authorization: `Bearer ${jwt}` },
-            }
-          );
-
-          if (response.ok) {
-            const userData = await response.json();
-            const profilePictureUrl = userData?.profil?.formats?.small?.url;
-            if (profilePictureUrl) {
-              setUserProfilePicture(profilePictureUrl);
-            }
+        const response = await fetch(
+          `${apiUrl}/api/users/me?populate=profil`,
+          {
+            headers: { Authorization: `Bearer ${jwt}` },
           }
-        } catch (error) {
-          console.error(
-            "Erreur lors de la récupération de l'image de profil :",
-            error
-          );
+        );
+
+        if (response.ok) {
+          const userData = await response.json();
+          const profilePictureUrl = userData?.profil?.formats?.small?.url;
+          if (profilePictureUrl) {
+            setUserProfilePicture(profilePictureUrl);
+          }
+        } else if (response.status === 401) {
+          // Token invalide/expiré, ne rien faire ici (AuthContext gèrera la déconnexion si nécessaire)
+          setUserProfilePicture(null);
         }
-      };
+      } catch (error) {
+        console.error(
+          "Erreur lors de la récupération de l'image de profil :",
+          error
+        );
+      }
+    };
 
-      fetchUserProfile();
-    }
-  }, []);
+    fetchUserProfile();
+  }, [jwt, user, apiUrl]);
 
-  const handleSearch = async () => {
-    if (!searchText.trim()) return;
-    try {
-      const url = `${apiUrl}/api/oeuvres?filters[titre][$containsi]=${searchText}&populate=couverture`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data?.data) setSearchResults(data.data);
-    } catch (error) {
-      console.error("Erreur lors de la recherche :", error);
-    }
-  };
+  if (!hasMounted || isLoading) return null;
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") handleSearch();
-  };
+  const isActive = (path) => pathname === path;
 
-  const handleOeuvreClick = (oeuvre) => {
-    const slug = oeuvre.titre
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-    router.push(`/oeuvre/${oeuvre.documentId}-${slug}`);
-    setIsSearchOpen(false);
-    setSearchText("");
-  };
-
-  if (!hasMounted) return null;
+  const NavLink = ({ href, icon: Icon, children }) => (
+    <Link
+      href={href}
+      className={`group flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-300 ${
+        isActive(href)
+          ? "text-indigo-400 bg-indigo-500/10"
+          : "text-gray-300 hover:text-white hover:bg-white/5"
+      }`}
+    >
+      <Icon className={`text-lg ${isActive(href) ? "text-indigo-400" : "text-gray-400 group-hover:text-indigo-400"} transition-colors`} />
+      <span className="relative">
+        {children}
+        <span className={`absolute -bottom-1 left-0 h-0.5 bg-indigo-500 transition-all duration-300 ${isActive(href) ? "w-full" : "w-0 group-hover:w-full"}`} />
+      </span>
+    </Link>
+  );
 
   return (
-    <header className="bg-black bg-opacity-80 text-white py-4 relative z-50">
-      <nav className="max-w-7xl mx-auto px-4 flex justify-between items-center relative">
-        <div
-          className="cursor-pointer hover:opacity-80 transition duration-300"
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      scrolled 
+        ? "bg-gray-900/95 backdrop-blur-lg shadow-lg shadow-black/20 border-b border-gray-800/50" 
+        : "bg-gradient-to-b from-gray-900/90 to-transparent"
+    }`}>
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
+        {/* Logo */}
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="cursor-pointer"
           onClick={() => router.push("/")}
         >
-          <img src="/logo.png" alt="Logo Novel-index" className="h-10 w-auto" />
-        </div>
+          <Image 
+            src="/logo.png" 
+            alt="Logo Novel-index" 
+            width={40} 
+            height={40} 
+            className="h-10 w-auto drop-shadow-lg" 
+          />
+        </motion.div>
 
-        <ul className="hidden md:flex space-x-4 items-center">
+        {/* Navigation Desktop */}
+        <ul className="hidden md:flex items-center gap-1">
           <li>
-            <Link
-              href="/"
-              className="text-white font-bold hover:text-gray-400 transition duration-300"
-            >
-              Accueil
-            </Link>
+            <NavLink href="/" icon={FiHome}>Accueil</NavLink>
           </li>
           <li>
-            <Link
-              href="/Oeuvres"
-              className="text-white font-bold hover:text-gray-400 transition duration-300"
-            >
-              Œuvres
-            </Link>
+            <NavLink href="/Oeuvres" icon={FiBook}>Oeuvres</NavLink>
           </li>
           <li>
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="text-white font-bold hover:text-gray-400 transition duration-300"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-300 group"
             >
-              Rechercher 🔍
+              <FiSearch className="text-lg text-gray-400 group-hover:text-indigo-400 transition-colors" />
+              <span>Rechercher</span>
             </button>
           </li>
+        </ul>
+
+        {/* Actions Desktop */}
+        <div className="hidden md:flex items-center gap-3">
           {!isLoggedIn ? (
             <>
-              <li>
-                <Link
-                  href="/Inscription"
-                  className="text-white font-bold hover:text-gray-400 transition duration-300"
-                >
-                  Inscription
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/Connexion"
-                  className="text-white font-bold hover:text-gray-400 transition duration-300"
-                >
-                  Connexion
-                </Link>
-              </li>
+              <Link
+                href="/Connexion"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-300"
+              >
+                <FiLogIn className="text-lg" />
+                <span>Connexion</span>
+              </Link>
+              <Link
+                href="/Inscription"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300"
+              >
+                <FiUserPlus className="text-lg" />
+                <span>Inscription</span>
+              </Link>
             </>
           ) : (
-            <li>
-              <Link
-                href="/Profil"
-                className="block w-10 h-10 rounded-full overflow-hidden border-2 border-white hover:border-gray-400 transition duration-300"
-              >
+            <Link
+              href="/Profil"
+              className="group relative"
+            >
+              <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-gray-700 group-hover:ring-indigo-500 transition-all duration-300 shadow-lg">
                 {userProfilePicture ? (
-                  <img
+                  <Image
                     src={userProfilePicture}
                     alt="Profil"
+                    width={40}
+                    height={40}
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+                  <div className="w-full h-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
                     <span className="text-white text-lg font-bold">
                       {usernameInitial}
                     </span>
                   </div>
                 )}
-              </Link>
-            </li>
+              </div>
+              <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900" />
+            </Link>
           )}
-        </ul>
+        </div>
 
-        <button
-          className="md:hidden text-white focus:outline-none"
+        {/* Hamburger Mobile */}
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg text-white hover:bg-white/10 transition-colors"
           onClick={() => setMenuOpen(!menuOpen)}
         >
-          {menuOpen ? "✖" : "☰"}
-        </button>
+          {menuOpen ? <FiX className="text-2xl" /> : <FiMenu className="text-2xl" />}
+        </motion.button>
       </nav>
 
-      {menuOpen && (
-        <ul className="md:hidden flex flex-col space-y-2 mt-2 px-4">
-          <li>
-            <Link href="/" className="text-white font-bold">
-              Accueil
-            </Link>
-          </li>
-          <li>
-            <Link href="/Oeuvres" className="text-white font-bold">
-              Œuvres
-            </Link>
-          </li>
-          <li>
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                setIsSearchOpen(true);
-              }}
-              className="text-white font-bold"
-            >
-              Rechercher 🔍
-            </button>
-          </li>
-          {!isLoggedIn ? (
-            <>
-              <li>
-                <Link href="/Inscription" className="text-white font-bold">
-                  Inscription
-                </Link>
-              </li>
-              <li>
-                <Link href="/Connexion" className="text-white font-bold">
-                  Connexion
-                </Link>
-              </li>
-            </>
-          ) : (
-            <li>
-              <Link href="/Profil" className="text-white font-bold">
-                Profil
-              </Link>
-            </li>
-          )}
-        </ul>
-      )}
-
-<AnimatePresence>
-  {isSearchOpen && (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.25 }}
-      className="fixed inset-0 bg-black bg-opacity-90 z-[999] flex flex-col items-center justify-center"
-    >
-      <div className="w-full max-w-2xl p-4">
-        <input
-          type="text"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          onKeyDown={handleKeyPress}
-          placeholder="Rechercher une œuvre..."
-          className="w-full px-4 py-3 rounded-md text-gray-900 focus:outline-none"
-          autoFocus
-        />
-      </div>
-
-      <div className="mt-6 w-full max-w-2xl bg-gray-800 rounded-lg p-4 max-h-80 overflow-y-auto">
-        {searchResults.length > 0 ? (
-          <ul>
-            <AnimatePresence>
-              {searchResults.map((oeuvre, index) => (
-                <motion.li
-                  key={oeuvre.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2, delay: index * 0.05 }}
-                  className="p-4 border-b border-gray-700 hover:bg-gray-700 cursor-pointer flex items-center"
-                  onClick={() => handleOeuvreClick(oeuvre)}
-                >
-                  {oeuvre.couverture?.url && (
-                    <img
-                      src={oeuvre.couverture.url}
-                      alt={oeuvre.titre || "Image non disponible"}
-                      className="w-16 h-16 object-cover rounded-md mr-4"
-                    />
-                  )}
-                  <div>
-                    <h3 className="text-xl font-bold">{oeuvre.titre || "Titre non disponible"}</h3>
-                    <p className="text-sm text-gray-400">
-                      Auteur : {oeuvre.auteur || "Non spécifié"}
-                    </p>
-                  </div>
-                </motion.li>
-              ))}
-            </AnimatePresence>
-          </ul>
-        ) : (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+      {/* Menu Mobile */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="text-gray-400 text-center"
+            className="md:hidden overflow-hidden bg-gray-900/95 backdrop-blur-lg border-t border-gray-800/50"
           >
-            Aucun résultat pour cette recherche.
-          </motion.p>
+            <ul className="flex flex-col p-4 space-y-1">
+              <li>
+                <Link 
+                  href="/" 
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
+                    isActive("/") ? "text-indigo-400 bg-indigo-500/10" : "text-gray-300 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <FiHome className="text-xl" />
+                  Accueil
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/Oeuvres" 
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
+                    isActive("/Oeuvres") ? "text-indigo-400 bg-indigo-500/10" : "text-gray-300 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <FiBook className="text-xl" />
+                  Oeuvres
+                </Link>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setIsSearchOpen(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-all"
+                >
+                  <FiSearch className="text-xl" />
+                  Rechercher
+                </button>
+              </li>
+              
+              <li className="pt-2 border-t border-gray-800/50 mt-2">
+                {!isLoggedIn ? (
+                  <div className="flex flex-col gap-2">
+                    <Link 
+                      href="/Connexion" 
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-all"
+                    >
+                      <FiLogIn className="text-xl" />
+                      Connexion
+                    </Link>
+                    <Link 
+                      href="/Inscription" 
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg"
+                    >
+                      <FiUserPlus className="text-xl" />
+                      Inscription
+                    </Link>
+                  </div>
+                ) : (
+                  <Link 
+                    href="/Profil" 
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-all"
+                  >
+                    <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-gray-700">
+                      {userProfilePicture ? (
+                        <Image
+                          src={userProfilePicture}
+                          alt="Profil"
+                          width={32}
+                          height={32}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">
+                            {usernameInitial}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    Mon Profil
+                  </Link>
+                )}
+              </li>
+            </ul>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
 
-      <motion.button
-        onClick={() => setIsSearchOpen(false)}
-        className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
-        Fermer
-      </motion.button>
-    </motion.div>
-  )}
-</AnimatePresence>
-
+      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </header>
   );
 };

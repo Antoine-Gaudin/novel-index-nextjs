@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AjouterOeuvresPopup from "./AjouterOeuvresPopup"; // adapte le chemin
+import Image from "next/image";
+import { slugify } from "@/utils/slugify";
 
 const VosCategories = ({ user }) => {
   const [categories, setCategories] = useState([]);
@@ -238,12 +240,7 @@ const VosCategories = ({ user }) => {
                   {oeuvres.map((oeuvre) => {
                     const cover = oeuvre.couverture?.url;
                     const titre = oeuvre.titre || "Sans titre";
-                    const slug = titre
-                      .toLowerCase()
-                      .normalize("NFD")
-                      .replace(/[\u0300-\u036f]/g, "")
-                      .replace(/[^a-z0-9]+/g, "-")
-                      .replace(/^-+|-+$/g, "");
+                    const slug = slugify(titre);
 
                     const chapitres = oeuvre.chapitres || [];
                     const lastCheckedDate = oeuvre.lastChecked
@@ -265,9 +262,11 @@ const VosCategories = ({ user }) => {
                         }
                       >
                         {cover ? (
-                          <img
+                          <Image
                             src={cover}
                             alt={titre}
+                            width={300}
+                            height={160}
                             className="w-full h-40 object-cover"
                           />
                         ) : (
@@ -275,27 +274,26 @@ const VosCategories = ({ user }) => {
                             Pas de visuel
                           </div>
                         )}
-                        <div className="p-3">
+                        <div className="p-3 space-y-1">
                           <h3 className="text-white font-semibold">{titre}</h3>
-                        </div>
-                        <p className="text-sm text-gray-400">
-                          Dernier accès :{" "}
-                          {lastCheckedDate
-                            ? lastCheckedDate.toLocaleString("fr-FR")
-                            : "Jamais"}
-                        </p>
-
-                        {nbNouveaux > 0 ? (
-                          <p className="text-sm text-green-400 font-semibold">
-                            📈 {nbNouveaux} nouveau{nbNouveaux > 1 ? "x" : ""}{" "}
-                            chapitre
-                            {nbNouveaux > 1 ? "s" : ""} depuis votre visite
-                          </p>
-                        ) : (
                           <p className="text-sm text-gray-400">
-                            ✅ Vous êtes à jour sur cette œuvre
+                            Dernier acc&egrave;s :{" "}
+                            {lastCheckedDate
+                              ? lastCheckedDate.toLocaleString("fr-FR")
+                              : "Jamais"}
                           </p>
-                        )}
+                          {nbNouveaux > 0 ? (
+                            <p className="text-sm text-green-400 font-semibold">
+                              {nbNouveaux} nouveau{nbNouveaux > 1 ? "x" : ""}{" "}
+                              chapitre
+                              {nbNouveaux > 1 ? "s" : ""} depuis votre visite
+                            </p>
+                          ) : (
+                            <p className="text-sm text-gray-400">
+                              Vous &ecirc;tes &agrave; jour sur cette oeuvre
+                            </p>
+                          )}
+                        </div>
                       </div>
                     );
                   })}

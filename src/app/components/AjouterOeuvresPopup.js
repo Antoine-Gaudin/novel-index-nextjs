@@ -1,6 +1,8 @@
 // extrait popup dans VosCategories
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { slugify } from "@/utils/slugify";
 
 const AjouterOeuvresPopup = ({ user, onClose, category, onOeuvreAjoutee }) => {
   const [abonnements, setAbonnements] = useState([]);
@@ -84,12 +86,7 @@ const AjouterOeuvresPopup = ({ user, onClose, category, onOeuvreAjoutee }) => {
               {abonnements.map((oeuvre) => {
                 const docId = oeuvre.documentId;
                 const isSelected = selectedDocumentIds.includes(docId);
-                const titreSlug = oeuvre.titre
-                  .toLowerCase()
-                  .normalize("NFD")
-                  .replace(/\p{Diacritic}/gu, "")
-                  .replace(/[^a-z0-9]+/g, "-")
-                  .replace(/^-+|-+$/g, "");
+                const titreSlug = slugify(oeuvre.titre);
 
                 return (
                   <div
@@ -100,9 +97,11 @@ const AjouterOeuvresPopup = ({ user, onClose, category, onOeuvreAjoutee }) => {
                     }`}
                   >
                     {oeuvre?.couverture?.url ? (
-                      <img
+                      <Image
                         src={oeuvre.couverture.url}
                         alt={oeuvre.titre}
+                        width={300}
+                        height={192}
                         className="w-full h-48 object-cover"
                       />
                     ) : (

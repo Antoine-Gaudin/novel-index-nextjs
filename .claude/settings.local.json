@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm ls:*)",
+      "Bash(if not exist \"C:\\\\Users\\\\agaud\\\\OneDrive\\\\Desktop\\\\sites\\\\novel-index v2\\\\novel-index-v2-project\\\\src\\\\contexts\" mkdir \"C:\\\\Users\\\\agaud\\\\OneDrive\\\\Desktop\\\\sites\\\\novel-index v2\\\\novel-index-v2-project\\\\src\\\\contexts\")",
+      "Bash(npx next build)",
+      "Bash(curl:*)",
+      "Bash(npx next dev:*)",
+      "Bash(taskkill:*)"
+    ]
+  }
+}

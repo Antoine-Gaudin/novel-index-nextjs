@@ -1,26 +1,28 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import Cookies from "js-cookie";
 
-const Commentaire = ({ oeuvre }) => {
-  const [user, setUser] = useState(null);
-  const [comments, setComments] = useState([]); // Initialisé en tant que tableau vide
+const Commentaire = ({ oeuvre, user: parentUser }) => {
+  const [user, setUser] = useState(parentUser || null);
+  const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [inputCode, setInputCode] = useState("");
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1); // Page actuelle
-  const commentsPerPage = 5; // Nombre de commentaires par page
+  const [currentPage, setCurrentPage] = useState(1);
+  const commentsPerPage = 5;
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-  // Récupérer les informations de l'utilisateur
+  // Récupérer les informations de l'utilisateur seulement si non fourni par le parent
   useEffect(() => {
+    if (parentUser) {
+      setUser(parentUser);
+      return;
+    }
     const fetchUser = async () => {
       const jwt = Cookies.get("jwt");
       if (!jwt) {
-        console.error("JWT introuvable.");
         return;
       }
 
@@ -31,7 +33,6 @@ const Commentaire = ({ oeuvre }) => {
           },
         });
         const data = await res.json();
-        console.log("donnée utilisateur complète",data)
         setUser(data);
       } catch (err) {
         console.error("Erreur lors de la récupération des informations utilisateur :", err);
@@ -39,7 +40,7 @@ const Commentaire = ({ oeuvre }) => {
     };
 
     fetchUser();
-  }, []);
+  }, [parentUser]);
 
 
 
@@ -51,13 +52,14 @@ const Commentaire = ({ oeuvre }) => {
   
   
         const formattedComments = data.data.map((comment) => {
-          const user = comment.users_permissions_users[0]; // Accès au premier utilisateur lié
+          const user = comment.users_permissions_users[0];
           return {
             id: comment.id,
             commentaire: comment.commentaire,
+            createdAt: comment.createdAt,
             user: {
               username: user?.username || "Utilisateur inconnu",
-              profil: user?.profil?.url || null, // Récupérer l'image au format "small"
+              profil: user?.profil?.url || null,
             },
           };
         });
@@ -70,25 +72,9 @@ const Commentaire = ({ oeuvre }) => {
   
     fetchComments();
   }, [oeuvre.documentId]);
-  
-
-  // Générer un code à 6 chiffres pour la vérification
-  useEffect(() => {
-    const generateCode = () => {
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      setVerificationCode(code);
-    };
-  
-    generateCode();
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
-    if (inputCode !== verificationCode) {
-      setError("Le code de vérification est incorrect.");
-      return;
-    }
   
     if (!newComment.trim()) {
       setError("Le commentaire ne peut pas être vide.");
@@ -127,9 +113,10 @@ const Commentaire = ({ oeuvre }) => {
       const newCommentData = {
         id: data.data.id,
         commentaire: data.data.commentaire,
+        createdAt: data.data.createdAt || new Date().toISOString(),
         user: {
           username: user.username,
-          profil: user.profil?.formats?.small?.url || null, // Vérifie si l'utilisateur a une photo de profil
+          profil: user.profil?.formats?.small?.url || null,
         },
       };
   
@@ -141,7 +128,6 @@ const Commentaire = ({ oeuvre }) => {
   
       // Réinitialisation des champs
       setNewComment("");
-      setInputCode("");
       setError(null);
     } catch (err) {
       console.error("Erreur lors de la soumission du commentaire :", err);
@@ -155,6 +141,23 @@ const currentComments = comments.slice(firstCommentIndex, lastCommentIndex);
 
 const totalPages = Math.ceil(comments.length / commentsPerPage);
 
+// Formater la date d'un commentaire
+const formatDate = (dateString) => {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "À l'instant";
+  if (diffMins < 60) return `Il y a ${diffMins} min`;
+  if (diffHours < 24) return `Il y a ${diffHours}h`;
+  if (diffDays < 7) return `Il y a ${diffDays}j`;
+  return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+};
+
 const handleNextPage = () => {
     if (currentPage < totalPages) setCurrentPage((prev) => prev + 1);
   };
@@ -163,9 +166,6 @@ const handleNextPage = () => {
     if (currentPage > 1) setCurrentPage((prev) => prev - 1);
   };
   
-
-
-console.log(currentComments)
 
   return (
     <div className="bg-gray-900 text-white p-6 rounded-lg shadow-lg space-y-6">
@@ -181,9 +181,11 @@ console.log(currentComments)
                 <div className="flex items-center space-x-4">
                   {/* Afficher la photo de profil de l'utilisateur */}
                   {user.profil ? (
-                    <img
-                      src={`${user.profil}`}
+                    <Image
+                      src={user.profil}
                       alt={`${user.username}'s profile`}
+                      width={48}
+                      height={48}
                       className="w-12 h-12 rounded-full object-cover"
                     />
                   ) : (
@@ -194,6 +196,9 @@ console.log(currentComments)
                     </div>
                   )}
                   <p className="font-bold">{user.username || "Utilisateur inconnu"}</p>
+                  {comment.createdAt && (
+                    <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
+                  )}
                 </div>
                 <p className="mt-2 text-gray-300">{comment.commentaire}</p>
               </div>
@@ -233,9 +238,11 @@ console.log(currentComments)
         <div className="flex items-center space-x-4">
           {/* Photo de profil de l'utilisateur */}
           {user?.profil?.url ? (
-            <img
-              src={`${user.profil.url}`}
+            <Image
+              src={user.profil.url}
               alt="Photo de profil"
+              width={48}
+              height={48}
               className="w-12 h-12 rounded-full object-cover"
             />
           ) : (
@@ -244,21 +251,6 @@ console.log(currentComments)
             </div>
           )}
           <p className="font-bold">{user?.username || "Utilisateur inconnu"}</p>
-        </div>
-  
-        {/* Code de vérification */}
-        <div>
-          <label htmlFor="verificationCode" className="block text-gray-400 mb-2">
-            Code de vérification : <strong>{verificationCode}</strong>
-          </label>
-          <input
-            type="text"
-            id="verificationCode"
-            value={inputCode}
-            onChange={(e) => setInputCode(e.target.value)}
-            className="w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none"
-            placeholder="Recopiez le code"
-          />
         </div>
   
         {/* Champ de texte pour le commentaire */}

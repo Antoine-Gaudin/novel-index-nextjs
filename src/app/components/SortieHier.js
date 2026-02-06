@@ -3,18 +3,23 @@
 import { useState, useEffect } from "react";
 import SectionSorties from "./SectionSorties";
 
-const SortieJours = () => {
+const SortieHier = () => {
   const [oeuvres, setOeuvres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
-    const fetchOeuvresMisesAJour = async () => {
+    const fetchOeuvresHier = async () => {
       setLoading(true);
       setError(null);
 
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split("T")[0];
+      const todayStr = today.toISOString().split("T")[0];
+
       const fetched = {};
       const results = [];
       const pageSize = 100;
@@ -26,7 +31,7 @@ const SortieJours = () => {
           const res = await fetch(
             `${apiUrl}/api/oeuvres?populate[couverture]=true&pagination[start]=${
               page * pageSize
-            }&pagination[limit]=${pageSize}&populate[chapitres][filters][updatedAt][$gte]=${today}T00:00:00`
+            }&pagination[limit]=${pageSize}&populate[chapitres][filters][updatedAt][$gte]=${yesterdayStr}T00:00:00&populate[chapitres][filters][updatedAt][$lt]=${todayStr}T00:00:00`
           );
           const data = await res.json();
           const oeuvresData = data?.data || [];
@@ -63,9 +68,9 @@ const SortieJours = () => {
           page++;
         }
 
-        // Ajouter les achats
+        // Ajouter les achats d'hier
         const achatRes = await fetch(
-          `${apiUrl}/api/Achatlivres?filters[updatedAt][$gte]=${today}T00:00:00&populate[oeuvres][populate]=couverture`
+          `${apiUrl}/api/Achatlivres?filters[updatedAt][$gte]=${yesterdayStr}T00:00:00&filters[updatedAt][$lt]=${todayStr}T00:00:00&populate[oeuvres][populate]=couverture`
         );
         const achatJson = await achatRes.json();
         const achats = achatJson?.data || [];
@@ -85,7 +90,6 @@ const SortieJours = () => {
           fetched[oeuvre.documentId] = true;
         }
 
-        // Trier par date de derniere mise a jour
         results.sort((a, b) => {
           const dateA = new Date(a.lastChapitreUpdate || a.updatedAt);
           const dateB = new Date(b.lastChapitreUpdate || b.updatedAt);
@@ -95,28 +99,28 @@ const SortieJours = () => {
         setOeuvres(results);
       } catch (err) {
         console.error("Erreur :", err);
-        setError("Erreur lors de la recuperation des oeuvres.");
+        setError("Erreur lors de la recuperation des sorties d'hier.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchOeuvresMisesAJour();
+    fetchOeuvresHier();
   }, [apiUrl]);
 
   return (
     <SectionSorties
-      titre="🔥 Sorties du jour"
+      titre="📅 Sorties d'hier"
       oeuvres={oeuvres}
       loading={loading}
       error={error}
-      showTimeAgo={true}
-      emptyMessage="Pas encore de sorties aujourd'hui. Repassez plus tard !"
+      showTimeAgo={false}
+      emptyMessage="Aucune sortie hier."
       countLabel={(count) =>
-        `${count} œuvre${count > 1 ? "s" : ""} mise${count > 1 ? "s" : ""} à jour aujourd'hui`
+        `${count} œuvre${count > 1 ? "s" : ""} mise${count > 1 ? "s" : ""} à jour hier`
       }
     />
   );
 };
 
-export default SortieJours;
+export default SortieHier;

@@ -3,15 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-
-// Ton slugify de référence
-const slugify = (str) =>
-  str
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+import { slugify } from "@/utils/slugify";
 
 export default function OeuvresParTagOuGenre() {
   const { type, slug } = useParams();

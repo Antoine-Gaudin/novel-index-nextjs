@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-const AffiChapitre = ({ documentId, licence }) => {
+const AffiChapitre = ({ documentId, licence, totalChapitres }) => {
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -14,13 +14,10 @@ const AffiChapitre = ({ documentId, licence }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [pageJump, setPageJump] = useState("");
 
-  console.log("🧱 COMPONENT RENDERED — AffiChapitre", documentId);
 
 
   useEffect(() => {
     const fetchData = async () => {
-      console.log("📡 FETCH lancé — documentId:", documentId, "licence:", licence);
-      
       try {
         const url = licence
           ? `${apiUrl}/api/oeuvres?filters[documentId][$eq]=${documentId}&populate=achatlivres`
@@ -30,8 +27,7 @@ const AffiChapitre = ({ documentId, licence }) => {
         const data = await res.json();
   
         const oeuvre = data.data?.[0];
-        console.log("📦 Données récupérées :", oeuvre);
-  
+
         if (!oeuvre) {
           console.warn("⛔ Aucune œuvre trouvée !");
           setItems([]);
@@ -68,7 +64,6 @@ const AffiChapitre = ({ documentId, licence }) => {
             new Date(item.publishedAt).toISOString().split("T")[0] === today,
         }));
   
-        console.log("✅ DATA READY — Nombre d'items:", itemsWithNewFlag.length);
         setItems(itemsWithNewFlag);
         setFilteredItems(itemsWithNewFlag);
         setTotalPages(Math.ceil(itemsWithNewFlag.length / itemsPerPage));
@@ -81,7 +76,6 @@ const AffiChapitre = ({ documentId, licence }) => {
     if (documentId) {
       fetchData();
     } else {
-      console.warn("⚠️ Aucun documentId reçu !");
     }
   }, [documentId, licence]);
   
@@ -131,18 +125,31 @@ const AffiChapitre = ({ documentId, licence }) => {
     const pages = [];
     const total = totalPages;
   
-    if (total <= 5) {
+    if (total <= 7) {
       for (let i = 1; i <= total; i++) {
         pages.push(i);
       }
     } else {
-      pages.push(1, 2, 3);
-  
-      if (currentPage > 5 && currentPage < total - 1) {
+      // Toujours afficher la première page
+      pages.push(1);
+
+      if (currentPage > 3) {
         pages.push("start-ellipsis");
       }
-  
-      pages.push(total - 1, total);
+
+      // Pages autour de la page courante
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(total - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+
+      if (currentPage < total - 2) {
+        pages.push("end-ellipsis");
+      }
+
+      // Toujours afficher la dernière page
+      pages.push(total);
     }
   
     return pages.map((page, idx) =>
@@ -150,7 +157,7 @@ const AffiChapitre = ({ documentId, licence }) => {
         <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">...</span>
       ) : (
         <button
-          key={`page-${page}`} // ✅ clé unique
+          key={`page-${page}`}
           className={`px-3 py-1 rounded-lg ${
             currentPage === page ? "bg-indigo-600 text-white" : "bg-gray-700 text-white"
           }`}
@@ -169,12 +176,16 @@ const AffiChapitre = ({ documentId, licence }) => {
       setCurrentPage(pageNum);
     }
   };
-  console.log("🔁 RENDER affichage final — Chapitres visibles :", filteredItems.length);
 
   return (
     <div className="space-y-6">
       <h3 className="text-2xl font-bold text-white">
         📚 Chapitres disponibles
+        {totalChapitres > 0 && (
+          <span className="ml-3 text-base font-normal bg-indigo-600 text-white px-3 py-1 rounded-full">
+            {totalChapitres} chapitre{totalChapitres > 1 ? "s" : ""}
+          </span>
+        )}
       </h3>
 
       {/* 🔍 Barre de recherche */}

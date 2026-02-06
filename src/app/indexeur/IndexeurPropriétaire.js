@@ -9,6 +9,7 @@ const Proprietaire = ({ user }) => {
   const [oeuvresAssociees, setOeuvresAssociees] = useState([]);
   const [localValidation, setLocalValidation] = useState({});
   const [message, setMessage] = useState(null);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +26,7 @@ const Proprietaire = ({ user }) => {
 
       // Requête pour récupérer les œuvres
       const oeuvresResponse = await axios.get(
-        `http://localhost:1337/api/oeuvres?filters[nomdomaine][$containsi]=${domain}`,
+        `${apiUrl}/api/oeuvres?filters[nomdomaine][$containsi]=${domain}`,
         {
           headers: { Authorization: `Bearer ${jwt}` },
         }
@@ -36,7 +37,7 @@ const Proprietaire = ({ user }) => {
       if (oeuvres.length === 0) {
         // Si aucune œuvre par `nomdomaine`, on cherche via les chapitres
         const chapitresResponse = await axios.get(
-          `http://localhost:1337/api/chapitres?populate=oeuvres`,
+          `${apiUrl}/api/chapitres?populate=oeuvres`,
           {
             headers: { Authorization: `Bearer ${jwt}` },
           }
@@ -58,7 +59,7 @@ const Proprietaire = ({ user }) => {
         const oeuvresFromChapitres = await Promise.all(
           oeuvreDocumentIds.map(async (documentId) => {
             const response = await axios.get(
-              `http://localhost:1337/api/oeuvres/${documentId}`,
+              `${apiUrl}/api/oeuvres/${documentId}`,
               {
                 headers: { Authorization: `Bearer ${jwt}` },
               }

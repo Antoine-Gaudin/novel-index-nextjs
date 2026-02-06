@@ -3,7 +3,7 @@
 import { useState } from "react";
 import VosAbonnements from "./VosAbonnements";
 import VosCategories from "./VosCategories";
-// (bientôt) import VosCategories from "@/components/VosCategories";
+
 
 const Bibliotheque = ({ user }) => {
   const [onglet, setOnglet] = useState("abonnements");
@@ -29,7 +29,6 @@ const Bibliotheque = ({ user }) => {
         >
           📖 Vos abonnements
         </button>
-        {/*
         <button
           className={`px-5 py-2 rounded-full font-medium transition ${
             onglet === "bibliotheque"
@@ -38,14 +37,13 @@ const Bibliotheque = ({ user }) => {
           }`}
           onClick={() => setOnglet("bibliotheque")}
         >
-          🗂️ Votre bibliothèque
+          Vos cat&eacute;gories
         </button>
-        */}
       </div>
 
       {/* Affichage des composants */}
       {onglet === "abonnements" && <VosAbonnements user={user} />}
-      {/* onglet === "bibliotheque" && <VosCategories user={user} />*/}
+      {onglet === "bibliotheque" && <VosCategories user={user} />}
     </div>
   );
 };

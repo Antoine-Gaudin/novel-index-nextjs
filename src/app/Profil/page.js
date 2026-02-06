@@ -22,8 +22,8 @@ const ProfilePage = () => {
       const jwt = Cookies.get("jwt");
       if (!jwt) {
         console.log("JWT non trouvé, redirection vers l'accueil");
-        router.push("/"); // ⛔ utilisateur non connecté → redirection
-        return;
+        router.push("/Connexion");
+        return; // Ne pas mettre isLoading = false, on redirige
       }
 
       try {
@@ -36,17 +36,22 @@ const ProfilePage = () => {
 
         if (!res.ok) {
           console.log("Erreur utilisateur → redirection");
-          router.push("/"); // ⛔ erreur d'authentification → redirection
-          return;
+          // Token invalide, supprimer les cookies
+          Cookies.remove("jwt");
+          Cookies.remove("userInfo");
+          router.push("/Connexion");
+          return; // Ne pas mettre isLoading = false, on redirige
         }
 
         const userData = await res.json();
         setUser(userData);
+        setIsLoading(false); // Seulement si succès
       } catch (error) {
         console.error("Erreur avec fetch :", error);
-        router.push("/"); // fallback redirection en cas d'erreur
-      } finally {
-        setIsLoading(false);
+        Cookies.remove("jwt");
+        Cookies.remove("userInfo");
+        router.push("/Connexion");
+        // Ne pas mettre isLoading = false, on redirige
       }
     };
 
@@ -64,7 +69,7 @@ const ProfilePage = () => {
   const renderContent = () => {
     switch (activeMenu) {
       case "parametre":
-        return <Parametre user={user} />;
+        return <Parametre user={user} onUserUpdate={setUser} />;
       case "indexeur":
         return <Indexeur user={user} />;
       case "administration":
@@ -80,7 +85,7 @@ const ProfilePage = () => {
   return (
     <div className="flex flex-col md:flex-row h-full">
       <div>
-        <NavigationProfil onMenuSelect={setActiveMenu} user={user} />
+        <NavigationProfil onMenuSelect={setActiveMenu} user={user} activeMenu={activeMenu} />
       </div>
       <main className="flex-grow bg-gray-900 text-white p-8">
         {renderContent()}

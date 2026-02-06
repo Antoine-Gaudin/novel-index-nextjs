@@ -2,47 +2,26 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import FiltreOeuvres from "@/app/components/FiltreOeuvres";
+import FicheOeuvre from "@/app/components/FicheOeuvre";
+import CoverBackground from "@/app/components/CoverBackground";
+import OeuvreCard from "@/app/components/OeuvreCard";
+import { slugify } from "@/utils/slugify";
+import { FiChevronLeft, FiChevronRight, FiSearch, FiBook, FiGrid, FiFilter } from "react-icons/fi";
 
 export default function Oeuvres() {
   const [oeuvres, setOeuvres] = useState([]);
   const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [queryFiltres, setQueryFiltres] = useState("");
   const [totalOeuvres, setTotalOeuvres] = useState(0);
+  const [selectedOeuvre, setSelectedOeuvre] = useState(null);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
   const pageSize = 12;
   const [pageJump, setPageJump] = useState("");
   const [filtrerNouveautes, setFiltrerNouveautes] = useState(false);
-
-
-  useEffect(() => {
-    // 🏷️ Définir le titre de la page
-    document.title = "Toutes les œuvres disponibles | Novel-Index";
-  
-    // 📝 Définir la meta description
-    let metaDescription = document.querySelector("meta[name='description']");
-    if (!metaDescription) {
-      metaDescription = document.createElement("meta");
-      metaDescription.name = "description";
-      document.head.appendChild(metaDescription);
-    }
-    metaDescription.setAttribute(
-      "content",
-      "Découvrez toutes les œuvres indexées sur Novel-Index : webnovels, light novels, manhwa, manga et plus encore, classés par genre, langue et statut."
-    );
-  
-    // 🔗 Canonical pour cette page
-    let linkCanonical = document.querySelector("link[rel='canonical']");
-    if (!linkCanonical) {
-      linkCanonical = document.createElement("link");
-      linkCanonical.setAttribute("rel", "canonical");
-      document.head.appendChild(linkCanonical);
-    }
-    linkCanonical.setAttribute("href", "https://novel-index.com/Oeuvres");
-  }, []);
-  
 
   const fetchOeuvres = async () => {
     setLoading(true);
@@ -73,12 +52,11 @@ export default function Oeuvres() {
   }, [queryFiltres, page]);
 
   const handleOeuvreClick = (oeuvre) => {
-    const slug = oeuvre.titre
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+    setSelectedOeuvre(oeuvre);
+  };
 
-    router.push(`/oeuvre/${oeuvre.documentId}-${slug}`);
+  const handleClosePreview = () => {
+    setSelectedOeuvre(null);
   };
 
   const handleFilterChange = (filtres) => {
@@ -117,165 +95,284 @@ export default function Oeuvres() {
     setPage(0); // reset à la première page si on change les filtres
   };
 
+  const totalPages = Math.ceil(totalOeuvres / pageSize);
+
+  // Skeleton loader component
+  const SkeletonCard = () => (
+    <div className="bg-gray-800/50 rounded-xl overflow-hidden animate-pulse">
+      <div className="h-48 sm:h-64 bg-gray-700/50" />
+      <div className="p-3 space-y-2">
+        <div className="flex gap-2">
+          <div className="h-5 w-16 bg-gray-700/50 rounded" />
+          <div className="h-5 w-20 bg-gray-700/50 rounded" />
+        </div>
+        <div className="h-6 w-3/4 bg-gray-700/50 rounded" />
+      </div>
+    </div>
+  );
+
   return (
-    <div className="bg-gray-900 text-white p-8 min-h-screen">
-      <h2 className="text-3xl font-bold mb-6">Liste des œuvres</h2>
-
-      <FiltreOeuvres onFilterChange={handleFilterChange} />
-
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {oeuvres.map((oeuvre) => (
-          <div
-            key={oeuvre.id}
-            className="relative bg-gray-800 rounded-lg shadow-lg overflow-hidden cursor-pointer"
-            onClick={() => handleOeuvreClick(oeuvre)}
+    <div className="bg-gray-900 text-white min-h-screen">
+      {/* Header avec CoverBackground */}
+      <div className="relative h-64 md:h-72 overflow-hidden">
+        <CoverBackground />
+        {/* Dégradés */}
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/60 to-gray-900 z-10" />
+        
+        {/* Contenu Header */}
+        <div className="relative z-20 h-full flex flex-col items-center justify-center px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center"
           >
-            {oeuvre.couverture?.url ? (
-              <div
-                className="h-48 sm:h-64 bg-cover bg-center"
-                style={{
-                  backgroundImage: `url('${oeuvre.couverture.url}')`,
-                }}
-              ></div>
-            ) : (
-              <div className="h-48 sm:h-64 bg-gray-700 flex items-center justify-center text-gray-400">
-                Pas de couverture
-              </div>
-            )}
-
-            <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-gray-900 opacity-90 px-4 py-2">
-              <div className="flex space-x-2 mb-2">
-                <span className="bg-black bg-opacity-70 text-white px-2 py-0.5 text-xs sm:text-sm rounded">
-                  {oeuvre.type || "Type non spécifié"}
-                </span>
-                <span className="bg-black bg-opacity-70 text-white px-2 py-0.5 text-xs sm:text-sm rounded">
-                  {oeuvre.categorie || "Catégorie non spécifiée"}
-                </span>
-              </div>
-              <p className="font-bold text-sm sm:text-base md:text-lg text-white truncate">
-                {oeuvre.titre || "Titre non disponible"}
-              </p>
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <FiGrid className="text-indigo-400 text-3xl md:text-4xl" />
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
+                Catalogue
+              </h1>
             </div>
-          </div>
-        ))}
+            <p className="text-gray-300 text-sm md:text-base max-w-xl">
+              Explorez notre collection de {totalOeuvres.toLocaleString()} œuvres
+            </p>
+          </motion.div>
+          
+          {/* Stats rapides */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="flex gap-6 mt-6"
+          >
+            <div className="text-center">
+              <div className="text-2xl md:text-3xl font-bold text-indigo-400">
+                {totalOeuvres.toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-400">Œuvres</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl md:text-3xl font-bold text-purple-400">
+                {totalPages}
+              </div>
+              <div className="text-xs text-gray-400">Pages</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl md:text-3xl font-bold text-pink-400">
+                {page + 1}
+              </div>
+              <div className="text-xs text-gray-400">Page actuelle</div>
+            </div>
+          </motion.div>
+        </div>
       </div>
 
-      {totalOeuvres > 0 && (
-  <div className="mt-10 text-center space-y-6">
-    <p className="text-sm text-gray-300">
-      Il y a un total de <span className="font-bold">{totalOeuvres}</span> œuvre{totalOeuvres > 1 ? "s" : ""}
-    </p>
+      {/* Contenu principal */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Filtres */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
+          <FiltreOeuvres onFilterChange={handleFilterChange} />
+        </motion.div>
 
-    {/* PAGINATION NUMÉROTÉE */}
-    <div className="flex flex-wrap justify-center gap-2">
-      <button
-        disabled={page === 0}
-        onClick={() => setPage((p) => Math.max(0, p - 1))}
-        className="px-3 py-1 bg-gray-700 rounded disabled:opacity-40"
-      >
-        ⬅ Précédent
-      </button>
+        {/* Indicateur de résultats */}
+        {!loading && (
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-gray-400 text-sm">
+              Affichage de <span className="text-white font-medium">{oeuvres.length}</span> œuvres 
+              sur <span className="text-white font-medium">{totalOeuvres.toLocaleString()}</span>
+            </p>
+            <p className="text-gray-500 text-sm">
+              Page {page + 1} / {totalPages}
+            </p>
+          </div>
+        )}
 
-      {(() => {
-        const totalPages = Math.ceil(totalOeuvres / pageSize);
-        const pages = [];
-        const middleStart = Math.max(1, page - 4);
-        const middleEnd = Math.min(totalPages - 4, page + 4);
-
-        // Début toujours visible
-        pages.push(
-          <button
-            key="first-0"
-            onClick={() => setPage(0)}
-            className={`px-3 py-1 rounded ${
-              page === 0 ? "bg-indigo-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-white"
-            }`}
+        {/* Grille des œuvres */}
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {[...Array(12)].map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        ) : oeuvres.length === 0 ? (
+          /* État vide */
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center py-20"
           >
-            1
-          </button>
-        );
+            <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
+              <FiBook className="text-4xl text-gray-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-300 mb-2">
+              Aucune œuvre trouvée
+            </h3>
+            <p className="text-gray-500 text-center max-w-md">
+              Essayez de modifier vos filtres ou d'élargir vos critères de recherche pour découvrir plus d'œuvres.
+            </p>
+          </motion.div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            <AnimatePresence mode="popLayout">
+              {oeuvres.map((oeuvre, index) => (
+                <OeuvreCard
+                  key={oeuvre.id}
+                  oeuvre={oeuvre}
+                  index={index}
+                  onClick={handleOeuvreClick}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
 
-        if (middleStart > 1) {
-          pages.push(<span key="start-ellipsis" className="px-2 text-gray-500">...</span>);
-        }
+        {/* Pagination moderne */}
+        {totalOeuvres > 0 && !loading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mt-12"
+          >
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700/30 p-4 md:p-6">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                {/* Bouton Précédent */}
+                <button
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-xl text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <FiChevronLeft className="text-lg" />
+                  <span className="hidden sm:inline">Précédent</span>
+                </button>
 
-        for (let i = middleStart; i <= middleEnd; i++) {
-          if (i !== 0 && i !== totalPages - 1) {
-            pages.push(
-              <button
-              key={`middle-${i}`}
-                onClick={() => setPage(i)}
-                className={`px-3 py-1 rounded ${
-                  i === page ? "bg-indigo-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-white"
-                }`}
-              >
-                {i + 1}
-              </button>
-            );
-          }
-        }
+                {/* Pages numérotées */}
+                <div className="flex flex-wrap items-center justify-center gap-1 md:gap-2">
+                  {(() => {
+                    const pages = [];
+                    const maxVisiblePages = 5;
+                    let startPage = Math.max(0, page - Math.floor(maxVisiblePages / 2));
+                    let endPage = Math.min(totalPages - 1, startPage + maxVisiblePages - 1);
+                    
+                    if (endPage - startPage < maxVisiblePages - 1) {
+                      startPage = Math.max(0, endPage - maxVisiblePages + 1);
+                    }
 
-        if (middleEnd < totalPages - 4) {
-          pages.push(<span key="end-ellipsis" className="px-2 text-gray-500">...</span>);
-        }
+                    // Première page
+                    if (startPage > 0) {
+                      pages.push(
+                        <button
+                          key="first"
+                          onClick={() => setPage(0)}
+                          className="w-10 h-10 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-white text-sm transition-all"
+                        >
+                          1
+                        </button>
+                      );
+                      if (startPage > 1) {
+                        pages.push(
+                          <span key="start-ellipsis" className="px-1 text-gray-500">...</span>
+                        );
+                      }
+                    }
 
-        // Fin toujours visible
-        for (let i = totalPages - 3; i < totalPages; i++) {
-          if (i > middleEnd) {
-            pages.push(
-              <button
-              key={`last-${i}`}
-                onClick={() => setPage(i)}
-                className={`px-3 py-1 rounded ${
-                  i === page ? "bg-indigo-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-white"
-                }`}
-              >
-                {i + 1}
-              </button>
-            );
-          }
-        }
+                    // Pages du milieu
+                    for (let i = startPage; i <= endPage; i++) {
+                      pages.push(
+                        <button
+                          key={i}
+                          onClick={() => setPage(i)}
+                          className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
+                            i === page
+                              ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
+                              : "bg-gray-700/50 hover:bg-gray-700 text-white"
+                          }`}
+                        >
+                          {i + 1}
+                        </button>
+                      );
+                    }
 
-        return pages;
-      })()}
+                    // Dernière page
+                    if (endPage < totalPages - 1) {
+                      if (endPage < totalPages - 2) {
+                        pages.push(
+                          <span key="end-ellipsis" className="px-1 text-gray-500">...</span>
+                        );
+                      }
+                      pages.push(
+                        <button
+                          key="last"
+                          onClick={() => setPage(totalPages - 1)}
+                          className="w-10 h-10 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-white text-sm transition-all"
+                        >
+                          {totalPages}
+                        </button>
+                      );
+                    }
 
-      <button
-        disabled={(page + 1) * pageSize >= totalOeuvres}
-        onClick={() => setPage((p) => p + 1)}
-        className="px-3 py-1 bg-gray-700 rounded disabled:opacity-40"
-      >
-        Suivant ➡
-      </button>
-    </div>
+                    return pages;
+                  })()}
+                </div>
 
-    {/* BARRE POUR SAUTER À UNE PAGE */}
-    <div className="flex justify-center items-center gap-2 mt-4">
-      <input
-        type="number"
-        placeholder="Page..."
-        min={1}
-        max={Math.ceil(totalOeuvres / pageSize)}
-        value={pageJump}
-        onChange={(e) => setPageJump(e.target.value)}
-        className="w-24 px-3 py-1 rounded bg-gray-700 text-white text-center"
-      />
-      <button
-        onClick={() => {
-          const val = parseInt(pageJump);
-          if (!isNaN(val) && val >= 1 && val <= Math.ceil(totalOeuvres / pageSize)) {
-            setPage(val - 1);
-            setPageJump("");
-          }
-        }}
-        className="px-4 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-500"
-      >
-        Rechercher
-      </button>
-    </div>
+                {/* Bouton Suivant */}
+                <button
+                  disabled={(page + 1) * pageSize >= totalOeuvres}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-xl text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <span className="hidden sm:inline">Suivant</span>
+                  <FiChevronRight className="text-lg" />
+                </button>
+              </div>
 
-  </div>
-)}
+              {/* Saut de page intégré */}
+              <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-gray-700/30">
+                <span className="text-gray-400 text-sm">Aller à la page</span>
+                <input
+                  type="number"
+                  placeholder="#"
+                  min={1}
+                  max={totalPages}
+                  value={pageJump}
+                  onChange={(e) => setPageJump(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = parseInt(pageJump);
+                      if (!isNaN(val) && val >= 1 && val <= totalPages) {
+                        setPage(val - 1);
+                        setPageJump("");
+                      }
+                    }
+                  }}
+                  className="w-16 px-2 py-1.5 rounded-lg bg-gray-700/50 text-white text-center text-sm border border-gray-600/30 focus:border-indigo-500 focus:outline-none transition-colors"
+                />
+                <button
+                  onClick={() => {
+                    const val = parseInt(pageJump);
+                    if (!isNaN(val) && val >= 1 && val <= totalPages) {
+                      setPage(val - 1);
+                      setPageJump("");
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition-colors"
+                >
+                  <FiSearch className="inline" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </div>
 
+      {/* Popup de prévisualisation */}
+      {selectedOeuvre && (
+        <FicheOeuvre oeuvre={selectedOeuvre} onClose={handleClosePreview} />
+      )}
     </div>
   );
 }

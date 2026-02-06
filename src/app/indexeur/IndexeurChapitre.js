@@ -1,24 +1,26 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import OneChapitre from "../addchapter/OneChapitre";
 import PlusieursChapitre from "../addchapter/PlusieurChapitre";
 import InfoChapitre from "../addchapter/InfoChapitre";
 import RemonterInfo from "../addchapter/RemonterInfo";
 
+const actionTabs = [
+  { key: "OneChapitre", label: "Un chapitre" },
+  { key: "PlusieursChapitre", label: "Plusieurs" },
+  { key: "InfoChapitre", label: "Infos" },
+  { key: "RemonterInfo", label: "Signaler" },
+];
+
 const IndexeurChapitre = ({ user }) => {
-  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedOeuvre, setSelectedOeuvre] = useState(null);
-  const [activeSection, setActiveSection] = useState("default");
-
-  useEffect(() => {
-    console.log("Utilisateur reçu :", user);
-  }, [user]);
+  const [activeSection, setActiveSection] = useState("OneChapitre");
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   const handleSearch = async () => {
     if (searchTerm.trim() === "") return;
@@ -27,7 +29,7 @@ const IndexeurChapitre = ({ user }) => {
     try {
       const jwt = localStorage.getItem("jwt");
       const response = await axios.get(
-        `https://novel-index-strapi.onrender.com/api/oeuvres?populate=couverture&filters[titre][$containsi]=${searchTerm}`,
+        `${apiUrl}/api/oeuvres?populate=couverture&filters[titre][$containsi]=${searchTerm}`,
         {
           headers: { Authorization: `Bearer ${jwt}` },
         }
@@ -56,71 +58,46 @@ const IndexeurChapitre = ({ user }) => {
       case "RemonterInfo":
         return <RemonterInfo user={user} oeuvre={selectedOeuvre} />;
       default:
-        return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-            {[
-              {
-                key: "OneChapitre",
-                label: "➕ Ajouter un chapitre",
-              },
-              {
-                key: "PlusieursChapitre",
-                label: "📚 Ajouter plusieurs chapitres",
-              },
-              {
-                key: "InfoChapitre",
-                label: "ℹ️ Infos chapitre",
-              },
-              {
-                key: "RemonterInfo",
-                label: "🚩 Remonter une information",
-              },
-            ].map((btn) => (
-              <button
-                key={btn.key}
-                onClick={() => setActiveSection(btn.key)}
-                className="bg-indigo-600 hover:bg-indigo-700 transition text-white rounded-xl p-4 shadow text-lg font-medium"
-              >
-                {btn.label}
-              </button>
-            ))}
-          </div>
-        );
+        return null;
     }
   };
 
   return (
     <div className="w-full max-w-5xl mx-auto bg-gray-900 p-8 rounded-2xl text-white">
-      <h1 className="text-3xl font-bold mb-8 text-center">📘 Indexer des Chapitres</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        Indexer des Chapitres
+      </h1>
 
+      {/* Barre de recherche (toujours visible) */}
+      <div className="flex mb-6">
+        <input
+          type="text"
+          placeholder="Rechercher une oeuvre par son titre..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className="flex-grow p-3 bg-gray-800 border border-gray-700 rounded-l-xl focus:outline-none text-sm"
+        />
+        <button
+          onClick={handleSearch}
+          disabled={loading}
+          className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 transition rounded-r-xl font-semibold"
+        >
+          {loading ? "..." : "Rechercher"}
+        </button>
+      </div>
+
+      {/* Resultats de recherche */}
       {!selectedOeuvre && (
-        <>
-          {/* Barre de recherche */}
-          <div className="flex mb-6">
-            <input
-              type="text"
-              placeholder="🔍 Rechercher une œuvre par son titre..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-grow p-3 bg-gray-800 border border-gray-700 rounded-l-xl focus:outline-none text-sm"
-            />
-            <button
-              onClick={handleSearch}
-              disabled={loading}
-              className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 transition rounded-r-xl font-semibold"
-            >
-              {loading ? "Recherche..." : "Rechercher"}
-            </button>
-          </div>
-
-          {/* Résultats de recherche */}
-          <div className="space-y-4">
-            {results.length > 0 ? (
-              results.map((oeuvre) => (
+        <div className="space-y-3">
+          {results.length > 0
+            ? results.map((oeuvre) => (
                 <div
                   key={oeuvre.id}
-                  onClick={() => setSelectedOeuvre(oeuvre)}
+                  onClick={() => {
+                    setSelectedOeuvre(oeuvre);
+                    setActiveSection("OneChapitre");
+                  }}
                   className="flex items-center bg-gray-800 p-4 rounded-xl shadow hover:bg-gray-700 cursor-pointer transition"
                 >
                   {oeuvre.couverture?.url ? (
@@ -130,8 +107,8 @@ const IndexeurChapitre = ({ user }) => {
                       className="w-16 h-20 rounded-lg object-cover mr-4"
                     />
                   ) : (
-                    <div className="w-16 h-20 bg-gray-600 rounded-lg mr-4 flex items-center justify-center text-gray-400">
-                      📄
+                    <div className="w-16 h-20 bg-gray-600 rounded-lg mr-4 flex items-center justify-center text-gray-400 text-xs">
+                      Pas d&apos;image
                     </div>
                   )}
                   <div>
@@ -142,34 +119,59 @@ const IndexeurChapitre = ({ user }) => {
                   </div>
                 </div>
               ))
-            ) : (
-              <p className="text-center text-gray-500">
-                {loading ? "Recherche en cours..." : "Aucun résultat trouvé."}
-              </p>
-            )}
-          </div>
-        </>
+            : !loading && (
+                <p className="text-center text-gray-500">
+                  Recherchez une oeuvre pour commencer.
+                </p>
+              )}
+        </div>
       )}
 
+      {/* Oeuvre selectionnee : tabs d'actions + contenu */}
       {selectedOeuvre && (
         <>
-          <h2 className="text-2xl font-bold mb-6 text-center">
-            {selectedOeuvre.titre}
-          </h2>
-
-          {renderContent()}
-
-          <div className="mt-8 text-center">
+          {/* En-tete oeuvre selectionnee */}
+          <div className="flex items-center justify-between bg-gray-800 p-4 rounded-xl mb-4">
+            <div className="flex items-center gap-3">
+              {selectedOeuvre.couverture?.url && (
+                <img
+                  src={selectedOeuvre.couverture.url}
+                  alt={selectedOeuvre.titre}
+                  className="w-10 h-14 rounded object-cover"
+                />
+              )}
+              <h2 className="text-lg font-bold">{selectedOeuvre.titre}</h2>
+            </div>
             <button
               onClick={() => {
                 setSelectedOeuvre(null);
-                setActiveSection("default");
+                setActiveSection("OneChapitre");
               }}
-              className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition"
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition"
             >
-              ⬅️ Retour à la recherche
+              Changer
             </button>
           </div>
+
+          {/* Tabs d'actions */}
+          <div className="flex gap-2 mb-6 bg-gray-800/50 p-1.5 rounded-lg">
+            {actionTabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveSection(tab.key)}
+                className={`flex-1 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeSection === tab.key
+                    ? "bg-indigo-600 text-white shadow"
+                    : "text-gray-400 hover:text-white hover:bg-gray-700/50"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Contenu de l'action */}
+          {renderContent()}
         </>
       )}
     </div>

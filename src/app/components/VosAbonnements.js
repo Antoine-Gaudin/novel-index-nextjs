@@ -2,12 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import AbonnementCard from "./AbonnementCard";
+
+const SkeletonCard = () => (
+  <div className="bg-gray-800 rounded-xl overflow-hidden shadow-md animate-pulse">
+    <div className="w-full h-48 bg-gray-700" />
+    <div className="p-4 space-y-3">
+      <div className="h-5 bg-gray-700 rounded w-3/4" />
+      <div className="h-4 bg-gray-700 rounded w-1/2" />
+      <div className="h-4 bg-gray-700 rounded w-2/3" />
+    </div>
+  </div>
+);
 
 const VosAbonnements = ({ user }) => {
   const [abonnements, setAbonnements] = useState([]);
+  const [loading, setLoading] = useState(true);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  const router = useRouter();
 
   useEffect(() => {
     const fetchAbonnements = async () => {
@@ -22,7 +33,7 @@ const VosAbonnements = ({ user }) => {
         );
 
         const data = await res.json();
-        const abonnementsData = data.data;
+        const abonnementsData = data.data || [];
 
         const abonnementsAvecChapitres = abonnementsData.map((a) => {
           const oeuvre = a.oeuvres?.[0];
@@ -33,11 +44,23 @@ const VosAbonnements = ({ user }) => {
         setAbonnements(abonnementsAvecChapitres);
       } catch (error) {
         console.error("Erreur lors du fetch des abonnements :", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchAbonnements();
-  }, [user.documentId]);
+  }, [user.documentId, apiUrl]);
+
+  if (loading) {
+    return (
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -52,68 +75,15 @@ const VosAbonnements = ({ user }) => {
         >
           {abonnements.length === 0 ? (
             <p className="text-center text-gray-400 col-span-full">
-              Aucun abonnement trouvé.
+              Aucun abonnement trouv&eacute;.
             </p>
           ) : (
-            abonnements.map((abonnement) => {
-              const chapitres = abonnement.chapitres || [];
-              const lastCheckedDate = new Date(abonnement.lastChecked);
-              const nouveauxChapitres = chapitres.filter(
-                (ch) => new Date(ch.createdAt) > lastCheckedDate
-              );
-              const nbNouveaux = nouveauxChapitres.length;
-              const oeuvre = abonnement.oeuvres?.[0];
-
-              return (
-                <div
-                  key={abonnement.documentId}
-                  className="bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow cursor-pointer"
-                  onClick={() => {
-                    const titreSlug = oeuvre.titre
-                      .toLowerCase()
-                      .normalize("NFD")
-                      .replace(/[\u0300-\u036f]/g, "")
-                      .replace(/[^a-z0-9]+/g, "-")
-                      .replace(/^-+|-+$/g, "");
-                    router.push(`/oeuvre/${oeuvre.documentId}-${titreSlug}`);
-                  }}
-                >
-                  {oeuvre?.couverture?.url ? (
-                    <img
-                      src={oeuvre.couverture.url}
-                      alt={oeuvre.titre}
-                      className="w-full h-48 object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-48 bg-gray-700 flex items-center justify-center text-gray-400">
-                      Pas de visuel
-                    </div>
-                  )}
-                  <div className="p-4 space-y-2">
-                    <h2 className="text-lg font-semibold text-white">
-                      {oeuvre?.titre || "Sans titre"}
-                    </h2>
-                    <p className="text-sm text-gray-400">
-                      Dernier accès :{" "}
-                      {abonnement.lastChecked
-                        ? new Date(abonnement.lastChecked).toLocaleString("fr-FR")
-                        : "Jamais"}
-                    </p>
-                    {nbNouveaux > 0 ? (
-                      <p className="text-sm text-green-400 font-semibold">
-                        📈 {nbNouveaux} nouveau
-                        {nbNouveaux > 1 ? "x" : ""} chapitre
-                        {nbNouveaux > 1 ? "s" : ""} depuis votre visite
-                      </p>
-                    ) : (
-                      <p className="text-sm text-gray-400">
-                        ✅ Vous êtes à jour sur cette œuvre
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+            abonnements.map((abonnement) => (
+              <AbonnementCard
+                key={abonnement.documentId}
+                abonnement={abonnement}
+              />
+            ))
           )}
         </motion.div>
       </AnimatePresence>

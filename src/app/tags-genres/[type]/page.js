@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
+import { slugify } from "@/utils/slugify";
 
 export default function TagsGenresListPage() {
   const { type } = useParams(); // "tag" ou "genre"
@@ -12,13 +13,6 @@ export default function TagsGenresListPage() {
   const observerRef = useRef(null);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const PAGE_SIZE = 25;
-  const slugify = (str) =>
-    str
-      .toLowerCase()
-      .normalize("NFD") // pour retirer les accents
-      .replace(/[\u0300-\u036f]/g, "") // encore les accents
-      .replace(/[^a-z0-9]+/g, "-") // espaces → tirets
-      .replace(/^-+|-+$/g, ""); // trim des tirets
   
 
 
