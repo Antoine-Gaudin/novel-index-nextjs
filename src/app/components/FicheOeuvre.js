@@ -306,6 +306,13 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
                         <FiStar className={`text-lg ${isSubscribed ? "fill-current" : ""}`} />
                         {isSubscribed ? "Désabonner" : "S'abonner"}
                       </button>
+                      <Link
+                        href={`/oeuvre/${oeuvre.documentId}-${slugify(oeuvre.titre || '')}`}
+                        className="px-4 py-2.5 bg-gray-600 text-white rounded-lg shadow-lg hover:bg-gray-500 hover:shadow-gray-500/25 transition-all flex items-center gap-2 font-medium text-sm"
+                      >
+                        <FiExternalLink className="text-lg" />
+                        Page complète
+                      </Link>
                     </div>
                   </div>
                 </div>

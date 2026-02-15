@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { 
   FiUser, FiMail, FiShield, FiCamera, FiUpload, FiCheck, FiX, 
-  FiEdit3, FiUsers, FiAlertCircle, FiSettings, FiToggleLeft, FiToggleRight 
+  FiEdit3, FiUsers, FiAlertCircle, FiSettings, FiToggleLeft, FiToggleRight,
+  FiLock, FiEye, FiEyeOff, FiSave
 } from "react-icons/fi";
 
 const Parametre = ({ user, onUserUpdate }) => {
@@ -18,6 +19,19 @@ const Parametre = ({ user, onUserUpdate }) => {
   const [uploadProgress, setUploadProgress] = useState(false);
   const fileInputRef = useRef(null);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  // Édition inline username/email
+  const [editingField, setEditingField] = useState(null);
+  const [editValue, setEditValue] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+
+  // Changement de mot de passe
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState(null);
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
 
   // Protection si user n'existe pas
   if (!user) {
@@ -178,6 +192,108 @@ const Parametre = ({ user, onUserUpdate }) => {
     }
   };
 
+  // Édition inline username/email
+  const startEditing = (field) => {
+    setEditingField(field);
+    setEditValue(user[field] || "");
+  };
+
+  const cancelEditing = () => {
+    setEditingField(null);
+    setEditValue("");
+  };
+
+  const saveField = async () => {
+    const jwt = Cookies.get("jwt");
+    if (!jwt || !editingField) return;
+
+    const trimmed = editValue.trim();
+    if (!trimmed) {
+      setError("Le champ ne peut pas être vide.");
+      return;
+    }
+    if (trimmed === user[editingField]) {
+      cancelEditing();
+      return;
+    }
+
+    try {
+      setEditLoading(true);
+      setError(null);
+      const res = await fetch(`${apiUrl}/api/users/${user.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwt}`,
+        },
+        body: JSON.stringify({ [editingField]: trimmed }),
+      });
+
+      if (!res.ok) throw new Error("Erreur lors de la mise à jour");
+
+      if (onUserUpdate) onUserUpdate((prev) => ({ ...prev, [editingField]: trimmed }));
+      setFeedbackMessage(
+        editingField === "username" ? "Nom d'utilisateur mis à jour !" : "Email mis à jour !"
+      );
+      cancelEditing();
+      setTimeout(() => setFeedbackMessage(""), 3000);
+    } catch (err) {
+      console.error("Erreur :", err);
+      setError("Erreur lors de la mise à jour. Veuillez réessayer.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    const jwt = Cookies.get("jwt");
+    if (!jwt) {
+      setPasswordMessage({ type: "error", text: "Session expirée. Veuillez vous reconnecter." });
+      return;
+    }
+
+    if (passwordData.new.length < 6) {
+      setPasswordMessage({ type: "error", text: "Le nouveau mot de passe doit faire au moins 6 caractères." });
+      return;
+    }
+    if (passwordData.new !== passwordData.confirm) {
+      setPasswordMessage({ type: "error", text: "Les mots de passe ne correspondent pas." });
+      return;
+    }
+
+    try {
+      setPasswordLoading(true);
+      setPasswordMessage(null);
+      const res = await fetch(`${apiUrl}/api/auth/change-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwt}`,
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.current,
+          password: passwordData.new,
+          passwordConfirmation: passwordData.confirm,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error?.message || "Mot de passe actuel incorrect.");
+      }
+
+      setPasswordMessage({ type: "success", text: "Mot de passe changé avec succès !" });
+      setPasswordData({ current: "", new: "", confirm: "" });
+      setShowPasswordForm(false);
+      setTimeout(() => setPasswordMessage(null), 4000);
+    } catch (err) {
+      setPasswordMessage({ type: "error", text: err.message });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   // Filtrer les toggles disponibles
   const availableToggles = Object.keys(togglesConfig).filter(key => 
     typeof user[key] === "boolean"
@@ -250,8 +366,47 @@ const Parametre = ({ user, onUserUpdate }) => {
                   <FiUser className="text-indigo-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-400 mb-0.5">Nom d'utilisateur</p>
-                  <p className="text-white font-medium truncate">{user.username}</p>
+                  <p className="text-xs text-gray-400 mb-0.5">Nom d&apos;utilisateur</p>
+                  {editingField === "username" ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        className="flex-1 bg-gray-800 text-white text-sm px-3 py-1.5 rounded-lg border border-gray-600 focus:border-indigo-500 focus:outline-none"
+                        autoFocus
+                        onKeyDown={(e) => e.key === "Enter" && saveField()}
+                      />
+                      <button
+                        onClick={saveField}
+                        disabled={editLoading}
+                        className="p-1.5 bg-green-600 hover:bg-green-500 rounded-lg text-white transition-colors disabled:opacity-50"
+                      >
+                        {editLoading ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <FiCheck className="text-sm" />
+                        )}
+                      </button>
+                      <button
+                        onClick={cancelEditing}
+                        className="p-1.5 bg-gray-600 hover:bg-gray-500 rounded-lg text-white transition-colors"
+                      >
+                        <FiX className="text-sm" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="text-white font-medium truncate">{user.username}</p>
+                      <button
+                        onClick={() => startEditing("username")}
+                        className="p-1 text-gray-500 hover:text-indigo-400 transition-colors"
+                        title="Modifier"
+                      >
+                        <FiEdit3 className="text-sm" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -264,7 +419,46 @@ const Parametre = ({ user, onUserUpdate }) => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-400 mb-0.5">Email</p>
-                  <p className="text-white font-medium truncate">{user.email}</p>
+                  {editingField === "email" ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="email"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        className="flex-1 bg-gray-800 text-white text-sm px-3 py-1.5 rounded-lg border border-gray-600 focus:border-indigo-500 focus:outline-none"
+                        autoFocus
+                        onKeyDown={(e) => e.key === "Enter" && saveField()}
+                      />
+                      <button
+                        onClick={saveField}
+                        disabled={editLoading}
+                        className="p-1.5 bg-green-600 hover:bg-green-500 rounded-lg text-white transition-colors disabled:opacity-50"
+                      >
+                        {editLoading ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <FiCheck className="text-sm" />
+                        )}
+                      </button>
+                      <button
+                        onClick={cancelEditing}
+                        className="p-1.5 bg-gray-600 hover:bg-gray-500 rounded-lg text-white transition-colors"
+                      >
+                        <FiX className="text-sm" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="text-white font-medium truncate">{user.email}</p>
+                      <button
+                        onClick={() => startEditing("email")}
+                        className="p-1 text-gray-500 hover:text-indigo-400 transition-colors"
+                        title="Modifier"
+                      >
+                        <FiEdit3 className="text-sm" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -401,6 +595,144 @@ const Parametre = ({ user, onUserUpdate }) => {
           </form>
         </motion.div>
       </div>
+
+      {/* Section Changement de mot de passe */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/30"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+            <FiLock className="text-yellow-400" />
+            Mot de passe
+          </h2>
+          <button
+            onClick={() => {
+              setShowPasswordForm(!showPasswordForm);
+              setPasswordMessage(null);
+              setPasswordData({ current: "", new: "", confirm: "" });
+            }}
+            className={`text-sm px-4 py-2 rounded-lg font-medium transition-colors ${
+              showPasswordForm
+                ? "bg-gray-700 text-gray-300"
+                : "bg-indigo-600 hover:bg-indigo-500 text-white"
+            }`}
+          >
+            {showPasswordForm ? "Annuler" : "Changer le mot de passe"}
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {passwordMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              className={`mb-4 px-4 py-3 rounded-xl flex items-center gap-2 text-sm ${
+                passwordMessage.type === "success"
+                  ? "bg-green-600/20 border border-green-600/30 text-green-300"
+                  : "bg-red-600/20 border border-red-600/30 text-red-300"
+              }`}
+            >
+              {passwordMessage.type === "success" ? <FiCheck /> : <FiAlertCircle />}
+              {passwordMessage.text}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showPasswordForm && (
+            <motion.form
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              onSubmit={handleChangePassword}
+              className="overflow-hidden space-y-4"
+            >
+              {/* Mot de passe actuel */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1.5">Mot de passe actuel</label>
+                <div className="relative">
+                  <input
+                    type={showCurrentPwd ? "text" : "password"}
+                    value={passwordData.current}
+                    onChange={(e) => setPasswordData((p) => ({ ...p, current: e.target.value }))}
+                    className="w-full bg-gray-900/50 text-white px-4 py-2.5 pr-10 rounded-xl border border-gray-700 focus:border-indigo-500 focus:outline-none text-sm"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPwd(!showCurrentPwd)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                  >
+                    {showCurrentPwd ? <FiEyeOff /> : <FiEye />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Nouveau mot de passe */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1.5">Nouveau mot de passe</label>
+                <div className="relative">
+                  <input
+                    type={showNewPwd ? "text" : "password"}
+                    value={passwordData.new}
+                    onChange={(e) => setPasswordData((p) => ({ ...p, new: e.target.value }))}
+                    className="w-full bg-gray-900/50 text-white px-4 py-2.5 pr-10 rounded-xl border border-gray-700 focus:border-indigo-500 focus:outline-none text-sm"
+                    minLength={6}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPwd(!showNewPwd)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                  >
+                    {showNewPwd ? <FiEyeOff /> : <FiEye />}
+                  </button>
+                </div>
+                {passwordData.new && passwordData.new.length < 6 && (
+                  <p className="text-xs text-yellow-400 mt-1">Minimum 6 caractères</p>
+                )}
+              </div>
+
+              {/* Confirmation */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1.5">Confirmer le nouveau mot de passe</label>
+                <input
+                  type="password"
+                  value={passwordData.confirm}
+                  onChange={(e) => setPasswordData((p) => ({ ...p, confirm: e.target.value }))}
+                  className="w-full bg-gray-900/50 text-white px-4 py-2.5 rounded-xl border border-gray-700 focus:border-indigo-500 focus:outline-none text-sm"
+                  required
+                />
+                {passwordData.confirm && passwordData.new !== passwordData.confirm && (
+                  <p className="text-xs text-red-400 mt-1">Les mots de passe ne correspondent pas</p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={passwordLoading || passwordData.new.length < 6 || passwordData.new !== passwordData.confirm}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-600/50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                {passwordLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Changement en cours...
+                  </>
+                ) : (
+                  <>
+                    <FiSave />
+                    Changer le mot de passe
+                  </>
+                )}
+              </button>
+            </motion.form>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Section Rôles et permissions */}
       {availableToggles.length > 0 && (

@@ -9,6 +9,7 @@ import Parametre from "../components/Parametre";
 import Indexeur from "../components/Indexeur";
 import Administration from "../components/Administration";
 import Bibliotheque from "../components/bibliotheque";
+import BulkTagsGenre from "../indexeur/BulkTagsGenre";
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
@@ -27,7 +28,7 @@ const ProfilePage = () => {
       }
 
       try {
-        const res = await fetch(`${apiUrl}/api/users/me`, {
+        const res = await fetch(`${apiUrl}/api/users/me?populate=profil`, {
           headers: {
             Authorization: `Bearer ${jwt}`,
           },
@@ -72,6 +73,8 @@ const ProfilePage = () => {
         return <Parametre user={user} onUserUpdate={setUser} />;
       case "indexeur":
         return <Indexeur user={user} />;
+      case "bulktags":
+        return <BulkTagsGenre user={user} />;
       case "administration":
         return <Administration user={user} />;
       case "bibliotheque":

@@ -48,7 +48,7 @@ export function AuthProvider({ children }) {
     if (!jwt) return;
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/users/me?populate=profil`,
         { headers: { Authorization: `Bearer ${jwt}` } }
       );
       if (res.ok) {

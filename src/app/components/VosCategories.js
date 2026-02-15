@@ -1,10 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import AjouterOeuvresPopup from "./AjouterOeuvresPopup"; // adapte le chemin
+import { motion, AnimatePresence } from "framer-motion";
+import AjouterOeuvresPopup from "./AjouterOeuvresPopup";
 import Image from "next/image";
 import { slugify } from "@/utils/slugify";
+import {
+  Plus,
+  Check,
+  Trash2,
+  MoreHorizontal,
+  BookOpen,
+  FolderPlus,
+  Bell,
+  CheckCircle,
+  Clock,
+  X as XIcon,
+} from "lucide-react";
+
+const SkeletonCategory = () => (
+  <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5 animate-pulse space-y-4">
+    <div className="flex items-center justify-between">
+      <div className="h-6 w-32 bg-gray-700/50 rounded" />
+      <div className="h-8 w-8 bg-gray-700/50 rounded" />
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="bg-gray-700/30 rounded-lg overflow-hidden">
+          <div className="w-full h-40 bg-gray-700/50" />
+          <div className="p-3 space-y-2">
+            <div className="h-4 w-3/4 bg-gray-700/50 rounded" />
+            <div className="h-3 w-1/2 bg-gray-700/50 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 const VosCategories = ({ user }) => {
   const [categories, setCategories] = useState([]);
@@ -17,61 +50,83 @@ const VosCategories = ({ user }) => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
   const [openMenuId, setOpenMenuId] = useState(null);
+  const menuRef = useRef(null);
 
+  // Fermer le menu au clic extérieur
   useEffect(() => {
-    const fetchCategoriesAndChecks = async () => {
-      try {
-        const jwt = localStorage.getItem("jwt");
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenMenuId(null);
+      }
+    };
+    if (openMenuId !== null) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [openMenuId]);
 
-        const [catRes, checkRes] = await Promise.all([
-          fetch(
-            `${apiUrl}/api/nameoeuvrelists?filters[users_permissions_users][documentId][$eq]=${user.documentId}&populate[oeuvres][populate][0]=couverture&populate[oeuvres][populate][1]=chapitres`,
-            { headers: { Authorization: `Bearer ${jwt}` } }
-          ),
-          fetch(
-            `${apiUrl}/api/checkoeuvretimes?filters[users_permissions_users][documentId][$eq]=${user.documentId}`,
-            { headers: { Authorization: `Bearer ${jwt}` } }
-          ),
-        ]);
+  const fetchCategories = async () => {
+    try {
+      const jwt = localStorage.getItem("jwt");
 
-        const catData = await catRes.json();
-        const checkData = await checkRes.json();
+      const [catRes, checkRes] = await Promise.all([
+        fetch(
+          `${apiUrl}/api/nameoeuvrelists?filters[users_permissions_users][documentId][$eq]=${user.documentId}&populate[oeuvres][populate][0]=couverture&populate[oeuvres][populate][1]=chapitres`,
+          { headers: { Authorization: `Bearer ${jwt}` } }
+        ),
+        fetch(
+          `${apiUrl}/api/checkoeuvretimes?filters[users_permissions_users][documentId][$eq]=${user.documentId}`,
+          { headers: { Authorization: `Bearer ${jwt}` } }
+        ),
+      ]);
 
-        const checks = checkData.data || [];
+      const catData = await catRes.json();
+      const checkData = await checkRes.json();
 
-        // Associe chaque œuvre avec son suivi
-        const categoriesEnrichies = (catData.data || []).map((cat) => {
-          const enrichedOeuvres = (cat.oeuvres || []).map((oeuvre) => {
-            const matchedCheck = checks.find(
-              (check) => check.oeuvres?.[0]?.documentId === oeuvre.documentId
-            );
-            return {
-              ...oeuvre,
-              lastChecked: matchedCheck?.lastChecked || null,
-              archived: matchedCheck?.archived || false,
-              chapitres: oeuvre.chapitres || [],
-            };
-          });
+      const checks = checkData.data || [];
 
+      const categoriesEnrichies = (catData.data || []).map((cat) => {
+        const enrichedOeuvres = (cat.oeuvres || []).map((oeuvre) => {
+          const matchedCheck = checks.find(
+            (check) => check.oeuvres?.[0]?.documentId === oeuvre.documentId
+          );
           return {
-            ...cat,
-            oeuvres: enrichedOeuvres,
+            ...oeuvre,
+            lastChecked: matchedCheck?.lastChecked || null,
+            archived: matchedCheck?.archived || false,
+            chapitres: oeuvre.chapitres || [],
           };
         });
 
-        setCategories(categoriesEnrichies);
-      } catch (err) {
-        console.error("Erreur lors du fetch enrichi :", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+        return {
+          ...cat,
+          oeuvres: enrichedOeuvres,
+        };
+      });
 
-    fetchCategoriesAndChecks();
+      setCategories(categoriesEnrichies);
+    } catch (err) {
+      console.error("Erreur lors du fetch enrichi :", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
   }, [user.documentId]);
 
   const handleCreateCategory = async (e) => {
     e.preventDefault();
+    // Vérif doublon
+    const nameExists = categories.some(
+      (c) => c.name?.toLowerCase() === newCatName.trim().toLowerCase()
+    );
+    if (nameExists) {
+      alert("Une catégorie avec ce nom existe déjà.");
+      return;
+    }
+
     const jwt = localStorage.getItem("jwt");
 
     const res = await fetch(`${apiUrl}/api/nameoeuvrelists`, {
@@ -82,7 +137,7 @@ const VosCategories = ({ user }) => {
       },
       body: JSON.stringify({
         data: {
-          name: newCatName,
+          name: newCatName.trim(),
           couleur: newCatColor,
           users_permissions_users: [user.id],
         },
@@ -91,21 +146,13 @@ const VosCategories = ({ user }) => {
 
     const data = await res.json();
     if (data?.data) {
-      setCategories((prev) => [...prev, data.data]);
+      setCategories((prev) => [...prev, { ...data.data, oeuvres: [] }]);
       setSelectedCategory(data.data);
       setNewCatName("");
       setShowForm(false);
-      setShowPopup(true); // 👈 Ouvre la popup
+      setShowPopup(true);
     }
   };
-
-  if (loading) {
-    return (
-      <p className="text-center text-gray-400">
-        Chargement de vos catégories...
-      </p>
-    );
-  }
 
   const handleDeleteCategory = async (catId) => {
     const jwt = localStorage.getItem("jwt");
@@ -132,55 +179,141 @@ const VosCategories = ({ user }) => {
   };
 
 
-  
+  const handleRemoveOeuvre = async (catDocumentId, oeuvreDocumentId) => {
+    const jwt = localStorage.getItem("jwt");
+    try {
+      const cat = categories.find((c) => c.documentId === catDocumentId);
+      if (!cat) return;
+      const remainingIds = (cat.oeuvres || [])
+        .filter((o) => o.documentId !== oeuvreDocumentId)
+        .map((o) => o.documentId);
+
+      await fetch(`${apiUrl}/api/nameoeuvrelists/${catDocumentId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwt}`,
+        },
+        body: JSON.stringify({
+          data: { oeuvres: remainingIds },
+        }),
+      });
+
+      setCategories((prev) =>
+        prev.map((c) =>
+          c.documentId === catDocumentId
+            ? { ...c, oeuvres: (c.oeuvres || []).filter((o) => o.documentId !== oeuvreDocumentId) }
+            : c
+        )
+      );
+    } catch (error) {
+      console.error("Erreur retrait oeuvre :", error);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Jamais";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffDays < 1) return "Aujourd'hui";
+    if (diffDays < 7) return `Il y a ${diffDays}j`;
+    return date.toLocaleDateString("fr-FR");
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <SkeletonCategory key={i} />
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Formulaire de création */}
-      <div className="mb-6 text-right">
+    <div className="space-y-6">
+      {/* Bouton créer */}
+      <div className="flex justify-end">
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            showForm
+              ? "bg-gray-700 text-gray-300"
+              : "bg-indigo-600 hover:bg-indigo-500 text-white"
+          }`}
         >
-          ➕ Créer une catégorie
+          {showForm ? (
+            <>
+              <XIcon className="w-4 h-4" />
+              Annuler
+            </>
+          ) : (
+            <>
+              <FolderPlus className="w-4 h-4" />
+              Créer une catégorie
+            </>
+          )}
         </button>
       </div>
 
-      {showForm && (
-        <form
-          onSubmit={handleCreateCategory}
-          className="bg-gray-800 p-4 rounded-lg mb-8"
-        >
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <input
-              type="text"
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              placeholder="Nom de la catégorie"
-              className="flex-grow p-2 rounded-lg bg-gray-900 text-white border border-gray-700"
-              required
-            />
-            <input
-              type="color"
-              value={newCatColor}
-              onChange={(e) => setNewCatColor(e.target.value)}
-              className="w-12 h-10 rounded-lg border border-gray-700"
-            />
-            <button
-              type="submit"
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-            >
-              ✅ Créer
-            </button>
-          </div>
-        </form>
-      )}
+      {/* Formulaire */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.form
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            onSubmit={handleCreateCategory}
+            className="overflow-hidden"
+          >
+            <div className="bg-gray-800/50 border border-gray-700/50 p-5 rounded-xl">
+              <div className="flex flex-col sm:flex-row gap-4 items-end">
+                <div className="flex-grow">
+                  <label className="block text-xs text-gray-400 mb-1.5">Nom de la catégorie</label>
+                  <input
+                    type="text"
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    placeholder="Ex : À lire, Favoris, En cours..."
+                    className="w-full p-2.5 rounded-lg bg-gray-900 text-white border border-gray-700 text-sm focus:border-indigo-500 focus:outline-none transition-colors"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1.5">Couleur</label>
+                  <input
+                    type="color"
+                    value={newCatColor}
+                    onChange={(e) => setNewCatColor(e.target.value)}
+                    className="w-12 h-[42px] rounded-lg border border-gray-700 cursor-pointer"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Check className="w-4 h-4" />
+                  Créer
+                </button>
+              </div>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
 
       {/* Liste des catégories */}
       {categories.length === 0 ? (
-        <p className="text-center text-gray-400">
-          Vous n’avez pas encore créé de catégories personnalisées.
-        </p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="p-4 bg-gray-800/50 rounded-full mb-4">
+            <FolderPlus className="w-10 h-10 text-gray-600" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-300 mb-2">Aucune catégorie</h3>
+          <p className="text-gray-500 text-sm max-w-sm">
+            Créez des catégories pour organiser vos œuvres (À lire, Favoris, En cours...).
+          </p>
+        </div>
       ) : (
         categories.map((cat) => {
           const nom = cat.name;
@@ -192,50 +325,91 @@ const VosCategories = ({ user }) => {
             : [];
 
           return (
-            <div key={cat.id} className="bg-gray-800 p-4 rounded-xl shadow-md">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold" style={{ color: couleur }}>
-                  {nom}
-                </h2>
+            <motion.div
+              key={cat.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gray-800/50 border border-gray-700/50 rounded-xl overflow-hidden"
+            >
+              {/* Header catégorie avec bordure couleur */}
+              <div
+                className="flex items-center justify-between px-5 py-4 border-l-4"
+                style={{ borderLeftColor: couleur }}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: couleur }}
+                  />
+                  <h2 className="text-lg font-bold text-white">{nom}</h2>
+                  <span className="text-xs text-gray-500 bg-gray-700/50 px-2 py-0.5 rounded">
+                    {oeuvres.length} œuvre{oeuvres.length > 1 ? "s" : ""}
+                  </span>
+                </div>
 
-                <div className="relative">
+                <div className="relative" ref={openMenuId === cat.id ? menuRef : null}>
                   <button
                     onClick={() =>
                       setOpenMenuId(openMenuId === cat.id ? null : cat.id)
                     }
-                    className="text-white text-xl px-2 hover:text-indigo-400"
+                    className="p-2 rounded-lg hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors"
                   >
-                    ⋯
+                    <MoreHorizontal className="w-5 h-5" />
                   </button>
 
-                  {openMenuId === cat.id && (
-                    <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow z-10">
-                      <button
-                        onClick={() => {
-                          setSelectedCategory(cat);
-                          setShowPopup(true);
-                          setOpenMenuId(null);
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-700 text-white"
+                  <AnimatePresence>
+                    {openMenuId === cat.id && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-1 w-52 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-10 overflow-hidden"
                       >
-                        ➕ Ajouter des œuvres
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCategory(cat.documentId)}
-                        className="w-full text-left px-4 py-2 hover:bg-red-600 text-red-400"
-                      >
-                        🗑️ Supprimer
-                      </button>
-                    </div>
-                  )}
+                        <button
+                          onClick={() => {
+                            setSelectedCategory(cat);
+                            setShowPopup(true);
+                            setOpenMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-gray-700/50 text-sm text-gray-200 transition-colors"
+                        >
+                          <Plus className="w-4 h-4 text-indigo-400" />
+                          Ajouter des œuvres
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleDeleteCategory(cat.documentId);
+                            setOpenMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-red-500/10 text-sm text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Supprimer la catégorie
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
-              {oeuvres.length === 0 ? (
-                <p className="text-gray-400 italic">
-                  Aucune œuvre dans cette catégorie.
-                </p>
-              ) : (
+              {/* Contenu */}
+              <div className="px-5 pb-5 pt-2">
+                {oeuvres.length === 0 ? (
+                  <div className="flex flex-col items-center py-8 text-center">
+                    <BookOpen className="w-8 h-8 text-gray-600 mb-2" />
+                    <p className="text-gray-500 text-sm">Aucune œuvre dans cette catégorie.</p>
+                    <button
+                      onClick={() => {
+                        setSelectedCategory(cat);
+                        setShowPopup(true);
+                      }}
+                      className="mt-3 text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors"
+                    >
+                      Ajouter des œuvres
+                    </button>
+                  </div>
+                ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {oeuvres.map((oeuvre) => {
                     const cover = oeuvre.couverture?.url;
@@ -253,69 +427,89 @@ const VosCategories = ({ user }) => {
                       : [];
                     const nbNouveaux = nouveauxChapitres.length;
 
-                    return (
-                      <div
-                        key={oeuvre.documentId}
-                        className="bg-gray-900 rounded-lg overflow-hidden shadow hover:shadow-lg cursor-pointer transition"
-                        onClick={() =>
-                          router.push(`/oeuvre/${oeuvre.documentId}-${slug}`)
-                        }
-                      >
-                        {cover ? (
-                          <Image
-                            src={cover}
-                            alt={titre}
-                            width={300}
-                            height={160}
-                            className="w-full h-40 object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-40 bg-gray-700 flex items-center justify-center text-gray-400">
-                            Pas de visuel
-                          </div>
-                        )}
-                        <div className="p-3 space-y-1">
-                          <h3 className="text-white font-semibold">{titre}</h3>
-                          <p className="text-sm text-gray-400">
-                            Dernier acc&egrave;s :{" "}
-                            {lastCheckedDate
-                              ? lastCheckedDate.toLocaleString("fr-FR")
-                              : "Jamais"}
-                          </p>
-                          {nbNouveaux > 0 ? (
-                            <p className="text-sm text-green-400 font-semibold">
-                              {nbNouveaux} nouveau{nbNouveaux > 1 ? "x" : ""}{" "}
-                              chapitre
-                              {nbNouveaux > 1 ? "s" : ""} depuis votre visite
-                            </p>
-                          ) : (
-                            <p className="text-sm text-gray-400">
-                              Vous &ecirc;tes &agrave; jour sur cette oeuvre
-                            </p>
+                      return (
+                        <div
+                          key={oeuvre.documentId}
+                          className="group relative bg-gray-900/50 border border-gray-700/30 rounded-lg overflow-hidden hover:border-gray-600/50 transition-all cursor-pointer"
+                          onClick={() =>
+                            router.push(`/oeuvre/${oeuvre.documentId}-${slug}`)
+                          }
+                        >
+                          {/* Bouton retirer */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveOeuvre(cat.documentId, oeuvre.documentId);
+                            }}
+                            className="absolute top-2 left-2 z-10 p-1.5 bg-gray-900/80 hover:bg-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                            title="Retirer de la catégorie"
+                          >
+                            <XIcon className="w-3.5 h-3.5 text-white" />
+                          </button>
+
+                          {/* Badge non lu */}
+                          {nbNouveaux > 0 && (
+                            <div className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full">
+                              <Bell className="w-3 h-3" />
+                              {nbNouveaux}
+                            </div>
                           )}
+
+                          {cover ? (
+                            <Image
+                              src={cover}
+                              alt={titre}
+                              width={300}
+                              height={160}
+                              className="w-full h-40 object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="w-full h-40 bg-gray-700/30 flex items-center justify-center">
+                              <BookOpen className="w-8 h-8 text-gray-600" />
+                            </div>
+                          )}
+                          <div className="p-3 space-y-1.5">
+                            <h3 className="text-white text-sm font-semibold truncate">{titre}</h3>
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                              <Clock className="w-3 h-3" />
+                              <span>{formatDate(oeuvre.lastChecked)}</span>
+                            </div>
+                            {nbNouveaux > 0 ? (
+                              <p className="text-xs text-green-400 font-medium">
+                                {nbNouveaux} nouveau{nbNouveaux > 1 ? "x" : ""} chapitre{nbNouveaux > 1 ? "s" : ""}
+                              </p>
+                            ) : (
+                              <div className="flex items-center gap-1 text-xs text-gray-500">
+                                <CheckCircle className="w-3 h-3" />
+                                <span>À jour</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
+                      );
                   })}
                 </div>
-              )}
-            </div>
+                )}
+              </div>
+            </motion.div>
           );
         })
       )}
 
-      {/* TODO : popup ajout d'œuvres sous abonnements */}
-      {showPopup && selectedCategory && (
-        <AjouterOeuvresPopup
-          user={user}
-          onClose={() => setShowPopup(false)}
-          category={selectedCategory}
-          onOeuvreAjoutee={() => {
-            setShowPopup(false);
-            // refresh des catégories si tu veux ici
-          }}
-        />
-      )}
+      {/* Popup ajout d'œuvres */}
+      <AnimatePresence>
+        {showPopup && selectedCategory && (
+          <AjouterOeuvresPopup
+            user={user}
+            onClose={() => setShowPopup(false)}
+            category={selectedCategory}
+            onOeuvreAjoutee={() => {
+              setShowPopup(false);
+              fetchCategories();
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

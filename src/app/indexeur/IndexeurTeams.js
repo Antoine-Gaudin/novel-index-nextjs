@@ -1,7 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import axios from "axios";
+import { FiCheck, FiX, FiAlertCircle } from "react-icons/fi";
+
+/**
+ * Vérifie les critères obligatoires pour être affiché sur la page Teams
+ * Critères obligatoires : titre, description
+ * Couverture optionnelle (un placeholder sera affiché)
+ */
+function checkRequirements(formData) {
+  const criteria = {
+    titre: { label: "Titre", valid: !!formData.titre?.trim(), required: true },
+    description: { label: "Description", valid: !!formData.description?.trim(), required: true },
+    couverture: { label: "Logo/Couverture", valid: !!formData.couverture, required: false },
+  };
+
+  const requiredCriteria = Object.values(criteria).filter((c) => c.required);
+  const allValid = requiredCriteria.every((c) => c.valid);
+  const validCount = requiredCriteria.filter((c) => c.valid).length;
+  const totalCount = requiredCriteria.length;
+
+  return { criteria, allValid, validCount, totalCount };
+}
 
 const IndexeurTeams = ({ user }) => {
   const [formData, setFormData] = useState({
@@ -15,6 +36,10 @@ const IndexeurTeams = ({ user }) => {
 
   const [newLien, setNewLien] = useState({ titre: "", url: "" }); // Nouveau lien à ajouter
   const [message, setMessage] = useState(null);
+
+  // Vérification des critères obligatoires en temps réel
+  const requirements = useMemo(() => checkRequirements(formData), [formData]);
+  const canBeDisplayed = requirements.allValid;
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -81,32 +106,26 @@ const IndexeurTeams = ({ user }) => {
         },
       });
 
-      const teamDocumentId = response.data.data.documentId; // Récupérer le documentId de la team créée
-      console.log("Team créée avec documentId :", teamDocumentId);
+      const teamDocumentId = response.data.data.documentId;
+      const teamId = response.data.data.id;
 
       // Envoi de la couverture si elle existe
       if (formData.couverture) {
         const coverData = new FormData();
         coverData.append("files", formData.couverture);
-        coverData.append("ref", "team"); // Nom de la collection
-        coverData.append("refId", teamDocumentId); // documentId de la team
+        coverData.append("ref", "api::team.team");
+        coverData.append("refId", teamId);
         coverData.append("field", "couverture");
 
         try {
           await axios.post("https://novel-index-strapi.onrender.com/api/upload", coverData, {
             headers: {
               Authorization: `Bearer ${jwt}`,
-              "Content-Type": "multipart/form-data",
             },
           });
-
-          console.log("Couverture ajoutée avec succès.");
         } catch (uploadError) {
-          if (uploadError.response?.status === 500) {
-            console.warn("Erreur mineure 500 ignorée pour l'ajout de la couverture.");
-          } else {
-            throw uploadError; // Propager les autres erreurs
-          }
+          console.error("Erreur upload couverture:", uploadError.response?.data || uploadError.message);
+          setMessage("Team creee mais erreur lors de l'upload de la couverture.");
         }
       }
 
@@ -147,11 +166,49 @@ const IndexeurTeams = ({ user }) => {
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-gray-900 p-8 rounded-2xl text-white space-y-6">
-      <h1 className="text-3xl font-bold text-center mb-2">👥 Ajouter une Team</h1>
+      <h1 className="text-3xl font-bold text-center mb-2">Ajouter une Team</h1>
   
       {message && (
         <p className="text-center text-yellow-400 font-medium mb-4">{message}</p>
       )}
+
+      {/* Critères obligatoires */}
+      <div className="bg-gray-800 rounded-xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold">Critères obligatoires</span>
+          <span className={`font-bold ${canBeDisplayed ? 'text-green-400' : 'text-yellow-400'}`}>
+            {requirements.validCount}/{requirements.totalCount}
+          </span>
+        </div>
+
+        {/* Liste des critères */}
+        <div className="space-y-2">
+          {Object.entries(requirements.criteria).map(([key, { label, valid }]) => (
+            <div key={key} className={`flex items-center gap-2 p-2 rounded-lg ${valid ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+              {valid ? <FiCheck /> : <FiX />}
+              <span>{label}</span>
+              {!valid && <span className="ml-auto text-xs">(obligatoire)</span>}
+            </div>
+          ))}
+        </div>
+
+        {/* Message d'avertissement */}
+        {!canBeDisplayed && (
+          <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm">
+            <FiAlertCircle className="mt-0.5 flex-shrink-0" />
+            <div>
+              <strong>Attention :</strong> Votre team ne sera pas visible sur la page Teams publique tant que tous les critères ne seront pas remplis.
+            </div>
+          </div>
+        )}
+
+        {canBeDisplayed && (
+          <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 text-sm">
+            <FiCheck className="flex-shrink-0" />
+            Votre team sera visible sur la page Teams publique !
+          </div>
+        )}
+      </div>
   
       <form onSubmit={handleSubmit} className="space-y-6">
   
@@ -204,31 +261,49 @@ const IndexeurTeams = ({ user }) => {
   
         <div>
   <label htmlFor="couverture" className="block text-sm font-semibold mb-2">
-    🖼️ Image de couverture
+    Logo / Couverture <span className="text-red-400">*</span>
   </label>
 
-  <div className="relative border-2 border-dashed border-gray-600 bg-gray-800 rounded-xl p-6 flex flex-col items-center justify-center hover:border-indigo-500 transition-all duration-200">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-10 w-10 text-indigo-400 mb-2"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M7 16V4m0 0L3 8m4-4l4 4M21 12v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8"
-      />
-    </svg>
-    <p className="text-sm text-gray-400 mb-1 text-center">
-      Glissez-déposez une image ou cliquez pour sélectionner un fichier
-    </p>
+  <div className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center transition-all duration-200 ${
+    formData.couverture 
+      ? 'border-green-500 bg-green-500/10' 
+      : 'border-gray-600 bg-gray-800 hover:border-indigo-500'
+  }`}>
+    {formData.couverture ? (
+      <>
+        <FiCheck className="h-10 w-10 text-green-400 mb-2" />
+        <p className="text-sm text-green-400 font-medium text-center">
+          {formData.couverture.name}
+        </p>
+        <p className="text-xs text-gray-400 mt-1">Cliquez pour changer</p>
+      </>
+    ) : (
+      <>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-10 w-10 text-indigo-400 mb-2"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M7 16V4m0 0L3 8m4-4l4 4M21 12v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8"
+          />
+        </svg>
+        <p className="text-sm text-gray-400 mb-1 text-center">
+          Glissez-déposez une image ou cliquez pour sélectionner
+        </p>
+        <p className="text-xs text-red-400">Obligatoire pour apparaître sur la page Teams</p>
+      </>
+    )}
     <input
       type="file"
       id="couverture"
       name="couverture"
+      accept="image/*"
       onChange={handleFileChange}
       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
     />

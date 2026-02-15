@@ -64,7 +64,7 @@ const CoverBackground = () => {
         ))}
       </div>
       {/* Overlay gradient sombre */}
-      <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-900/80 to-gray-900/95" />
+      <div className="absolute inset-0 bg-gradient-to-b from-gray-900/40 via-gray-900/55 to-gray-900/90" />
     </div>
   );
 };

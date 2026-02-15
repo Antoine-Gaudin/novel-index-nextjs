@@ -11,21 +11,45 @@ import Link from "next/link";
 import { slugify } from "@/utils/slugify";
 import CoverBackground from "../../components/CoverBackground";
 import { motion, AnimatePresence } from "framer-motion";
+import { FiShare2, FiCopy, FiCheck, FiClock, FiUsers, FiBookOpen, FiCalendar, FiTrendingUp } from "react-icons/fi";
 
 const OeuvrePage = () => {
   const pathname = usePathname();
   const parts = pathname.split("/");
-  const documentId = parts[2].split("-")[0];
+  // Extract documentId - handle format /oeuvre/documentId-slug
+  // DocumentId is the part before the first hyphen in the last segment
+  const rawSegment = parts[2] || "";
+  const firstHyphenIndex = rawSegment.indexOf("-");
+  const documentId = firstHyphenIndex > 0 ? rawSegment.substring(0, firstHyphenIndex) : rawSegment;
+  
   const [oeuvre, setOeuvre] = useState(null);
   const [chapitres, setChapitres] = useState([]); // Liste des chapitres
   const [selectedChapter, setSelectedChapter] = useState(null); // Chapitre sélectionné pour le pop-up
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionId, setSubscriptionId] = useState(null);
   const [showAllTags, setShowAllTags] = useState(false);
   const [showAllGenres, setShowAllGenres] = useState(false);
   const [user, setUser] = useState(null);
+  
+  // Enrichissements
+  const [team, setTeam] = useState(null);
+  const [subscribersCount, setSubscribersCount] = useState(0);
+  const [similarOeuvres, setSimilarOeuvres] = useState([]);
+  const [lastChapterDate, setLastChapterDate] = useState(null);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Fermer le menu partage quand on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = () => setShowShareMenu(false);
+    if (showShareMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showShareMenu]);
 
   // Récupérer l'utilisateur connecté
   useEffect(() => {
@@ -47,28 +71,103 @@ const OeuvrePage = () => {
 
   useEffect(() => {
     const fetchOeuvre = async () => {
+      if (!documentId) {
+        setError("ID d'œuvre invalide");
+        setLoading(false);
+        return;
+      }
+
       try {
+        // Fetch oeuvre with all needed relations
         const res = await fetch(
-          `${apiUrl}/api/oeuvres/${documentId}?populate[0]=couverture&populate[1]=tags&populate[2]=genres&populate[3]=chapitres`
+          `${apiUrl}/api/oeuvres/${documentId}?populate[0]=couverture&populate[1]=tags&populate[2]=genres&populate[3]=chapitres&populate[4]=achatlivres`
         );
-        if (!res.ok) throw new Error("Erreur API");
+        
+        if (!res.ok) {
+          if (res.status === 404 || res.status === 400) {
+            setError("Œuvre non trouvée ou supprimée");
+          } else {
+            setError(`Erreur serveur (${res.status})`);
+          }
+          setLoading(false);
+          return;
+        }
+        
         const data = await res.json();
+        if (!data.data) {
+          setError("Œuvre non trouvée");
+          setLoading(false);
+          return;
+        }
+        
         setOeuvre(data.data);
         const sortedChapitres = (data.data.chapitres || []).sort(
           (a, b) => a.order - b.order
         );
         setChapitres(sortedChapitres);
+        
+        // Calculer la date du dernier chapitre
+        if (sortedChapitres.length > 0) {
+          const lastCh = sortedChapitres[sortedChapitres.length - 1];
+          if (lastCh.publishedAt || lastCh.createdAt) {
+            setLastChapterDate(new Date(lastCh.publishedAt || lastCh.createdAt));
+          }
+        }
       } catch (err) {
         console.error("Erreur lors de la récupération de l'œuvre :", err);
+        setError("Impossible de charger cette œuvre");
       } finally {
         setLoading(false);
       }
     };
 
-    if (documentId) {
-      fetchOeuvre();
-    }
-  }, [documentId]);
+    fetchOeuvre();
+  }, [documentId, apiUrl]);
+
+  // Fetch enrichissements: team, stats, similaires
+  useEffect(() => {
+    if (!oeuvre) return;
+    
+    const fetchEnrichments = async () => {
+      try {
+        // Fetch en parallèle
+        const [teamRes, subscribersRes, similarRes] = await Promise.all([
+          // Team via field traduction
+          oeuvre.traduction 
+            ? fetch(`${apiUrl}/api/teams?filters[nom][$eqi]=${encodeURIComponent(oeuvre.traduction)}&populate=logo&pagination[limit]=1`)
+            : Promise.resolve({ json: () => ({ data: [] }) }),
+          // Nombre d'abonnés
+          fetch(`${apiUrl}/api/checkoeuvretimes?filters[oeuvres][documentId][$eq]=${oeuvre.documentId}&pagination[limit]=1`),
+          // Œuvres similaires basées sur les genres
+          oeuvre.genres?.length > 0
+            ? fetch(`${apiUrl}/api/oeuvres?populate=couverture&filters[genres][titre][$in]=${oeuvre.genres.slice(0, 3).map(g => encodeURIComponent(g.titre)).join(',')}&filters[documentId][$ne]=${oeuvre.documentId}&pagination[limit]=6`)
+            : Promise.resolve({ json: () => ({ data: [] }) })
+        ]);
+
+        const [teamData, subscribersData, similarData] = await Promise.all([
+          teamRes.json ? teamRes.json() : { data: [] },
+          subscribersRes.json(),
+          similarRes.json ? similarRes.json() : { data: [] }
+        ]);
+
+        // Team
+        if (teamData.data?.[0]) {
+          setTeam(teamData.data[0]);
+        }
+
+        // Nombre d'abonnés
+        setSubscribersCount(subscribersData.meta?.pagination?.total || 0);
+
+        // Œuvres similaires (filtrer pour ne pas inclure l'œuvre actuelle)
+        const similaires = (similarData.data || []).filter(o => o.documentId !== oeuvre.documentId);
+        setSimilarOeuvres(similaires.slice(0, 5));
+      } catch (err) {
+        console.error("Erreur enrichissements:", err);
+      }
+    };
+
+    fetchEnrichments();
+  }, [oeuvre, apiUrl]);
 
   useEffect(() => {
     const checkAbonnement = async () => {
@@ -185,6 +284,59 @@ const OeuvrePage = () => {
     setSubscriptionId(null);
   };
 
+  // Fonction de partage
+  const handleShare = async (e) => {
+    e.stopPropagation(); // Empêche la fermeture immédiate par handleClickOutside
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: oeuvre?.titre,
+          text: `Découvrez "${oeuvre?.titre}" sur Novel Index`,
+          url: url,
+        });
+      } catch (err) {
+        // L'utilisateur a annulé ou erreur
+      }
+    } else {
+      setShowShareMenu(!showShareMenu); // Toggle pour pouvoir fermer en recliquant
+    }
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Erreur copie:", err);
+    }
+  };
+
+  // Estimation temps de lecture (environ 5 min par chapitre en moyenne)
+  const estimatedReadingTime = chapitres.length * 5;
+  const formatReadingTime = (minutes) => {
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
+  };
+
+  // Formater la date relative
+  const formatRelativeDate = (date) => {
+    if (!date) return null;
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return "Aujourd'hui";
+    if (diffDays === 1) return "Hier";
+    if (diffDays < 7) return `Il y a ${diffDays} jours`;
+    if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} semaines`;
+    if (diffDays < 365) return `Il y a ${Math.floor(diffDays / 30)} mois`;
+    return `Il y a ${Math.floor(diffDays / 365)} ans`;
+  };
+
   if (loading)
     return (
       <div className="bg-gray-900 text-white min-h-screen relative">
@@ -222,8 +374,33 @@ const OeuvrePage = () => {
         </div>
       </div>
     );
-  if (!oeuvre)
-    return <p className="text-center text-red-500 mt-10">Œuvre introuvable.</p>;
+  
+  if (error || !oeuvre)
+    return (
+      <div className="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-4">📚</div>
+          <h1 className="text-2xl font-bold mb-2">{error || "Œuvre introuvable"}</h1>
+          <p className="text-gray-400 mb-6">
+            Cette œuvre n'existe pas ou a été supprimée.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Link 
+              href="/Oeuvres" 
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+            >
+              Voir les œuvres
+            </Link>
+            <button 
+              onClick={() => window.history.back()} 
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            >
+              Retour
+            </button>
+          </div>
+        </div>
+      </div>
+    );
 
   // Gestion de la redirection avec pop-up
   const handleReadClick = (type) => {
@@ -353,7 +530,114 @@ const OeuvrePage = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                 </svg>                {isSubscribed ? "Se désabonner" : "S’abonner"}
               </button>
+              
+              {/* Bouton Partager */}
+              <div className="relative">
+                <button
+                  className="px-5 py-3 bg-gray-700 text-white rounded-lg shadow-lg hover:bg-gray-600 transition-all flex items-center gap-2 font-medium"
+                  onClick={(e) => handleShare(e)}
+                >
+                  <FiShare2 className="w-5 h-5" />
+                  Partager
+                </button>
+                
+                {/* Menu de partage */}
+                {showShareMenu && (
+                  <div 
+                    className="absolute top-full left-0 mt-2 bg-gray-800 border border-gray-700 rounded-xl shadow-xl p-3 space-y-2 z-50 min-w-[200px]"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => {
+                        copyToClipboard();
+                        setShowShareMenu(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-700 rounded-lg transition-colors text-left"
+                    >
+                      {copied ? <FiCheck className="text-green-400" /> : <FiCopy />}
+                      <span>{copied ? "Copié !" : "Copier le lien"}</span>
+                    </button>
+                    <a
+                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Découvrez "${oeuvre?.titre}" sur Novel Index`)}&url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-700 rounded-lg transition-colors"
+                      onClick={() => setShowShareMenu(false)}
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      <span>Twitter / X</span>
+                    </a>
+                    <a
+                      href={`https://www.reddit.com/submit?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}&title=${encodeURIComponent(oeuvre?.titre || '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-700 rounded-lg transition-colors"
+                      onClick={() => setShowShareMenu(false)}
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+                      <span>Reddit</span>
+                    </a>
+                    <button
+                      onClick={() => setShowShareMenu(false)}
+                      className="w-full text-center text-sm text-gray-500 hover:text-gray-300 pt-2 border-t border-gray-700"
+                    >
+                      Fermer
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
+            
+            {/* Stats rapides */}
+            <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-2">
+              {subscribersCount > 0 && (
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <FiUsers className="text-pink-400" />
+                  <span><strong className="text-white">{subscribersCount}</strong> abonné{subscribersCount > 1 ? 's' : ''}</span>
+                </div>
+              )}
+              {chapitres.length > 0 && (
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <FiClock className="text-blue-400" />
+                  <span>~<strong className="text-white">{formatReadingTime(estimatedReadingTime)}</strong> de lecture</span>
+                </div>
+              )}
+              {lastChapterDate && (
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <FiCalendar className="text-green-400" />
+                  <span>MAJ <strong className="text-white">{formatRelativeDate(lastChapterDate)}</strong></span>
+                </div>
+              )}
+            </div>
+            
+            {/* Lien Team */}
+            {team && (
+              <Link 
+                href={`/Teams/${team.documentId}-${slugify(team.nom)}`}
+                className="inline-flex items-center gap-3 bg-gray-800/60 hover:bg-gray-700/60 border border-gray-700/50 hover:border-indigo-500/50 rounded-xl px-4 py-3 transition-all group"
+              >
+                {team.logo?.url ? (
+                  <Image
+                    src={team.logo.url}
+                    alt={team.nom}
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-indigo-600/30 rounded-lg flex items-center justify-center">
+                    <FiUsers className="text-indigo-400" />
+                  </div>
+                )}
+                <div className="text-left">
+                  <p className="text-xs text-gray-400">Traduit par</p>
+                  <p className="font-medium group-hover:text-indigo-400 transition-colors">{team.nom}</p>
+                </div>
+                <svg className="w-4 h-4 text-gray-500 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -566,14 +850,42 @@ const OeuvrePage = () => {
           )}
         </div>
 
+        {/* Bandeau Licence */}
+        {oeuvre.licence && (
+          <div className="bg-gradient-to-r from-amber-600/30 to-orange-600/30 border border-amber-500 rounded-xl p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <svg className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div className="flex-1">
+                <h4 className="font-bold text-amber-400 text-lg">Oeuvre sous licence officielle</h4>
+                <p className="text-gray-300 text-sm mt-1">
+                  Cette oeuvre a été licenciée. Les chapitres de la traduction amateur ne sont plus disponibles.
+                </p>
+                {oeuvre.oeuvre_licence && (
+                  <Link
+                    href={`/oeuvre/${oeuvre.oeuvre_licence.documentId}-${slugify(oeuvre.oeuvre_licence.titre)}`}
+                    className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                    Voir la version officielle : {oeuvre.oeuvre_licence.titre}
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Chapitres et Achats */}
         <div className="bg-gray-800/50 rounded-xl p-4 space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
-            Chapitres
-            {chapitres.length > 0 && (
+            {oeuvre.licence ? "Où acheter" : "Chapitres"}
+            {!oeuvre.licence && chapitres.length > 0 && (
               <span className="text-sm font-normal text-gray-400">({chapitres.length} disponibles)</span>
             )}
           </h3>
@@ -583,6 +895,50 @@ const OeuvrePage = () => {
             totalChapitres={chapitres.length}
           />
         </div>
+
+        {/* Œuvres similaires */}
+        {similarOeuvres.length > 0 && (
+          <div className="bg-gray-800/50 rounded-xl p-4 space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <FiTrendingUp className="w-5 h-5 text-purple-400" />
+              Œuvres similaires
+              <span className="text-sm font-normal text-gray-400">
+                Basées sur les genres communs
+              </span>
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+              {similarOeuvres.map((similar) => (
+                <Link
+                  key={similar.documentId}
+                  href={`/oeuvre/${similar.documentId}-${slugify(similar.titre)}`}
+                  className="group"
+                >
+                  <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-700">
+                    {similar.couverture?.url ? (
+                      <Image
+                        src={similar.couverture.url}
+                        alt={similar.titre}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FiBookOpen className="text-3xl text-gray-600" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-sm font-medium line-clamp-2 group-hover:text-indigo-300 transition-colors">
+                        {similar.titre}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">{similar.type || "Novel"}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Section Commentaires */}
         <div className="bg-gray-800/50 rounded-xl p-4 space-y-4">

@@ -1,39 +1,45 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import FormMoChapitre from "../components/FormMoChapitre";
 
-const MoChapitre = ({ user, oeuvre }) => {
+const STRAPI_URL = "https://novel-index-strapi.onrender.com";
+
+const MoChapitre = ({ user, oeuvre, onDirty }) => {
   const [chapitres, setChapitres] = useState([]);
-  const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [feedback, setFeedback] = useState(null);
   const [showUrls, setShowUrls] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
-  const [showAllUrls, setShowAllUrls] = useState(false); // ✅ toggle global URL
+  const [showAllUrls, setShowAllUrls] = useState(false);
   const [bulkTome, setBulkTome] = useState("");
   const [modifiedChapitreIds, setModifiedChapitreIds] = useState(new Set());
+  const [selectedIds, setSelectedIds] = useState(new Set());
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState("");
 
   const fetchChapitres = async () => {
+    setLoading(true);
     try {
       const jwt = localStorage.getItem("jwt");
       const response = await axios.get(
-        `https://novel-index-strapi.onrender.com/api/oeuvres/${oeuvre.documentId}?populate=chapitres`,
-        {
-          headers: { Authorization: `Bearer ${jwt}` },
-        }
+        `${STRAPI_URL}/api/oeuvres/${oeuvre.documentId}?populate=chapitres`,
+        { headers: { Authorization: `Bearer ${jwt}` } }
       );
       setChapitres(
-        (response.data.data.chapitres || []).sort((a, b) => Number(a.order) - Number(b.order))
+        (response.data.data.chapitres || []).sort(
+          (a, b) => Number(a.order) - Number(b.order)
+        )
       );
-      
     } catch (error) {
-      console.error(
-        "Erreur lors de la récupération des chapitres :",
-        error.response?.data || error.message
-      );
-      setMessage("Erreur lors de la récupération des chapitres.");
+      console.error("Erreur fetch chapitres:", error);
+      setFeedback({
+        type: "error",
+        message: "Erreur lors de la recuperation des chapitres.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,45 +47,81 @@ const MoChapitre = ({ user, oeuvre }) => {
     fetchChapitres();
   }, [oeuvre]);
 
-  const handleChapitreChange = (index, field, value) => {
+  // Correction du bug : utilise documentId au lieu de l'index filtre
+  const handleChapitreChange = (documentId, field, value) => {
     const updated = [...chapitres];
-    updated[index][field] = value;
-    setChapitres(updated);
+    const idx = updated.findIndex((c) => c.documentId === documentId);
+    if (idx === -1) return;
 
-    const id = updated[index].documentId;
-    setModifiedChapitreIds((prev) => new Set(prev).add(id));
+    updated[idx] = { ...updated[idx], [field]: value };
+    setChapitres(updated);
+    setModifiedChapitreIds((prev) => new Set(prev).add(documentId));
+    onDirty?.(true);
   };
 
-  const toggleUrl = (index) => {
+  const toggleUrl = (documentId) => {
     setShowUrls((prev) => ({
       ...prev,
-      [index]: !prev[index],
+      [documentId]: !prev[documentId],
     }));
   };
 
-  const handleSaveChapitres = async () => {
+  const toggleSelect = (documentId) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(documentId)) {
+        next.delete(documentId);
+      } else {
+        next.add(documentId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (filteredList) => {
+    const allFilteredIds = filteredList.map((c) => c.documentId);
+    const allSelected = allFilteredIds.every((id) => selectedIds.has(id));
+
+    if (allSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        allFilteredIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        allFilteredIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  };
+
+  const handleSaveChapitres = useCallback(async () => {
     try {
       const jwt = localStorage.getItem("jwt");
 
-// 🔁 Force un ordre croissant à partir de 1 (ou 0 si tu préfères)
-const reorderedChapitres = [...chapitres]
-  .sort((a, b) => Number(a.order) - Number(b.order))
-  .map((chap, index) => ({
-    ...chap,
-    order: index + 1, // <- ordres stricts 1, 2, 3, ...
-  }));
+      // Force un ordre croissant a partir de 1
+      const reorderedChapitres = [...chapitres]
+        .sort((a, b) => Number(a.order) - Number(b.order))
+        .map((chap, index) => ({
+          ...chap,
+          order: index + 1,
+        }));
 
-setChapitres(reorderedChapitres);
+      setChapitres(reorderedChapitres);
 
-// Ensuite, sélectionne les modifiés
-const chaptersToUpdate = reorderedChapitres.filter((chap) =>
-  modifiedChapitreIds.has(chap.documentId)
-);
-
+      const chaptersToUpdate = reorderedChapitres.filter((chap) =>
+        modifiedChapitreIds.has(chap.documentId)
+      );
 
       if (chaptersToUpdate.length === 0) {
-        setMessage("Aucune modification à enregistrer.");
-        setStatusMessage("Aucune mise à jour nécessaire.");
+        setFeedback({
+          type: "info",
+          message: "Aucune modification a enregistrer.",
+        });
+        setStatusMessage("");
+        setTimeout(() => setFeedback(null), 3000);
         return;
       }
 
@@ -99,58 +141,72 @@ const chaptersToUpdate = reorderedChapitres.filter((chap) =>
 
         try {
           await axios.put(
-            `https://novel-index-strapi.onrender.com/api/chapitres/${chapitre.documentId}`,
+            `${STRAPI_URL}/api/chapitres/${chapitre.documentId}`,
             { data: filteredChapitre },
             { headers: { Authorization: `Bearer ${jwt}` } }
           );
 
           successCount++;
-          // Pause automatique toutes les 80 requêtes
+
           if (successCount % 80 === 0 && successCount !== total) {
             setStatusMessage(
-              `🛑 Pause 5 sec après ${successCount} chapitres...`
+              `Pause 5s apres ${successCount} chapitres...`
             );
             await new Promise((r) => setTimeout(r, 5000));
-            setStatusMessage("✅ Reprise...");
+            setStatusMessage("Reprise...");
           }
+
           const pourcentage = Math.round((successCount / total) * 100);
           setProgress(pourcentage);
           setStatusMessage(
-            `💾 Enregistrement ${successCount}/${total} chapitres...`
+            `Enregistrement ${successCount}/${total} chapitres...`
           );
-
         } catch (err) {
-          console.error(`❌ Échec mise à jour chapitre ${chapitre.titre}`, err);
-          setStatusMessage(`❌ Erreur sur "${chapitre.titre}"`);
+          console.error(`Echec mise a jour chapitre ${chapitre.titre}`, err);
+          setStatusMessage(`Erreur sur "${chapitre.titre}"`);
         }
       }
 
-      setMessage("✅ Tous les chapitres ont été enregistrés.");
-      setStatusMessage("✅ Terminé !");
+      setFeedback({
+        type: "success",
+        message: `${successCount} chapitre${successCount > 1 ? "s" : ""} enregistre${successCount > 1 ? "s" : ""} avec succes.`,
+      });
+      setStatusMessage("Termine !");
       setModifiedChapitreIds(new Set());
+      onDirty?.(false);
 
+      await fetchChapitres();
 
-// 🔁 Re-fetch les chapitres mis à jour
-await fetchChapitres();
-
-      // Affiche encore la barre 1 seconde après la fin
       setTimeout(() => {
         setProgress(0);
         setStatusMessage("");
-      }, 1500);
+        setFeedback(null);
+      }, 3000);
     } catch (error) {
-      console.error(
-        "🔥 Erreur globale :",
-        error.response?.data || error.message
-      );
-      setMessage("❌ Erreur lors de la mise à jour.");
-      setStatusMessage("Erreur générale.");
+      console.error("Erreur globale:", error.response?.data || error.message);
+      setFeedback({
+        type: "error",
+        message: "Erreur lors de la mise a jour des chapitres.",
+      });
+      setStatusMessage("");
     }
-  };
+  }, [chapitres, modifiedChapitreIds, oeuvre, onDirty]);
 
-  const filteredChapitres = chapitres
-  .filter((chapitre) => {
+  // Ctrl+S shortcut
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        handleSaveChapitres();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleSaveChapitres]);
+
+  const filteredChapitres = chapitres.filter((chapitre) => {
     const query = searchTerm.toLowerCase().trim();
+    if (!query) return true;
 
     const matchesTitre = chapitre.titre?.toLowerCase().includes(query);
 
@@ -168,27 +224,32 @@ await fetchChapitres();
     })();
 
     return matchesTitre || matchesOrderRange;
-  })
-
+  });
 
   return (
     <FormMoChapitre
-    chapitres={chapitres}
-    setChapitres={setChapitres}
-    searchTerm={searchTerm}
-    setSearchTerm={setSearchTerm}
-    bulkTome={bulkTome}
-    setBulkTome={setBulkTome}
-    showAllUrls={showAllUrls}
-    setShowAllUrls={setShowAllUrls}
-    showUrls={showUrls}
-    toggleUrl={toggleUrl}
-    filteredChapitres={filteredChapitres}
-    handleChapitreChange={handleChapitreChange}
-    handleSaveChapitres={handleSaveChapitres}
-    statusMessage={statusMessage}
-    progress={progress}
-  />
+      chapitres={chapitres}
+      setChapitres={setChapitres}
+      searchTerm={searchTerm}
+      setSearchTerm={setSearchTerm}
+      bulkTome={bulkTome}
+      setBulkTome={setBulkTome}
+      showAllUrls={showAllUrls}
+      setShowAllUrls={setShowAllUrls}
+      showUrls={showUrls}
+      toggleUrl={toggleUrl}
+      selectedIds={selectedIds}
+      toggleSelect={toggleSelect}
+      toggleSelectAll={toggleSelectAll}
+      filteredChapitres={filteredChapitres}
+      modifiedChapitreIds={modifiedChapitreIds}
+      handleChapitreChange={handleChapitreChange}
+      handleSaveChapitres={handleSaveChapitres}
+      feedback={feedback}
+      statusMessage={statusMessage}
+      progress={progress}
+      loading={loading}
+    />
   );
 };
 

@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Geist, Geist_Mono } from "next/font/google";
 import ClientLayout from "./components/ClientLayout";
+import Footer from "./components/Footer";
 import JsonLd from "./components/JsonLd";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -92,6 +93,7 @@ export default function RootLayout({ children }) {
         <ClientLayout>
           {children}
         </ClientLayout>
+        <Footer />
       </body>
     </html>
   );

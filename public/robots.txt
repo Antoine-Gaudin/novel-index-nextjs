@@ -1,6 +1,17 @@
-# *
 User-agent: *
 Allow: /
+
+Disallow: /Profil
+Disallow: /administration
+Disallow: /importoeuvre
+Disallow: /scrapeauto
+Disallow: /scrapping
+Disallow: /pagescrapetest
+Disallow: /addchapter
+Disallow: /indexeur
+Disallow: /Modification
+Disallow: /admin-teams-relations
+Disallow: /api/
 
 # Host
 Host: https://www.novel-index.com

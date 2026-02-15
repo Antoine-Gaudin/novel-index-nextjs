@@ -6,7 +6,16 @@
       "Bash(npx next build)",
       "Bash(curl:*)",
       "Bash(npx next dev:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(findstr:*)",
+      "WebSearch",
+      "Bash(node -e:*)",
+      "Bash(node -c:*)",
+      "Bash(npx kill-port:*)",
+      "WebFetch(domain:www.novel-index.com)",
+      "WebFetch(domain:developers.google.com)",
+      "Bash(config \")"
     ]
   }
 }

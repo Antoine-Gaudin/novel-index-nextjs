@@ -11,6 +11,7 @@ const menuItems = [
 
 const conditionalItems = [
   { key: "indexeur", label: "Indexeur", emoji: "\uD83E\uDDE9", condition: (user) => user?.indexeur || user?.proprietaire },
+  { key: "bulktags", label: "Tags en masse", emoji: "\uD83C\uDFF7\uFE0F", condition: (user) => user?.email === "agaudin76@gmail.com" },
   { key: "administration", label: "Administration", emoji: "\uD83D\uDEE0\uFE0F", condition: (user) => user?.admin },
 ];
 
