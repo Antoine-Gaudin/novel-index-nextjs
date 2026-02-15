@@ -10,6 +10,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { slugify } from "@/utils/slugify";
 import CoverBackground from "../../components/CoverBackground";
+import KanveoBanner from "../../components/KanveoBanner";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiShare2, FiCopy, FiCheck, FiClock, FiUsers, FiBookOpen, FiCalendar, FiTrendingUp } from "react-icons/fi";
 
@@ -750,6 +751,9 @@ const OeuvrePage = () => {
             )}
           </div>
         </div>
+
+        {/* Publicité Kanveo */}
+        <KanveoBanner format="banner" className="py-2" delay={1000} />
 
         {oeuvre.synopsis && (
           <div className="bg-gray-800/40 backdrop-blur-md rounded-xl p-4 border border-gray-700/30">

@@ -9,6 +9,7 @@ import SortieHier from "./components/SortieHier";
 import SortieOeuvre from "./components/SortieOeuvre";
 import CoverBackground from "./components/CoverBackground";
 import SearchModal from "./components/SearchModal";
+import KanveoBanner from "./components/KanveoBanner";
 
 export default function Home() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -134,6 +135,9 @@ export default function Home() {
         {/* Dégradé en bas du Hero Header */}
         <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-b from-transparent to-gray-900 z-20"></div>
       </div>
+
+      {/* Publicité Kanveo */}
+      <KanveoBanner format="banner" className="py-6 px-4" delay={1200} />
 
       {/* Sections */}
       <div id="sorties-jour">
