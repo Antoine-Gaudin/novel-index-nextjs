@@ -110,6 +110,11 @@ export default function TeamPage() {
     );
   }
 
+  // Support des différents formats de couverture
+  const coverUrl = typeof team.couverture === "string"
+    ? team.couverture
+    : team.couverture?.formats?.medium?.url || team.couverture?.formats?.small?.url || team.couverture?.url;
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Header avec bannière */}
@@ -117,9 +122,9 @@ export default function TeamPage() {
         {/* Bannière/Couverture */}
         <div className="h-64 md:h-80 relative overflow-hidden">
           <CoverBackground />
-          {team.couverture?.url && (
+          {coverUrl && (
             <Image
-              src={team.couverture.url}
+              src={coverUrl}
               alt={team.titre}
               fill
               className="object-cover opacity-30 z-[1]"
@@ -129,13 +134,13 @@ export default function TeamPage() {
         </div>
 
         {/* Contenu du header */}
-        <div className="max-w-7xl mx-auto px-4 relative -mt-32">
+        <div className="max-w-7xl mx-auto px-4 relative -mt-32 z-10">
           <div className="flex flex-col md:flex-row gap-6 items-end md:items-end">
             {/* Logo/Avatar */}
             <div className="w-40 h-40 rounded-xl overflow-hidden border-4 border-gray-900 bg-gray-800 shadow-xl flex-shrink-0">
-              {team.couverture?.url ? (
+              {coverUrl ? (
                 <Image
-                  src={team.couverture.url}
+                  src={coverUrl}
                   alt={team.titre}
                   width={160}
                   height={160}
@@ -218,38 +223,45 @@ export default function TeamPage() {
 
               {team.oeuvres?.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {team.oeuvres.map((oeuvre) => (
-                    <Link
-                      key={oeuvre.documentId}
-                      href={`/oeuvre/${oeuvre.documentId}-${slugify(oeuvre.titre)}`}
-                      className="group"
-                    >
-                      <div className="bg-gray-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-indigo-500 transition-all">
-                        <div className="aspect-[3/4] relative">
-                          {oeuvre.couverture?.url ? (
-                            <Image
-                              src={oeuvre.couverture.url}
-                              alt={oeuvre.titre}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-600 flex items-center justify-center">
-                              <FiBook className="text-3xl text-gray-500" />
-                            </div>
-                          )}
+                  {team.oeuvres.map((oeuvre) => {
+                    // Support des formats de couverture pour les œuvres
+                    const oeuvreCoverUrl = typeof oeuvre.couverture === "string"
+                      ? oeuvre.couverture
+                      : oeuvre.couverture?.formats?.medium?.url || oeuvre.couverture?.formats?.small?.url || oeuvre.couverture?.url;
+                    
+                    return (
+                      <Link
+                        key={oeuvre.documentId}
+                        href={`/oeuvre/${oeuvre.documentId}-${slugify(oeuvre.titre)}`}
+                        className="group"
+                      >
+                        <div className="bg-gray-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-indigo-500 transition-all">
+                          <div className="aspect-[3/4] relative">
+                            {oeuvreCoverUrl ? (
+                              <Image
+                                src={oeuvreCoverUrl}
+                                alt={oeuvre.titre}
+                                fill
+                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-600 flex items-center justify-center">
+                                <FiBook className="text-3xl text-gray-500" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-2">
+                            <p className="text-sm font-medium truncate group-hover:text-indigo-400 transition-colors">
+                              {oeuvre.titre}
+                            </p>
+                            {oeuvre.type && (
+                              <p className="text-xs text-gray-500">{oeuvre.type}</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="p-2">
-                          <p className="text-sm font-medium truncate group-hover:text-indigo-400 transition-colors">
-                            {oeuvre.titre}
-                          </p>
-                          {oeuvre.type && (
-                            <p className="text-xs text-gray-500">{oeuvre.type}</p>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-gray-500 text-center py-8">

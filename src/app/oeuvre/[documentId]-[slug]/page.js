@@ -135,7 +135,7 @@ const OeuvrePage = () => {
         const [teamRes, subscribersRes, similarRes] = await Promise.all([
           // Team via field traduction
           oeuvre.traduction 
-            ? fetch(`${apiUrl}/api/teams?filters[nom][$eqi]=${encodeURIComponent(oeuvre.traduction)}&populate=logo&pagination[limit]=1`)
+            ? fetch(`${apiUrl}/api/teams?filters[titre][$eqi]=${encodeURIComponent(oeuvre.traduction)}&populate=couverture&pagination[limit]=1`)
             : Promise.resolve({ json: () => ({ data: [] }) }),
           // Nombre d'abonnés
           fetch(`${apiUrl}/api/checkoeuvretimes?filters[oeuvres][documentId][$eq]=${oeuvre.documentId}&pagination[limit]=1`),
@@ -614,13 +614,13 @@ const OeuvrePage = () => {
             {/* Lien Team */}
             {team && (
               <Link 
-                href={`/Teams/${team.documentId}-${slugify(team.nom)}`}
+                href={`/Teams/${team.documentId}-${slugify(team.titre)}`}
                 className="inline-flex items-center gap-3 bg-gray-800/60 hover:bg-gray-700/60 border border-gray-700/50 hover:border-indigo-500/50 rounded-xl px-4 py-3 transition-all group"
               >
-                {team.logo?.url ? (
+                {(team.couverture?.formats?.small?.url || team.couverture?.url) ? (
                   <Image
-                    src={team.logo.url}
-                    alt={team.nom}
+                    src={team.couverture?.formats?.small?.url || team.couverture.url}
+                    alt={team.titre}
                     width={32}
                     height={32}
                     className="w-8 h-8 rounded-lg object-cover"
@@ -632,7 +632,7 @@ const OeuvrePage = () => {
                 )}
                 <div className="text-left">
                   <p className="text-xs text-gray-400">Traduit par</p>
-                  <p className="font-medium group-hover:text-indigo-400 transition-colors">{team.nom}</p>
+                  <p className="font-medium group-hover:text-indigo-400 transition-colors">{team.titre}</p>
                 </div>
                 <svg className="w-4 h-4 text-gray-500 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

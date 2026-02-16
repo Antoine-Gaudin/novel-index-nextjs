@@ -22,6 +22,11 @@ export async function generateMetadata({ params }) {
     const data = await res.json();
     const team = data.data;
 
+    // Support des différents formats de couverture
+    const coverUrl = typeof team.couverture === "string"
+      ? team.couverture
+      : team.couverture?.formats?.medium?.url || team.couverture?.formats?.small?.url || team.couverture?.url;
+
     return {
       title: `${team.titre} | Teams | Novel-Index`,
       description: team.description?.slice(0, 160) || `Découvrez l'équipe de traduction ${team.titre} sur Novel-Index.`,
@@ -31,7 +36,7 @@ export async function generateMetadata({ params }) {
         description: team.description?.slice(0, 160) || `Équipe de traduction ${team.titre}`,
         url: `https://www.novel-index.com/Teams/${fullParam}`,
         siteName: "Novel-Index",
-        images: team.couverture?.url ? [{ url: team.couverture.url, alt: team.titre }] : [],
+        images: coverUrl ? [{ url: coverUrl, alt: team.titre }] : [],
         locale: "fr_FR",
         type: "profile",
       },
@@ -39,7 +44,7 @@ export async function generateMetadata({ params }) {
         card: "summary_large_image",
         title: `${team.titre} | Novel-Index`,
         description: team.description?.slice(0, 160) || `Équipe de traduction ${team.titre}`,
-        images: team.couverture?.url ? [team.couverture.url] : [],
+        images: coverUrl ? [coverUrl] : [],
       },
       alternates: {
         canonical: `https://www.novel-index.com/Teams/${fullParam}`,
@@ -70,13 +75,18 @@ export default async function TeamLayout({ children, params }) {
       const data = await res.json();
       const team = data.data;
 
+      // Support des différents formats de couverture
+      const coverUrl = typeof team.couverture === "string"
+        ? team.couverture
+        : team.couverture?.formats?.medium?.url || team.couverture?.formats?.small?.url || team.couverture?.url;
+
       teamJsonLd = {
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": team.titre,
         "description": team.description || `Équipe de traduction ${team.titre}`,
         "url": `https://www.novel-index.com/Teams/${fullParam}`,
-        "logo": team.couverture?.url || undefined,
+        "logo": coverUrl || undefined,
         "sameAs": team.teamliens?.map(l => l.url).filter(Boolean) || [],
         "numberOfEmployees": {
           "@type": "QuantitativeValue",

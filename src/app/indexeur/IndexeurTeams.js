@@ -113,16 +113,23 @@ const IndexeurTeams = ({ user }) => {
       if (formData.couverture) {
         const coverData = new FormData();
         coverData.append("files", formData.couverture);
-        coverData.append("ref", "api::team.team");
-        coverData.append("refId", teamId);
-        coverData.append("field", "couverture");
 
         try {
-          await axios.post("https://novel-index-strapi.onrender.com/api/upload", coverData, {
+          const uploadRes = await axios.post("https://novel-index-strapi.onrender.com/api/upload", coverData, {
             headers: {
               Authorization: `Bearer ${jwt}`,
             },
           });
+
+          const uploadedImageId = uploadRes.data[0]?.id;
+          if (uploadedImageId) {
+            // Associer la couverture à la team via PUT
+            await axios.put(
+              `https://novel-index-strapi.onrender.com/api/teams/${teamDocumentId}`,
+              { data: { couverture: uploadedImageId } },
+              { headers: { Authorization: `Bearer ${jwt}` } }
+            );
+          }
         } catch (uploadError) {
           console.error("Erreur upload couverture:", uploadError.response?.data || uploadError.message);
           setMessage("Team creee mais erreur lors de l'upload de la couverture.");

@@ -54,7 +54,7 @@ const MoTeams = ({ user, team, onDirty }) => {
         const data = response.data.data || {};
         setTeamData(data);
         setOriginalData(data);
-        setPreview(data?.couverture?.url || null);
+        setPreview(data?.couverture?.formats?.medium?.url || data?.couverture?.formats?.small?.url || data?.couverture?.url || null);
         setNewCouverture(null);
 
         // Set associated oeuvres
@@ -167,18 +167,18 @@ const MoTeams = ({ user, team, onDirty }) => {
 
     try {
       const jwt = localStorage.getItem("jwt");
+      let uploadedCouvertureId = null;
 
       // 1. Upload nouvelle couverture si elle existe
       if (newCouverture instanceof File) {
         const uploadForm = new FormData();
         uploadForm.append("files", newCouverture);
-        uploadForm.append("ref", "api::team.team");
-        uploadForm.append("refId", teamData.id);
-        uploadForm.append("field", "couverture");
 
-        await axios.post(`${STRAPI_URL}/api/upload`, uploadForm, {
+        const uploadRes = await axios.post(`${STRAPI_URL}/api/upload`, uploadForm, {
           headers: { Authorization: `Bearer ${jwt}` },
         });
+
+        uploadedCouvertureId = uploadRes.data[0]?.id;
       }
 
       // 2. Mise a jour des champs texte + relations oeuvres
@@ -188,6 +188,11 @@ const MoTeams = ({ user, team, onDirty }) => {
 
       // Add oeuvres relation
       filtered.oeuvres = associatedOeuvres.map(o => o.documentId);
+
+      // Associer la nouvelle couverture si elle a ete uploadee
+      if (uploadedCouvertureId) {
+        filtered.couverture = uploadedCouvertureId;
+      }
 
       await axios.put(
         `${STRAPI_URL}/api/teams/${team.documentId}`,

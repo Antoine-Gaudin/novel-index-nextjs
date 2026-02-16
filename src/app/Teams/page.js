@@ -199,14 +199,19 @@ export default function TeamsPage() {
 function TeamCard({ team }) {
   const slug = slugify(team.titre);
 
+  // Support des différents formats de couverture
+  const coverUrl = typeof team.couverture === "string"
+    ? team.couverture
+    : team.couverture?.formats?.medium?.url || team.couverture?.formats?.small?.url || team.couverture?.url;
+
   return (
     <Link href={`/Teams/${team.documentId}-${slug}`}>
       <div className="bg-gray-800 rounded-xl overflow-hidden hover:ring-2 hover:ring-indigo-500 transition-all duration-300 transform hover:-translate-y-1 cursor-pointer group">
         {/* Image de couverture */}
         <div className="relative h-40 bg-gray-700">
-          {team.couverture?.url ? (
+          {coverUrl ? (
             <Image
-              src={team.couverture.url}
+              src={coverUrl}
               alt={team.titre}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"
