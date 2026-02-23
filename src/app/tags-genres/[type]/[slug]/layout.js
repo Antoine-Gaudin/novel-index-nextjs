@@ -1,27 +1,34 @@
+import { cache } from "react";
 import { slugify } from "@/utils/slugify";
 import JsonLd from "@/app/components/JsonLd";
+
+// Dédupliqué entre generateMetadata et le layout body
+const getTagsOrGenres = cache(async (type) => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const res = await fetch(
+    `${apiUrl}/api/${type === "tag" ? "tags" : "genres"}`,
+    { next: { revalidate: 3600 } }
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.data || [];
+});
 
 // ✅ SSR Metadata pour tags-genres/[type]/[slug]
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
   const { type, slug } = resolvedParams;
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   
   try {
-    const res = await fetch(
-      `${apiUrl}/api/${type === "tag" ? "tags" : "genres"}`,
-      { next: { revalidate: 3600 } }
-    );
+    const items = await getTagsOrGenres(type);
     
-    if (!res.ok) {
+    if (items.length === 0) {
       return {
         title: `${type === "tag" ? "Tag" : "Genre"} | Novel-Index`,
         description: "Découvrez les œuvres par tag et genre sur Novel-Index.",
       };
     }
     
-    const data = await res.json();
-    const items = data.data || [];
     const matched = items.find((item) => slugify(item.titre) === slug);
     
     if (!matched) {
@@ -70,23 +77,14 @@ export async function generateMetadata({ params }) {
 export default async function TagGenreSlugLayout({ children, params }) {
   const resolvedParams = await params;
   const { type, slug } = resolvedParams;
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   
   let itemTitle = slug; // Fallback au slug si pas de données
   
   try {
-    const res = await fetch(
-      `${apiUrl}/api/${type === "tag" ? "tags" : "genres"}`,
-      { next: { revalidate: 3600 } }
-    );
-    
-    if (res.ok) {
-      const data = await res.json();
-      const items = data.data || [];
-      const matched = items.find((item) => slugify(item.titre) === slug);
-      if (matched) {
-        itemTitle = matched.titre;
-      }
+    const items = await getTagsOrGenres(type);
+    const matched = items.find((item) => slugify(item.titre) === slug);
+    if (matched) {
+      itemTitle = matched.titre;
     }
   } catch (error) {
     console.error("[TagGenreSlugLayout] Erreur récupération données:", error);
