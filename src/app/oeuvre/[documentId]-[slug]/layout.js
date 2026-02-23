@@ -1,5 +1,16 @@
+import { cache } from "react";
 import { slugify } from "@/utils/slugify";
 import JsonLd from "@/app/components/JsonLd";
+
+// Dédupliquer le fetch oeuvre entre generateMetadata et OeuvreLayout
+const getOeuvre = cache(async (id) => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const fetchUrl = `${apiUrl}/api/oeuvres/${id}?populate[0]=couverture&populate[1]=tags&populate[2]=genres`;
+  const res = await fetch(fetchUrl, { next: { revalidate: 3600 } });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.data || null;
+});
 
 // ✅ SSR Metadata - Génération côté serveur
 export async function generateMetadata({ params }) {
@@ -20,23 +31,8 @@ export async function generateMetadata({ params }) {
     
     // Extraire le documentId (partie avant le premier tiret)
     const id = fullSegment.split("-")[0];
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
-    const fetchUrl = `${apiUrl}/api/oeuvres/${id}?populate[0]=couverture&populate[1]=tags&populate[2]=genres`;
     
-    const res = await fetch(fetchUrl, { 
-      next: { revalidate: 3600 }
-    });
-
-    if (!res.ok) {
-      return {
-        title: "Œuvre introuvable | Novel-Index",
-        description: "Cette œuvre n'existe pas ou a été supprimée.",
-      };
-    }
-
-    const data = await res.json();
-    const oeuvre = data.data;
+    const oeuvre = await getOeuvre(id);
 
     if (!oeuvre) {
       return {
@@ -94,15 +90,9 @@ export default async function OeuvreLayout({ children, params }) {
     if (fullSegment && typeof fullSegment === 'string') {
       const id = fullSegment.split("-")[0];
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const fetchUrl = `${apiUrl}/api/oeuvres/${id}?populate[0]=couverture&populate[1]=tags&populate[2]=genres`;
       
-      const res = await fetch(fetchUrl, { 
-        next: { revalidate: 3600 }
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const oeuvre = data.data;
+      // Utilise le cache dédupliqué — même fetch que generateMetadata
+      const oeuvre = await getOeuvre(id);
         
         if (oeuvre) {
           const slug = slugify(oeuvre.titre);
@@ -202,7 +192,6 @@ export default async function OeuvreLayout({ children, params }) {
             </>
           );
         }
-      }
     }
   } catch (error) {
     console.error("[OeuvreLayout] Erreur lors de la génération du JSON-LD:", error);
