@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiFilter, FiFolder, FiGlobe, FiBarChart2, FiBook, FiCalendar, FiFileText, FiEdit, FiTag, FiCheck, FiX, FiChevronUp, FiChevronDown, FiStar } from "react-icons/fi";
 
 export default function FiltreOeuvres({ onFilterChange }) {
   const [allTags, setAllTags] = useState([]);
@@ -9,6 +11,7 @@ export default function FiltreOeuvres({ onFilterChange }) {
   const [searchGenre, setSearchGenre] = useState("");
   const [filtrerNouveautes, setFiltrerNouveautes] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const debounceRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,10 +46,18 @@ export default function FiltreOeuvres({ onFilterChange }) {
     setFiltres({ ...filtres, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  // E6: Auto-apply filters with debounce
+  const applyFilters = useCallback(() => {
     onFilterChange({ ...filtres, nouveautes: filtrerNouveautes });
-  };
+  }, [filtres, filtrerNouveautes, onFilterChange]);
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      applyFilters();
+    }, 500);
+    return () => clearTimeout(debounceRef.current);
+  }, [filtres, filtrerNouveautes, applyFilters]);
 
   const handleReset = () => {
     const emptyFiltres = {
@@ -83,11 +94,11 @@ export default function FiltreOeuvres({ onFilterChange }) {
     <div className="bg-gray-800 rounded-xl mb-8 overflow-hidden">
       {/* En-tête avec résumé des filtres actifs */}
       <div 
-        className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-750"
+        className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-700/50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-3">
-          <span className="text-lg font-medium text-white">🔍 Filtres</span>
+          <span className="text-lg font-medium text-white flex items-center gap-2"><FiFilter className="text-indigo-400" /> Filtres</span>
           {activeFiltersCount > 0 && (
             <span className="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">
               {activeFiltersCount} actif{activeFiltersCount > 1 ? "s" : ""}
@@ -105,16 +116,24 @@ export default function FiltreOeuvres({ onFilterChange }) {
               <span className="bg-gray-700 text-gray-300 text-xs px-2 py-0.5 rounded">{filtres.etat}</span>
             )}
             {filtrerNouveautes && (
-              <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded">🆕 Nouveautés</span>
+              <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded flex items-center gap-1"><FiStar className="text-[10px]" /> Nouveautés</span>
             )}
           </div>
         </div>
-        <span className="text-gray-400 text-xl">{isExpanded ? "▲" : "▼"}</span>
+        <span className="text-gray-400 text-xl">{isExpanded ? <FiChevronUp /> : <FiChevronDown />}</span>
       </div>
 
-      {/* Formulaire de filtres (collapsible) */}
-      {isExpanded && (
-        <form onSubmit={handleSubmit} className="p-6 pt-2 border-t border-gray-700">
+      {/* U3: Formulaire de filtres avec animation */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="p-6 pt-2 border-t border-gray-700">
           {/* Boutons rapides */}
           <div className="flex flex-wrap gap-2 mb-6">
             <button
@@ -126,7 +145,7 @@ export default function FiltreOeuvres({ onFilterChange }) {
                   : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
             >
-              {filtrerNouveautes ? "✅ Nouveautés du mois" : "🆕 Nouveautés du mois"}
+              {filtrerNouveautes ? "Nouveautés du mois" : "Nouveautés du mois"}
             </button>
             {activeFiltersCount > 0 && (
               <button
@@ -142,7 +161,7 @@ export default function FiltreOeuvres({ onFilterChange }) {
           {/* Grille des filtres principaux */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
             <div>
-              <label className="block text-xs text-gray-400 mb-1">📂 Catégorie</label>
+              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiFolder className="text-indigo-400" /> Catégorie</label>
               <select
                 name="categorie"
                 value={filtres.categorie}
@@ -158,7 +177,7 @@ export default function FiltreOeuvres({ onFilterChange }) {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1">🌐 Langue</label>
+              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiGlobe className="text-green-400" /> Langue</label>
               <select
                 name="langage"
                 value={filtres.langage}
@@ -173,7 +192,7 @@ export default function FiltreOeuvres({ onFilterChange }) {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1">📊 État</label>
+              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiBarChart2 className="text-blue-400" /> État</label>
               <select
                 name="etat"
                 value={filtres.etat}
@@ -191,7 +210,7 @@ export default function FiltreOeuvres({ onFilterChange }) {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1">📚 Type</label>
+              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiBook className="text-purple-400" /> Type</label>
               <select
                 name="type"
                 value={filtres.type}
@@ -207,7 +226,7 @@ export default function FiltreOeuvres({ onFilterChange }) {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1">📅 Année</label>
+              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiCalendar className="text-orange-400" /> Année</label>
               <input
                 type="number"
                 name="annee"
@@ -219,7 +238,7 @@ export default function FiltreOeuvres({ onFilterChange }) {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1">📜 Licence</label>
+              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiFileText className="text-yellow-400" /> Licence</label>
               <select
                 name="licence"
                 value={filtres.licence}
@@ -233,7 +252,7 @@ export default function FiltreOeuvres({ onFilterChange }) {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1">✍️ Traducteur</label>
+              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiEdit className="text-cyan-400" /> Traducteur</label>
               <input
                 type="text"
                 name="traduction"
@@ -247,8 +266,8 @@ export default function FiltreOeuvres({ onFilterChange }) {
 
           {/* FILTRE TAGS */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-indigo-400 mb-2">
-              🏷️ Tags
+            <label className="block text-sm font-medium text-indigo-400 mb-2 flex items-center gap-1.5">
+              <FiTag /> Tags
             </label>
             <input
               type="text"
@@ -324,8 +343,8 @@ export default function FiltreOeuvres({ onFilterChange }) {
 
           {/* FILTRE GENRES */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-pink-400 mb-2">
-              📚 Genres
+            <label className="block text-sm font-medium text-pink-400 mb-2 flex items-center gap-1.5">
+              <FiBook /> Genres
             </label>
             <input
               type="text"
@@ -401,17 +420,23 @@ export default function FiltreOeuvres({ onFilterChange }) {
             </div>
           </div>
 
-          {/* Bouton submit */}
+          {/* Boutons d'action */}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
-            <button
-              type="submit"
-              className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-medium transition duration-200 flex items-center gap-2"
-            >
-              <span>✓</span> Appliquer les filtres
-            </button>
+            {activeFiltersCount > 0 && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg font-medium transition duration-200 flex items-center gap-2 text-sm"
+              >
+                <FiX /> Réinitialiser
+              </button>
+            )}
+            <span className="text-gray-500 text-xs self-center">Les filtres s'appliquent automatiquement</span>
           </div>
-        </form>
-      )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

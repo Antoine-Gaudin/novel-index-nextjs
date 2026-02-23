@@ -1,156 +1,77 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { FiBook, FiUsers, FiCompass, FiArrowRight, FiBookOpen, FiEye, FiHeart, FiTag, FiSearch, FiCheckCircle, FiPlusCircle, FiShare2 } from "react-icons/fi";
+import { FiBook, FiUsers, FiCompass, FiArrowRight, FiBookOpen, FiEye, FiHeart, FiTag, FiSearch, FiPlusCircle, FiShare2 } from "react-icons/fi";
+import HeroSection from "./components/HeroSection";
 import SortieJours from "./components/SortieJours";
 import SortieHier from "./components/SortieHier";
 import SortieOeuvre from "./components/SortieOeuvre";
-import CoverBackground from "./components/CoverBackground";
-import SearchModal from "./components/SearchModal";
 import KanveoBanner from "./components/KanveoBanner";
+import CtaInscription from "./components/CtaInscription";
+
+// ✅ Metadata SSR — rendue côté serveur pour le SEO
+export const metadata = {
+  title: "Novel-Index - Plateforme d'indexation de traductions",
+  description:
+    "Trad-Index - Plateforme d'indexation collaborative redirigeant les utilisateurs vers les sites traducteurs. Découvrez des webnovels, light novels, manhwa et manga traduits en français.",
+  keywords: [
+    "traductions",
+    "webnovels",
+    "light novels",
+    "manhwa",
+    "manga",
+    "français",
+    "index",
+    "trad-index",
+    "webtoons",
+    "scans",
+    "novel-index",
+  ],
+  alternates: {
+    canonical: "https://www.novel-index.com",
+  },
+  openGraph: {
+    title: "Novel-Index - Plateforme d'indexation de traductions",
+    description:
+      "Plateforme d'indexation collaborative. Découvrez des webnovels, light novels, manhwa et manga traduits en français.",
+    url: "https://www.novel-index.com",
+    siteName: "Novel-Index",
+    images: [
+      { url: "https://www.novel-index.com/logo.png", alt: "Novel-Index" },
+    ],
+    locale: "fr_FR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Novel-Index - Plateforme d'indexation de traductions",
+    description:
+      "Plateforme d'indexation collaborative. Découvrez des webnovels, light novels, manhwa et manga traduits en français.",
+    images: ["https://www.novel-index.com/logo.png"],
+  },
+};
 
 export default function Home() {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [stats, setStats] = useState({ oeuvres: 0, chapitres: 0, teams: 0 });
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
-  // Charger les stats
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [oeuvresRes, chapitresRes, teamsRes] = await Promise.all([
-          fetch(`${apiUrl}/api/oeuvres?pagination[limit]=1`),
-          fetch(`${apiUrl}/api/chapitres?pagination[limit]=1`),
-          fetch(`${apiUrl}/api/teams?pagination[limit]=1`),
-        ]);
-        const [oeuvresData, chapitresData, teamsData] = await Promise.all([
-          oeuvresRes.json(),
-          chapitresRes.json(),
-          teamsRes.json(),
-        ]);
-        setStats({
-          oeuvres: oeuvresData.meta?.pagination?.total || 0,
-          chapitres: chapitresData.meta?.pagination?.total || 0,
-          teams: teamsData.meta?.pagination?.total || 0,
-        });
-      } catch (err) {
-        console.error("Erreur chargement stats:", err);
-      }
-    };
-    fetchStats();
-  }, [apiUrl]);
-
-  const scrollToSorties = () => {
-    document.getElementById("sorties-jour")?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
     <div>
-      {/* Hero Header avec CoverBackground */}
-      <div className="relative h-[75vh] w-full overflow-hidden">
-        {/* Background couvertures */}
-        <CoverBackground />
+      {/* Hero — client component (stats, animations, recherche) */}
+      <HeroSection />
 
-        {/* Content */}
-        <div className="absolute inset-0 z-10 flex flex-col justify-center items-center text-center text-white px-4">
-          <motion.h1
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4"
-          >
-            Novel-Index
-          </motion.h1>
-          
-          <motion.p
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg md:text-xl text-gray-200 mb-6 max-w-2xl"
-          >
-            La plateforme collaborative d'indexation de Light Novels, Web Novels, Scans et Webtoons
-          </motion.p>
-
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="flex flex-wrap justify-center gap-4 sm:gap-8 mb-8"
-          >
-            <div className="text-center">
-              <p className="text-3xl sm:text-4xl font-bold text-indigo-400">{stats.oeuvres.toLocaleString()}+</p>
-              <p className="text-sm text-gray-400">Œuvres</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl sm:text-4xl font-bold text-green-400">{stats.chapitres.toLocaleString()}+</p>
-              <p className="text-sm text-gray-400">Chapitres</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl sm:text-4xl font-bold text-pink-400">{stats.teams.toLocaleString()}+</p>
-              <p className="text-sm text-gray-400">Teams</p>
-            </div>
-          </motion.div>
-
-          {/* Barre de recherche - ouvre le modal */}
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            onClick={() => setIsSearchOpen(true)}
-            className="w-full max-w-xl mb-6"
-          >
-            <div className="relative flex items-center w-full px-5 py-4 rounded-full bg-gray-800/80 backdrop-blur-sm border border-gray-600 text-gray-400 hover:border-indigo-500 hover:bg-gray-800 transition cursor-text">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <span>Rechercher une œuvre, un auteur, un traducteur...</span>
-            </div>
-          </motion.button>
-
-          {/* CTAs */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.8 }}
-            className="flex flex-wrap justify-center gap-4"
-          >
-            <Link
-              href="/Oeuvres"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg text-lg font-semibold transition shadow-lg hover:shadow-indigo-500/25"
-            >
-              Explorer le catalogue
-            </Link>
-            <button
-              onClick={scrollToSorties}
-              className="bg-gray-700/80 hover:bg-gray-600 text-white px-6 py-3 rounded-lg text-lg font-medium transition backdrop-blur-sm"
-            >
-              Sorties du jour ↓
-            </button>
-          </motion.div>
-        </div>
-
-        {/* Dégradé en bas du Hero Header */}
-        <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-b from-transparent to-gray-900 z-20"></div>
-      </div>
-
-      {/* Publicité Kanveo */}
-      <KanveoBanner format="banner" className="py-6 px-4" delay={1200} />
-
-      {/* Sections */}
+      {/* Sections sorties — client components */}
       <div id="sorties-jour">
         <SortieJours />
       </div>
+
+      {/* Publicité Kanveo — déplacée après les sorties du jour */}
+      <KanveoBanner format="banner" className="py-6 px-4" delay={1200} />
+
       <SortieHier />
       <SortieOeuvre />
 
       {/* ========== BLOC 1 — Qu'est-ce que Novel-Index ? ========== */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-900">
+      {/* ✅ Contenu statique rendu côté serveur pour le SEO */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-900" aria-labelledby="about-heading">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6 text-center">
-            Qu'est-ce que Novel-Index ?
+          <h2 id="about-heading" className="text-3xl sm:text-4xl font-bold text-white mb-6 text-center">
+            Qu&apos;est-ce que Novel-Index ?
           </h2>
           <div className="space-y-4 text-gray-300 text-lg leading-relaxed">
             <p>
@@ -160,27 +81,27 @@ export default function Home() {
               Notre mission est simple : <strong className="text-white">centraliser toutes les traductions françaises</strong> disponibles en un seul endroit. Plutôt que de chercher sur des dizaines de sites différents, Novel-Index vous redirige directement vers les <strong className="text-white">teams de traduction</strong> qui publient les chapitres.
             </p>
             <p>
-              Nous ne stockons aucun contenu traduit. Novel-Index est un <strong className="text-white">index collaboratif</strong> : chaque team de traduction peut référencer ses œuvres et ses chapitres, et les lecteurs retrouvent tout au même endroit. C'est un pont entre les lecteurs francophones et les traducteurs passionnés.
+              Nous ne stockons aucun contenu traduit. Novel-Index est un <strong className="text-white">index collaboratif</strong> : chaque team de traduction peut référencer ses œuvres et ses chapitres, et les lecteurs retrouvent tout au même endroit. C&apos;est un pont entre les lecteurs francophones et les traducteurs passionnés.
             </p>
             <p>
-              Que vous cherchiez le dernier chapitre de votre <strong className="text-indigo-400">novel fantaisie</strong> préféré, une nouvelle <strong className="text-indigo-400">série romance</strong> à découvrir, ou les dernières sorties de <strong className="text-indigo-400">scans action</strong>, Novel-Index vous permet de tout suivre en temps réel grâce à son système d'abonnements et de notifications.
+              Que vous cherchiez le dernier chapitre de votre <strong className="text-indigo-400">novel fantaisie</strong> préféré, une nouvelle <strong className="text-indigo-400">série romance</strong> à découvrir, ou les dernières sorties de <strong className="text-indigo-400">scans action</strong>, Novel-Index vous permet de tout suivre en temps réel grâce à son système d&apos;abonnements et de notifications.
             </p>
           </div>
         </div>
       </section>
 
       {/* ========== BLOC 2 — Accès rapide par catégorie ========== */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-950">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-950" aria-labelledby="categories-heading">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3 text-center">
+          <h2 id="categories-heading" className="text-3xl sm:text-4xl font-bold text-white mb-3 text-center">
             Explorez par catégorie
           </h2>
-          <p className="text-gray-400 text-center mb-10 max-w-2xl mx-auto">
-            Naviguez dans notre catalogue par type d'œuvre ou par genre. Des milliers de titres traduits en français vous attendent.
+          <p className="text-gray-300 text-center mb-10 max-w-2xl mx-auto">
+            Naviguez dans notre catalogue par type d&apos;œuvre ou par genre. Des milliers de titres traduits en français vous attendent.
           </p>
 
           {/* Types d'œuvres */}
-          <h3 className="text-xl font-semibold text-white mb-4">Par type d'œuvre</h3>
+          <h3 className="text-xl font-semibold text-white mb-4">Par type d&apos;œuvre</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-10">
             {[
               { label: "Light Novels", href: "/Oeuvres?type=Light+Novel", icon: <FiBook className="text-indigo-400" /> },
@@ -234,12 +155,12 @@ export default function Home() {
       </section>
 
       {/* ========== BLOC 3 — Comment ça marche ? ========== */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-900">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-900" aria-labelledby="how-heading">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3 text-center">
+          <h2 id="how-heading" className="text-3xl sm:text-4xl font-bold text-white mb-3 text-center">
             Comment ça marche ?
           </h2>
-          <p className="text-gray-400 text-center mb-12 max-w-2xl mx-auto">
+          <p className="text-gray-300 text-center mb-12 max-w-2xl mx-auto">
             Novel-Index est gratuit et ouvert à tous. En 3 étapes, accédez à des milliers de chapitres traduits en français.
           </p>
 
@@ -250,7 +171,7 @@ export default function Home() {
                 <FiSearch className="text-indigo-400 text-2xl" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">1. Recherchez</h3>
-              <p className="text-gray-400">
+              <p className="text-gray-300">
                 Trouvez une œuvre par son titre, son genre, son auteur ou sa team de traduction. Utilisez les filtres pour affiner vos résultats.
               </p>
             </div>
@@ -261,7 +182,7 @@ export default function Home() {
                 <FiPlusCircle className="text-green-400 text-2xl" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">2. Abonnez-vous</h3>
-              <p className="text-gray-400">
+              <p className="text-gray-300">
                 Créez un compte gratuit et abonnez-vous à vos œuvres préférées. Vous serez notifié à chaque nouveau chapitre disponible.
               </p>
             </div>
@@ -272,27 +193,16 @@ export default function Home() {
                 <FiShare2 className="text-pink-400 text-2xl" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">3. Lisez</h3>
-              <p className="text-gray-400">
+              <p className="text-gray-300">
                 Cliquez sur un chapitre et vous êtes redirigé directement vers le site de la team de traduction. Simple, rapide, gratuit.
               </p>
             </div>
           </div>
 
-          {/* CTA final */}
-          <div className="text-center mt-12">
-            <Link
-              href="/Inscription"
-              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg text-lg font-semibold transition shadow-lg hover:shadow-indigo-500/25"
-            >
-              Créer un compte gratuit
-              <FiArrowRight />
-            </Link>
-          </div>
+          {/* CTA final — conditionnel (masqué si connecté) */}
+          <CtaInscription />
         </div>
       </section>
-
-      {/* Modal de recherche */}
-      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </div>
   );
 }

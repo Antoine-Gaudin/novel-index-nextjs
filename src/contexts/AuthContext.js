@@ -55,6 +55,13 @@ export function AuthProvider({ children }) {
         const data = await res.json();
         setUser(data);
         Cookies.set("userInfo", JSON.stringify(data), { expires: 7 });
+      } else if (res.status === 401) {
+        // Token expiré ou invalide — déconnexion automatique
+        Cookies.remove("jwt");
+        Cookies.remove("userInfo");
+        localStorage.removeItem("jwt");
+        setJwt(null);
+        setUser(null);
       }
     } catch (err) {
       console.error("Erreur refresh user:", err);

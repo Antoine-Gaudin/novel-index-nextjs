@@ -30,6 +30,7 @@ const SectionSorties = ({
   showTimeAgo = false,
   emptyMessage = "Aucune sortie pour le moment.",
   countLabel = null,
+  accentColor = "indigo",
 }) => {
   const [selectedType, setSelectedType] = useState("Tout");
   const [selectedData, setSelectedData] = useState(null);
@@ -53,9 +54,16 @@ const SectionSorties = ({
     return false;
   });
 
+  const accentClasses = {
+    indigo: { active: "bg-indigo-600", border: "border-l-indigo-500" },
+    amber: { active: "bg-amber-600", border: "border-l-amber-500" },
+    emerald: { active: "bg-emerald-600", border: "border-l-emerald-500" },
+  };
+  const accent = accentClasses[accentColor] || accentClasses.indigo;
+
   return (
-    <div className="bg-gray-900 text-white p-[1rem]">
-      <h2 className="text-3xl font-bold mb-6">{titre}</h2>
+    <section className="bg-gray-900 text-white p-4" aria-labelledby={`section-${accentColor}`}>
+      <h2 id={`section-${accentColor}`} className={`text-3xl font-bold mb-6 border-l-4 pl-4 ${accent.border}`}>{titre}</h2>
 
       {error && <p className="text-red-500">{error}</p>}
 
@@ -71,9 +79,10 @@ const SectionSorties = ({
             key={type}
             className={`px-4 py-2 rounded-md ${
               selectedType === type
-                ? "bg-indigo-600"
+                ? accent.active
                 : "bg-gray-600 hover:bg-gray-700"
             } text-white`}
+            aria-pressed={selectedType === type}
             onClick={() => setSelectedType(type)}
           >
             {type}
@@ -133,7 +142,7 @@ const SectionSorties = ({
       {/* Filtre vide après filtrage */}
       {!loading && !error && oeuvres.length > 0 && filteredOeuvres.length === 0 && (
         <div className="text-center py-8 text-gray-500">
-          <p>Aucune oeuvre dans cette categorie.</p>
+          <p>Aucune œuvre dans cette catégorie.</p>
         </div>
       )}
 
@@ -143,7 +152,7 @@ const SectionSorties = ({
           onClose={() => setSelectedData(null)}
         />
       )}
-    </div>
+    </section>
   );
 };
 

@@ -20,18 +20,32 @@ const Menu = () => {
   const pathname = usePathname();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-  const { isLoggedIn, user, jwt, isLoading, usernameInitial } = useAuth();
+  const { isLoggedIn, user, jwt, isLoading, usernameInitial, logout } = useAuth();
 
   useEffect(() => {
     setHasMounted(true);
     
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
+      // Fermer le menu mobile au scroll
+      if (menuOpen) setMenuOpen(false);
+    };
+    
+    // Raccourci clavier Ctrl+K pour la recherche
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
     };
     
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
 
   // Fetch profile picture when user/jwt changes
   useEffect(() => {
@@ -56,7 +70,8 @@ const Menu = () => {
             setUserProfilePicture(profilePictureUrl);
           }
         } else if (response.status === 401) {
-          // Token invalide/expiré, ne rien faire ici (AuthContext gèrera la déconnexion si nécessaire)
+          // Token expiré — déconnexion automatique
+          logout();
           setUserProfilePicture(null);
         }
       } catch (error) {
@@ -132,6 +147,7 @@ const Menu = () => {
             >
               <FiSearch className="text-lg text-gray-400 group-hover:text-indigo-400 transition-colors" />
               <span>Rechercher</span>
+              <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono text-gray-500 bg-gray-800 border border-gray-700 rounded ml-1">Ctrl K</kbd>
             </button>
           </li>
         </ul>

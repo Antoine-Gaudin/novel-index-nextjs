@@ -20,9 +20,10 @@ const SortieJours = () => {
       const pageSize = 100;
       let page = 0;
       let hasMore = true;
+      const maxPages = 10;
 
       try {
-        while (hasMore) {
+        while (hasMore && page < maxPages) {
           const res = await fetch(
             `${apiUrl}/api/oeuvres?populate[couverture]=true&pagination[start]=${
               page * pageSize
@@ -95,7 +96,7 @@ const SortieJours = () => {
         setOeuvres(results);
       } catch (err) {
         console.error("Erreur :", err);
-        setError("Erreur lors de la recuperation des oeuvres.");
+        setError("Erreur lors de la récupération des œuvres.");
       } finally {
         setLoading(false);
       }
@@ -111,6 +112,7 @@ const SortieJours = () => {
       loading={loading}
       error={error}
       showTimeAgo={true}
+      accentColor="indigo"
       emptyMessage="Pas encore de sorties aujourd'hui. Repassez plus tard !"
       countLabel={(count) =>
         `${count} œuvre${count > 1 ? "s" : ""} mise${count > 1 ? "s" : ""} à jour aujourd'hui`

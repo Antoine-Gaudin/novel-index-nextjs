@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { FiBook } from "react-icons/fi";
+import Image from "next/image";
 import Link from "next/link";
 import { slugify } from "@/utils/slugify";
 
@@ -29,6 +30,15 @@ const OeuvreCard = ({ oeuvre, index = 0, onClick, showTimeAgo = false }) => {
 
   const oeuvreUrl = `/oeuvre/${oeuvre.documentId}-${slugify(oeuvre.titre || '')}`;
 
+  const handleClick = (e) => {
+    // Permettre Ctrl+clic / clic molette pour ouvrir dans un nouvel onglet
+    if (e.ctrlKey || e.metaKey || e.button === 1) return;
+    if (onClick) {
+      e.preventDefault();
+      onClick(oeuvre);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -39,17 +49,20 @@ const OeuvreCard = ({ oeuvre, index = 0, onClick, showTimeAgo = false }) => {
     >
       <Link
         href={oeuvreUrl}
-        onClick={(e) => {
-          e.preventDefault();
-          onClick?.(oeuvre);
-        }}
+        onClick={handleClick}
         className="block cursor-pointer"
       >
         {coverUrl ? (
-          <div
-            className="h-48 sm:h-64 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-            style={{ backgroundImage: `url(${coverUrl})` }}
-          />
+          <div className="relative h-48 sm:h-64 overflow-hidden">
+            <Image
+              src={coverUrl}
+              alt={oeuvre.titre || "Couverture"}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+            />
+          </div>
         ) : (
           <div className="h-48 sm:h-64 bg-gray-700/50 flex items-center justify-center text-gray-500">
             <FiBook className="text-4xl" />

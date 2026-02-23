@@ -25,9 +25,10 @@ const SortieHier = () => {
       const pageSize = 100;
       let page = 0;
       let hasMore = true;
+      const maxPages = 10;
 
       try {
-        while (hasMore) {
+        while (hasMore && page < maxPages) {
           const res = await fetch(
             `${apiUrl}/api/oeuvres?populate[couverture]=true&pagination[start]=${
               page * pageSize
@@ -99,7 +100,7 @@ const SortieHier = () => {
         setOeuvres(results);
       } catch (err) {
         console.error("Erreur :", err);
-        setError("Erreur lors de la recuperation des sorties d'hier.");
+        setError("Erreur lors de la récupération des sorties d'hier.");
       } finally {
         setLoading(false);
       }
@@ -115,6 +116,7 @@ const SortieHier = () => {
       loading={loading}
       error={error}
       showTimeAgo={false}
+      accentColor="amber"
       emptyMessage="Aucune sortie hier."
       countLabel={(count) =>
         `${count} œuvre${count > 1 ? "s" : ""} mise${count > 1 ? "s" : ""} à jour hier`

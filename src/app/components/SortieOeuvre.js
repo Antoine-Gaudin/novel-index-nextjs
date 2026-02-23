@@ -23,7 +23,7 @@ const SortieOeuvre = () => {
         const data = await response.json();
 
         if (!response.ok)
-          throw new Error("Erreur lors de la recuperation des oeuvres.");
+          throw new Error("Erreur lors de la récupération des œuvres.");
 
         const enriched = data.data.map((oeuvre) => ({
           ...oeuvre,
@@ -35,7 +35,7 @@ const SortieOeuvre = () => {
 
         setOeuvres(enriched);
       } catch (err) {
-        setError("Impossible de recuperer les nouvelles oeuvres.");
+        setError("Impossible de récupérer les nouvelles œuvres.");
         console.error("Erreur lors du fetch :", err);
       } finally {
         setLoading(false);
@@ -52,6 +52,7 @@ const SortieOeuvre = () => {
       loading={loading}
       error={error}
       showTimeAgo={false}
+      accentColor="emerald"
       emptyMessage="Aucune nouvelle œuvre aujourd'hui."
       countLabel={(count) =>
         `${count} nouvelle${count > 1 ? "s" : ""} œuvre${count > 1 ? "s" : ""} ajoutée${count > 1 ? "s" : ""} aujourd'hui`

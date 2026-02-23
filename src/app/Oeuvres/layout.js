@@ -41,7 +41,7 @@ export default function OeuvresLayout({ children }) {
       "name": "Œuvres indexées",
       "description": "Liste des webnovels, light novels, manhwa et manga traduits en français",
       "itemListOrder": "https://schema.org/ItemListUnordered",
-      "numberOfItems": "1000+"
+      "numberOfItems": 1000
     },
     "breadcrumb": {
       "@type": "BreadcrumbList",

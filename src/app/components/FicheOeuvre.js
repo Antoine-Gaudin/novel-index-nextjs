@@ -25,6 +25,24 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
   const [showAllGenres, setShowAllGenres] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
 
+  // E2: Fermeture par Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsVisible(false);
+        setTimeout(() => onClose(), 300);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  // E3: Verrouiller le scroll du body
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   useEffect(() => {
     const fetchChapitres = async () => {
       try {
@@ -50,18 +68,20 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
     if (oeuvre.documentId) {
       fetchChapitres();
     }
-  }, [oeuvre.documentId]);
+  }, [oeuvre.documentId, apiUrl]);
 
   useEffect(() => {
     const checkAbonnement = async () => {
       const jwt = Cookies.get("jwt");
       const userInfo = Cookies.get("userInfo");
-      const userId = userInfo ? JSON.parse(userInfo)?.documentId : null;
+      let userId = null;
+      try {
+        userId = userInfo ? JSON.parse(userInfo)?.documentId : null;
+      } catch {
+        return;
+      }
 
       if (!jwt || !userId || !oeuvre?.documentId) {
-        console.warn(
-          "❌ Paramètres manquants pour checkAbonnement, annulation."
-        );
         return;
       }
 
@@ -73,6 +93,11 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
             Authorization: `Bearer ${jwt}`,
           },
         });
+
+        if (!res.ok) {
+          // Token expiré ou endpoint refusé — on ignore silencieusement
+          return;
+        }
 
         const data = await res.json();
 
@@ -92,15 +117,12 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
     if (oeuvre?.documentId) {
       checkAbonnement();
     }
-  }, [oeuvre?.documentId]);
+  }, [oeuvre?.documentId, apiUrl]);
 
   useEffect(() => {
     const updateLastChecked = async () => {
       const jwt = Cookies.get("jwt");
-      const userInfo = Cookies.get("userInfo");
-      const userId = userInfo ? JSON.parse(userInfo)?.documentId : null;
-
-      if (!jwt || !userId || !oeuvre?.documentId || !subscriptionId) return;
+      if (!jwt || !subscriptionId) return;
 
       try {
         await fetch(`${apiUrl}/api/checkoeuvretimes/${subscriptionId}`, {
@@ -123,48 +145,66 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
     if (subscriptionId) {
       updateLastChecked();
     }
-  }, [subscriptionId]);
+  }, [subscriptionId, apiUrl]);
 
   const handleSubscribe = async () => {
-    const jwt = localStorage.getItem("jwt");
-    const userInfo = Cookies.get("userInfo");
-    const userId = userInfo ? JSON.parse(userInfo)?.documentId : null;
+    const jwt = Cookies.get("jwt");
+    if (!jwt) return; // garde : non connecté
 
-    const res = await fetch(`${apiUrl}/api/checkoeuvretimes`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${jwt}`,
-      },
-      body: JSON.stringify({
-        data: {
-          oeuvres: [oeuvre.documentId],
-          users_permissions_users: [userId],
-          lastChecked: new Date().toISOString(),
-          notification: true,
-          archived: false,
+    let userId = null;
+    try {
+      const userInfo = Cookies.get("userInfo");
+      userId = userInfo ? JSON.parse(userInfo)?.documentId : null;
+    } catch {
+      return;
+    }
+    if (!userId) return;
+
+    try {
+      const res = await fetch(`${apiUrl}/api/checkoeuvretimes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwt}`,
         },
-      }),
-    });
-
-    const data = await res.json();
-    setIsSubscribed(true);
-    setSubscriptionId(data.data.documentId);
+        body: JSON.stringify({
+          data: {
+            oeuvres: [oeuvre.documentId],
+            users_permissions_users: [userId],
+            lastChecked: new Date().toISOString(),
+            notification: true,
+            archived: false,
+          },
+        }),
+      });
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
+      const data = await res.json();
+      setIsSubscribed(true);
+      setSubscriptionId(data.data.documentId);
+    } catch (err) {
+      console.error("❌ Erreur lors de l'abonnement :", err);
+    }
   };
 
   const handleUnsubscribe = async () => {
     if (!subscriptionId) return;
 
-    const jwt = localStorage.getItem("jwt");
-    await fetch(`${apiUrl}/api/checkoeuvretimes/${subscriptionId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${jwt}`,
-      },
-    });
+    const jwt = Cookies.get("jwt");
+    if (!jwt) return; // garde : non connecté
 
-    setIsSubscribed(false);
-    setSubscriptionId(null);
+    try {
+      const res = await fetch(`${apiUrl}/api/checkoeuvretimes/${subscriptionId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
+      setIsSubscribed(false);
+      setSubscriptionId(null);
+    } catch (err) {
+      console.error("❌ Erreur lors du désabonnement :", err);
+    }
   };
 
   useEffect(() => {
@@ -217,7 +257,7 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Scrollable content */}
-            <div className="overflow-y-auto max-h-[90vh] scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+            <div className="overflow-y-auto max-h-[90vh]">
               
               {/* Header avec couverture floue en fond */}
               <div className="relative h-48 md:h-56">

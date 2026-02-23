@@ -11,6 +11,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 const AUTHORIZED_EMAIL = "agaudin76@gmail.com";
@@ -46,8 +47,7 @@ const BulkTagsGenre = ({ user }) => {
   // Expanded preview
   const [previewExpanded, setPreviewExpanded] = useState(false);
 
-  const jwt =
-    typeof window !== "undefined" ? localStorage.getItem("jwt") : null;
+  const { jwt } = useAuth();
 
   const isAuthorized = user?.email === AUTHORIZED_EMAIL;
 
@@ -106,7 +106,7 @@ const BulkTagsGenre = ({ user }) => {
         }
         setAllGenres(allGenresData);
       } catch (err) {
-        console.error("Erreur chargement des donnees:", err);
+        console.error("Erreur chargement des données:", err);
       } finally {
         setLoading(false);
       }
@@ -221,7 +221,7 @@ const BulkTagsGenre = ({ user }) => {
     for (let i = 0; i < allItems.length; i++) {
       const item = allItems[i];
       const endpoint = item.kind === "tag" ? "tags" : "genres";
-      const label = `Attribution de "${item.titre}" (${item.kind}) a ${selectedIds.size} oeuvres...`;
+      const label = `Attribution de "${item.titre}" (${item.kind}) à ${selectedIds.size} œuvres...`;
       setProgress({ current: i + 1, total, label });
 
       try {
@@ -244,7 +244,7 @@ const BulkTagsGenre = ({ user }) => {
         );
 
         successList.push(
-          `${item.titre} (${item.kind}) - assigne a ${selectedIds.size} oeuvres`
+          `${item.titre} (${item.kind}) - assigné à ${selectedIds.size} œuvres`
         );
       } catch (err) {
         console.error(`Erreur pour ${item.titre}:`, err);
@@ -288,9 +288,9 @@ const BulkTagsGenre = ({ user }) => {
     return (
       <div className="text-center py-16">
         <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">Acces refuse</h2>
+        <h2 className="text-xl font-bold text-white mb-2">Accès refusé</h2>
         <p className="text-gray-400">
-          Cet outil est reserve a l&apos;administrateur.
+          Cet outil est réservé à l&apos;administrateur.
         </p>
       </div>
     );
@@ -300,18 +300,18 @@ const BulkTagsGenre = ({ user }) => {
     return (
       <div className="text-center py-16">
         <div className="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4" />
-        <p className="text-gray-400">Chargement des donnees...</p>
+        <p className="text-gray-400">Chargement des données...</p>
       </div>
     );
   }
 
   // Step indicators
   const steps = [
-    "Selection",
+    "Sélection",
     "Tags & Genres",
-    "Apercu",
-    "Execution",
-    "Resultats",
+    "Aperçu",
+    "Exécution",
+    "Résultats",
   ];
 
   return (
@@ -354,7 +354,7 @@ const BulkTagsGenre = ({ user }) => {
             transition={{ duration: 0.2 }}
           >
             <h2 className="text-xl font-bold text-white mb-4">
-              Selectionner les oeuvres
+              Sélectionner les œuvres
             </h2>
 
             {/* Filters */}
@@ -396,21 +396,21 @@ const BulkTagsGenre = ({ user }) => {
             {/* Actions */}
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm text-gray-400">
-                {filteredOeuvres.length} oeuvres affichees - {selectedIds.size}{" "}
-                selectionnees
+                {filteredOeuvres.length} œuvres affichées - {selectedIds.size}{" "}
+                sélectionnées
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={selectAllFiltered}
                   className="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
                 >
-                  Tout selectionner
+                  Tout sélectionner
                 </button>
                 <button
                   onClick={deselectAllFiltered}
                   className="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
                 >
-                  Tout deselectionner
+                  Tout désélectionner
                 </button>
               </div>
             </div>
@@ -465,7 +465,7 @@ const BulkTagsGenre = ({ user }) => {
                 disabled={selectedIds.size === 0}
                 className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg text-white font-medium transition"
               >
-                Suivant ({selectedIds.size} oeuvres)
+                Suivant ({selectedIds.size} œuvres)
               </button>
             </div>
           </motion.div>
@@ -484,7 +484,7 @@ const BulkTagsGenre = ({ user }) => {
               Choisir les Tags & Genres
             </h2>
             <p className="text-sm text-gray-400 mb-6">
-              {selectedIds.size} oeuvres selectionnees
+              {selectedIds.size} œuvres sélectionnées
             </p>
 
             <div className="grid md:grid-cols-2 gap-6">
@@ -633,7 +633,7 @@ const BulkTagsGenre = ({ user }) => {
             transition={{ duration: 0.2 }}
           >
             <h2 className="text-xl font-bold text-white mb-4">
-              Apercu de l&apos;assignation
+              Aperçu de l&apos;assignation
             </h2>
 
             <div className="bg-gray-800 rounded-lg p-6 space-y-4">
@@ -653,7 +653,7 @@ const BulkTagsGenre = ({ user }) => {
                   </span>
                 </p>
                 <p className="text-sm text-gray-400 mt-1">
-                  {totalApiCalls} appels API necessaires
+                  {totalApiCalls} appels API nécessaires
                 </p>
               </div>
 
@@ -662,7 +662,7 @@ const BulkTagsGenre = ({ user }) => {
                 {selectedTags.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-400 mb-2">
-                      Tags a assigner
+                      Tags à assigner
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedTags.map((t) => (
@@ -679,7 +679,7 @@ const BulkTagsGenre = ({ user }) => {
                 {selectedGenres.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-400 mb-2">
-                      Genres a assigner
+                      Genres à assigner
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedGenres.map((g) => (
@@ -706,7 +706,7 @@ const BulkTagsGenre = ({ user }) => {
                   ) : (
                     <ChevronDown className="w-4 h-4" />
                   )}
-                  {selectedOeuvresList.length} oeuvres concernees
+                  {selectedOeuvresList.length} œuvres concernées
                 </button>
                 {(previewExpanded || selectedOeuvresList.length <= 10) && (
                   <ul className="mt-2 space-y-1 max-h-[300px] overflow-y-auto">
@@ -741,7 +741,7 @@ const BulkTagsGenre = ({ user }) => {
                 }}
                 className="px-6 py-2.5 bg-green-600 hover:bg-green-700 rounded-lg text-white font-medium transition"
               >
-                Executer l&apos;assignation
+                Exécuter l&apos;assignation
               </button>
             </div>
           </motion.div>
@@ -788,7 +788,7 @@ const BulkTagsGenre = ({ user }) => {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2 }}
           >
-            <h2 className="text-xl font-bold text-white mb-6">Resultats</h2>
+            <h2 className="text-xl font-bold text-white mb-6">Résultats</h2>
 
             <div className="bg-gray-800 rounded-lg p-6 space-y-6">
               {/* Counters */}
@@ -797,7 +797,7 @@ const BulkTagsGenre = ({ user }) => {
                   <p className="text-3xl font-bold text-green-400">
                     {results.success.length}
                   </p>
-                  <p className="text-sm text-gray-400">Succes</p>
+                  <p className="text-sm text-gray-400">Succès</p>
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-red-400">
@@ -811,7 +811,7 @@ const BulkTagsGenre = ({ user }) => {
               {results.success.length > 0 && (
                 <div>
                   <h4 className="text-sm font-medium text-green-400 mb-2 flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4" /> Assignations reussies
+                    <CheckCircle className="w-4 h-4" /> Assignations réussies
                   </h4>
                   <ul className="space-y-1">
                     {results.success.map((s, i) => (
