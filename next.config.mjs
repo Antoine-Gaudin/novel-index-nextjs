@@ -4,6 +4,19 @@ const nextConfig = {
       NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
       NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     },
+    async headers() {
+      return [
+        {
+          source: "/(.*)",
+          headers: [
+            {
+              key: "X-Robots-Tag",
+              value: "noai, noimageai",
+            },
+          ],
+        },
+      ];
+    },
     images: {
       remotePatterns: [
         {
