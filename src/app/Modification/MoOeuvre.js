@@ -15,13 +15,21 @@ const MoOeuvre = ({ user, oeuvre, onDirty }) => {
   const [saving, setSaving] = useState(false);
   const previewUrlRef = useRef(null);
 
-  const excludedFields = [
-    "publishedAt",
-    "updatedAt",
-    "createdAt",
-    "id",
-    "documentId",
-    "chapitres",
+  // Seuls les champs scalaires du schema Strapi
+  const scalarFields = [
+    "titre",
+    "titrealt",
+    "auteur",
+    "traduction",
+    "synopsis",
+    "annee",
+    "etat",
+    "type",
+    "categorie",
+    "licence",
+    "langage",
+    "nomdomaine",
+    "nameurl",
   ];
 
   useEffect(() => {
@@ -96,7 +104,7 @@ const MoOeuvre = ({ user, oeuvre, onDirty }) => {
 
     try {
       const jwt = localStorage.getItem("jwt");
-      const formData = new FormData();
+      const payload = {};
 
       // Upload image separement si nouvelle
       if (oeuvreData.nouvelleCouverture instanceof File) {
@@ -111,39 +119,31 @@ const MoOeuvre = ({ user, oeuvre, onDirty }) => {
 
         const uploadedImageId = uploadRes.data[0]?.id;
         if (uploadedImageId) {
-          formData.append("data[couverture]", uploadedImageId);
+          payload.couverture = uploadedImageId;
         }
       }
 
-      // Ajoute les champs texte sauf les exclus
-      const filteredOeuvreData = Object.keys(oeuvreData)
-        .filter(
-          (key) =>
-            !excludedFields.includes(key) &&
-            key !== "couverture" &&
-            key !== "nouvelleCouverture"
-        )
-        .reduce((obj, key) => {
-          obj[key] = oeuvreData[key];
-          return obj;
-        }, {});
+      // Ajoute uniquement les champs scalaires connus
+      scalarFields.forEach((key) => {
+        if (!(key in oeuvreData)) return;
+        const value = oeuvreData[key];
 
-      Object.entries(filteredOeuvreData).forEach(([key, value]) => {
-        if (key === "licence") {
-          const finalBool = value === true ? "true" : "false";
-          formData.append(`data[${key}]`, finalBool);
+        if (key === "annee") {
+          payload[key] = value != null && value !== "" ? Number(value) : null;
+        } else if (key === "licence") {
+          payload[key] = value === true || value === "true";
         } else {
-          formData.append(`data[${key}]`, value ?? "");
+          payload[key] = value ?? null;
         }
       });
 
       await axios.put(
         `${STRAPI_URL}/api/oeuvres/${oeuvre.documentId}`,
-        formData,
+        { data: payload },
         {
           headers: {
             Authorization: `Bearer ${jwt}`,
-            "Content-Type": "multipart/form-data",
+            "Content-Type": "application/json",
           },
         }
       );
