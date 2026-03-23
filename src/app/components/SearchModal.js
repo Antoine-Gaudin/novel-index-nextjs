@@ -38,6 +38,7 @@ export default function SearchModal({ isOpen, onClose }) {
   const debounceTimeout = useRef(null);
   const inputRef = useRef(null);
   const resultRefs = useRef([]);
+  const modalRef = useRef(null);
 
   // RF5: Charger les recherches récentes
   useEffect(() => {
@@ -47,11 +48,55 @@ export default function SearchModal({ isOpen, onClose }) {
     } catch {}
   }, []);
 
-  // Focus l'input quand le modal s'ouvre
+  // Focus l'input + bloquer le scroll du body quand la modal s'ouvre
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+    if (isOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      document.body.dataset.scrollY = scrollY;
+      if (inputRef.current) {
+        setTimeout(() => inputRef.current?.focus(), 100);
+      }
+    } else {
+      const scrollY = document.body.dataset.scrollY || "0";
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      window.scrollTo(0, parseInt(scrollY));
     }
+    return () => {
+      const scrollY = document.body.dataset.scrollY || "0";
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      window.scrollTo(0, parseInt(scrollY));
+    };
+  }, [isOpen]);
+
+  // Focus trap dans la modale
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleTabTrap = (e) => {
+      if (e.key !== 'Tab' || !modalRef.current) return;
+      const focusable = modalRef.current.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    window.addEventListener('keydown', handleTabTrap);
+    return () => window.removeEventListener('keydown', handleTabTrap);
   }, [isOpen]);
 
   // RF1: Recherche par titre ET auteur
@@ -157,7 +202,12 @@ export default function SearchModal({ isOpen, onClose }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 bg-black/95 z-[999] flex flex-col items-center pt-12 sm:pt-20 px-4"
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Rechercher une œuvre"
+          className="fixed top-0 left-0 right-0 bottom-0 bg-black/95 z-[999] flex flex-col items-center pt-12 sm:pt-20 px-4 overflow-y-auto"
+          style={{ height: "100dvh" }}
           onClick={(e) => e.target === e.currentTarget && onClose()}
         >
           {/* Barre de recherche */}

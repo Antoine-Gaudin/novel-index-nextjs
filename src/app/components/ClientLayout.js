@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence } from "framer-motion";
 import Menu from "./Menu";
 import { GoogleAnalytics } from "nextjs-google-analytics";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -19,9 +18,7 @@ export default function ClientLayout({ children }) {
       <Menu />
 
       <main id="main-content" className="pt-16">
-        <AnimatePresence mode="wait">
-          {children}
-        </AnimatePresence>
+        {children}
       </main>
     </AuthProvider>
   );

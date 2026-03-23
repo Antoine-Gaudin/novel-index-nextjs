@@ -161,8 +161,9 @@ export default function FiltreOeuvres({ onFilterChange }) {
           {/* Grille des filtres principaux */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
             <div>
-              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiFolder className="text-indigo-400" /> Catégorie</label>
+              <label htmlFor="filtre-categorie" className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiFolder className="text-indigo-400" /> Catégorie</label>
               <select
+                id="filtre-categorie"
                 name="categorie"
                 value={filtres.categorie}
                 onChange={handleChange}
@@ -177,8 +178,9 @@ export default function FiltreOeuvres({ onFilterChange }) {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiGlobe className="text-green-400" /> Langue</label>
+              <label htmlFor="filtre-langage" className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiGlobe className="text-green-400" /> Langue</label>
               <select
+                id="filtre-langage"
                 name="langage"
                 value={filtres.langage}
                 onChange={handleChange}
@@ -192,8 +194,9 @@ export default function FiltreOeuvres({ onFilterChange }) {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiBarChart2 className="text-blue-400" /> État</label>
+              <label htmlFor="filtre-etat" className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiBarChart2 className="text-blue-400" /> État</label>
               <select
+                id="filtre-etat"
                 name="etat"
                 value={filtres.etat}
                 onChange={handleChange}
@@ -210,8 +213,9 @@ export default function FiltreOeuvres({ onFilterChange }) {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiBook className="text-purple-400" /> Type</label>
+              <label htmlFor="filtre-type" className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiBook className="text-purple-400" /> Type</label>
               <select
+                id="filtre-type"
                 name="type"
                 value={filtres.type}
                 onChange={handleChange}
@@ -226,8 +230,9 @@ export default function FiltreOeuvres({ onFilterChange }) {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiCalendar className="text-orange-400" /> Année</label>
+              <label htmlFor="filtre-annee" className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiCalendar className="text-orange-400" /> Année</label>
               <input
+                id="filtre-annee"
                 type="number"
                 name="annee"
                 placeholder="Ex : 2024"
@@ -238,8 +243,9 @@ export default function FiltreOeuvres({ onFilterChange }) {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiFileText className="text-yellow-400" /> Licence</label>
+              <label htmlFor="filtre-licence" className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiFileText className="text-yellow-400" /> Licence</label>
               <select
+                id="filtre-licence"
                 name="licence"
                 value={filtres.licence}
                 onChange={handleChange}
@@ -252,8 +258,9 @@ export default function FiltreOeuvres({ onFilterChange }) {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiEdit className="text-cyan-400" /> Traducteur</label>
+              <label htmlFor="filtre-traduction" className="block text-xs text-gray-400 mb-1 flex items-center gap-1"><FiEdit className="text-cyan-400" /> Traducteur</label>
               <input
+                id="filtre-traduction"
                 type="text"
                 name="traduction"
                 placeholder="Nom du traducteur"

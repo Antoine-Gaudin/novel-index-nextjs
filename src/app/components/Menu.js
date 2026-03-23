@@ -7,7 +7,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import SearchModal from "./SearchModal";
-import { FiHome, FiBook, FiSearch, FiUser, FiUserPlus, FiLogIn, FiMenu, FiX, FiUsers } from "react-icons/fi";
+import { FiHome, FiBook, FiSearch, FiUser, FiUserPlus, FiLogIn, FiMenu, FiX, FiUsers, FiFileText } from "react-icons/fi";
 
 const Menu = () => {
   const [hasMounted, setHasMounted] = useState(false);
@@ -141,6 +141,9 @@ const Menu = () => {
             <NavLink href="/Teams" icon={FiUsers}>Teams</NavLink>
           </li>
           <li>
+            <NavLink href="/actualites" icon={FiFileText}>Actualités</NavLink>
+          </li>
+          <li>
             <button
               onClick={() => setIsSearchOpen(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-300 group"
@@ -244,8 +247,8 @@ const Menu = () => {
                 </Link>
               </li>
               <li>
-                <Link 
-                  href="/Teams" 
+                <Link
+                  href="/Teams"
                   onClick={() => setMenuOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
                     isActive("/Teams") ? "text-indigo-400 bg-indigo-500/10" : "text-gray-300 hover:text-white hover:bg-white/5"
@@ -253,6 +256,18 @@ const Menu = () => {
                 >
                   <FiUsers className="text-xl" />
                   Teams
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/actualites"
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
+                    isActive("/actualites") ? "text-indigo-400 bg-indigo-500/10" : "text-gray-300 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <FiFileText className="text-xl" />
+                  Actualités
                 </Link>
               </li>
               <li>

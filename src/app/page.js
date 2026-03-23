@@ -7,6 +7,7 @@ import SortieOeuvre from "./components/SortieOeuvre";
 import KanveoBanner from "./components/KanveoBanner";
 import CtaInscription from "./components/CtaInscription";
 
+
 // ✅ Metadata SSR — rendue côté serveur pour le SEO
 export const metadata = {
   title: "Novel-Index - Plateforme d'indexation de traductions",

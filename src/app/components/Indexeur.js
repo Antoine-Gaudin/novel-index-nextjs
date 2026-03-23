@@ -8,6 +8,7 @@ import {
   Users,
   PencilLine,
   Tag,
+  Newspaper,
   ChevronRight,
 } from "lucide-react";
 
@@ -16,6 +17,7 @@ import IndexeurOeuvre from "../indexeur/IndexeurOeuvre";
 import IndexeurTeams from "../indexeur/IndexeurTeams";
 import IndexeurModification from "../indexeur/IndexeurModification";
 import TagsGenre from "../indexeur/TagsGenre";
+import IndexeurArticle from "../indexeur/IndexeurArticle";
 
 const sections = [
   {
@@ -43,6 +45,11 @@ const sections = [
     title: "Tags & Genres",
     icon: Tag,
   },
+  {
+    id: "IndexeurArticle",
+    title: "Articles",
+    icon: Newspaper,
+  },
 ];
 
 const Indexeur = ({ user }) => {
@@ -60,6 +67,8 @@ const Indexeur = ({ user }) => {
         return <IndexeurModification user={user} />;
       case "TagsGenre":
         return <TagsGenre user={user} />;
+      case "IndexeurArticle":
+        return <IndexeurArticle user={user} />;
       default:
         return null;
     }

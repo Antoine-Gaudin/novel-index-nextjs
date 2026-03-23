@@ -255,7 +255,9 @@ const handleNextPage = () => {
   
         {/* Champ de texte pour le commentaire */}
         <div>
+          <label htmlFor="nouveau-commentaire" className="sr-only">Votre commentaire</label>
           <textarea
+            id="nouveau-commentaire"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             className="w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none"

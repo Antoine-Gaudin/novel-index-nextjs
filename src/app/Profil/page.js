@@ -86,11 +86,9 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-full">
-      <div>
-        <NavigationProfil onMenuSelect={setActiveMenu} user={user} activeMenu={activeMenu} />
-      </div>
-      <main className="flex-grow bg-gray-900 text-white p-8">
+    <div className="flex flex-col md:flex-row min-h-[calc(100vh-4rem)]">
+      <NavigationProfil onMenuSelect={setActiveMenu} user={user} activeMenu={activeMenu} />
+      <main className="flex-1 bg-gray-900 text-white p-6 md:p-8 lg:p-10">
         {renderContent()}
       </main>
     </div>

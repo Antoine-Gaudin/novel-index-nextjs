@@ -1,9 +1,10 @@
 import "./globals.css";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Geist, Geist_Mono } from "next/font/google";
 import ClientLayout from "./components/ClientLayout";
 import Footer from "./components/Footer";
 import JsonLd from "./components/JsonLd";
 
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
@@ -77,7 +78,7 @@ export default function RootLayout({ children }) {
   const isProduction = process.env.NODE_ENV === 'production';
 
   return (
-    <html lang="fr" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="fr" className={`${inter.variable} ${geistSans.variable} ${geistMono.variable}`}>
       <head>
         {isProduction && (
           <script 

@@ -13,7 +13,7 @@ import { slugify } from "@/utils/slugify";
 import { useAuth } from "@/contexts/AuthContext";
 import { FiChevronLeft, FiChevronRight, FiSearch, FiBook, FiGrid, FiFilter, FiStar, FiClock, FiTrendingUp, FiCalendar, FiRefreshCw, FiSettings, FiPlus, FiX, FiCheck, FiAlertCircle, FiArrowUp } from "react-icons/fi";
 
-export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0, initialPage = 0 }) {
+export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0, initialPage = 0, initialExtras = null }) {
   const [oeuvres, setOeuvres] = useState(initialOeuvres);
   const [page, setPage] = useState(initialPage);
   const [loading, setLoading] = useState(initialOeuvres.length === 0);
@@ -37,10 +37,10 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
   // Nouvelles données pour les sections enrichies
   const [featuredOeuvres, setFeaturedOeuvres] = useState([]);
   const [featuredIndex, setFeaturedIndex] = useState(0);
-  const [dernieresMaj, setDernieresMaj] = useState([]);
-  const [nouveautes, setNouveautes] = useState([]);
-  const [stats, setStats] = useState({ chapitres: 0, teams: 0 });
-  const [loadingExtras, setLoadingExtras] = useState(true);
+  const [dernieresMaj, setDernieresMaj] = useState(initialExtras?.dernieresMaj || []);
+  const [nouveautes, setNouveautes] = useState(initialExtras?.nouveautes || []);
+  const [stats, setStats] = useState(initialExtras?.stats || { chapitres: 0, teams: 0 });
+  const [loadingExtras, setLoadingExtras] = useState(!initialExtras);
   const [isHoveringCarousel, setIsHoveringCarousel] = useState(false);
   
   // Admin - gestion des coups de cœur
@@ -49,92 +49,42 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
   const [adminSearch, setAdminSearch] = useState("");
   const [loadingAdminSearch, setLoadingAdminSearch] = useState(false);
 
-  // Fetch les données supplémentaires une seule fois
+  // Sélection featured depuis les données SSR + localStorage admin
   useEffect(() => {
-    const fetchExtras = async () => {
-      setLoadingExtras(true);
+    const candidates = initialExtras?.featuredCandidates || [];
+    setAllOeuvresForPicker(candidates);
+
+    if (candidates.length > 0) {
+      // Vérifier le localStorage pour les sélections admin
       try {
-        // Fetch en parallèle
-        const [
-          featuredRes,
-          dernieresMajRes,
-          nouveautesRes,
-          chapitresRes,
-          teamsRes
-        ] = await Promise.all([
-          // Œuvres mises en avant avec couverture et synopsis
-          fetch(`${apiUrl}/api/oeuvres?populate[0]=couverture&populate[1]=genres&pagination[limit]=30&filters[couverture][url][$notNull]=true`),
-          // Dernières mises à jour
-          fetch(`${apiUrl}/api/oeuvres?populate=couverture&sort=updatedAt:desc&pagination[limit]=6`),
-          // Nouveautés du mois
-          fetch(`${apiUrl}/api/oeuvres?populate=couverture&sort=createdAt:desc&pagination[limit]=6&filters[createdAt][$gte]=${new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()}`),
-          // Stats
-          fetch(`${apiUrl}/api/chapitres?pagination[limit]=1`),
-          fetch(`${apiUrl}/api/teams?pagination[limit]=1`)
-        ]);
-
-        const [featuredData, dernieresMajData, nouveautesData, chapitresData, teamsData] = await Promise.all([
-          featuredRes.json(),
-          dernieresMajRes.json(),
-          nouveautesRes.json(),
-          chapitresRes.json(),
-          teamsRes.json()
-        ]);
-
-        // Sélectionner 5 oeuvres avec couverture pour la section mise en avant
-        const oeuvresAvecCouverture = (featuredData.data || []).filter(o => o.couverture?.url && o.synopsis);
-        setAllOeuvresForPicker(oeuvresAvecCouverture); // Garder pour le picker admin
-        
-        if (oeuvresAvecCouverture.length > 0) {
-          // F1: Vérifier le localStorage pour les sélections admin
-          try {
-            const savedFeatured = localStorage.getItem('novel-index-featured');
-            if (savedFeatured) {
-              const savedIds = JSON.parse(savedFeatured);
-              if (Array.isArray(savedIds) && savedIds.length > 0) {
-                const savedOeuvres = savedIds
-                  .map(id => oeuvresAvecCouverture.find(o => o.documentId === id))
-                  .filter(Boolean);
-                if (savedOeuvres.length >= 3) {
-                  setFeaturedOeuvres(savedOeuvres);
-                  setDernieresMaj(dernieresMajData.data || []);
-                  setNouveautes(nouveautesData.data || []);
-                  setStats({
-                    chapitres: chapitresData.meta?.pagination?.total || 0,
-                    teams: teamsData.meta?.pagination?.total || 0
-                  });
-                  setLoadingExtras(false);
-                  return;
-                }
-              }
+        const savedFeatured = localStorage.getItem('novel-index-featured');
+        if (savedFeatured) {
+          const savedIds = JSON.parse(savedFeatured);
+          if (Array.isArray(savedIds) && savedIds.length > 0) {
+            const savedOeuvres = savedIds
+              .map(id => candidates.find(o => o.documentId === id))
+              .filter(Boolean);
+            if (savedOeuvres.length >= 3) {
+              setFeaturedOeuvres(savedOeuvres);
+              setLoadingExtras(false);
+              return;
             }
-          } catch {}
-          
-          // Mélanger et prendre 5 (basé sur le jour pour varier)
-          const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 1)) / (24 * 60 * 60 * 1000));
-          const shuffled = [...oeuvresAvecCouverture].sort((a, b) => {
-            const hashA = (a.documentId.charCodeAt(0) + dayOfYear) % 100;
-            const hashB = (b.documentId.charCodeAt(0) + dayOfYear) % 100;
-            return hashA - hashB;
-          });
-          setFeaturedOeuvres(shuffled.slice(0, 5));
+          }
         }
+      } catch {}
 
-        setDernieresMaj(dernieresMajData.data || []);
-        setNouveautes(nouveautesData.data || []);
-        setStats({
-          chapitres: chapitresData.meta?.pagination?.total || 0,
-          teams: teamsData.meta?.pagination?.total || 0
-        });
-      } catch (error) {
-        console.error("Erreur chargement extras:", error);
-      } finally {
-        setLoadingExtras(false);
-      }
-    };
+      // Mélanger et prendre 5 (basé sur le jour pour varier)
+      const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 1)) / (24 * 60 * 60 * 1000));
+      const shuffled = [...candidates].sort((a, b) => {
+        const hashA = (a.documentId.charCodeAt(0) + dayOfYear) % 100;
+        const hashB = (b.documentId.charCodeAt(0) + dayOfYear) % 100;
+        return hashA - hashB;
+      });
+      setFeaturedOeuvres(shuffled.slice(0, 5));
+    }
 
-    fetchExtras();
-  }, [apiUrl]);
+    setLoadingExtras(false);
+  }, [initialExtras]);
 
   // F1: Admin - Sauvegarder la sélection dans localStorage
   const saveFeaturedToStorage = useCallback((oeuvresList) => {

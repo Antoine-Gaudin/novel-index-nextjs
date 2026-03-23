@@ -104,6 +104,8 @@ const VosCategories = ({ user }) => {
         };
       });
 
+      // Tri stable par id pour éviter les réarrangements au refresh
+      categoriesEnrichies.sort((a, b) => (a.id || 0) - (b.id || 0));
       setCategories(categoriesEnrichies);
     } catch (err) {
       console.error("Erreur lors du fetch enrichi :", err);
@@ -326,7 +328,8 @@ const VosCategories = ({ user }) => {
 
           return (
             <motion.div
-              key={cat.id}
+              key={cat.documentId || cat.id}
+              layout
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-gray-800/50 border border-gray-700/50 rounded-xl overflow-hidden"

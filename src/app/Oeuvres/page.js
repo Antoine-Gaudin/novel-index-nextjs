@@ -3,30 +3,46 @@ import Link from "next/link";
 import { FiHome, FiChevronRight, FiGrid } from "react-icons/fi";
 import CoverBackground from "@/app/components/CoverBackground";
 
+async function fetchSSR(url) {
+  try {
+    const res = await fetch(url, { next: { revalidate: 300 } });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
 export default async function OeuvresPage({ searchParams }) {
   const sp = await searchParams;
   const rawPage = parseInt(sp?.page);
   const initialPage = !isNaN(rawPage) && rawPage > 1 ? rawPage - 1 : 0;
   const pageSize = 12;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const start = initialPage * pageSize;
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
 
-  // S1: SSR fetch — données initiales pour Googlebot & premier affichage
-  let initialOeuvres = [];
-  let initialTotal = 0;
-  try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    const start = initialPage * pageSize;
-    const res = await fetch(
-      `${apiUrl}/api/oeuvres?populate=couverture&pagination[start]=${start}&pagination[limit]=${pageSize}`,
-      { next: { revalidate: 3600 } }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      initialOeuvres = data.data || [];
-      initialTotal = data.meta?.pagination?.total || 0;
-    }
-  } catch (e) {
-    console.error("SSR fetch error:", e);
-  }
+  // SSR: toutes les données en parallèle
+  const [oeuvresRes, featuredRes, dernieresMajRes, nouveautesRes, chapitresRes, teamsRes] = await Promise.all([
+    fetchSSR(`${apiUrl}/api/oeuvres?populate=couverture&pagination[start]=${start}&pagination[limit]=${pageSize}`),
+    fetchSSR(`${apiUrl}/api/oeuvres?populate[0]=couverture&populate[1]=genres&pagination[limit]=10&filters[couverture][url][$notNull]=true`),
+    fetchSSR(`${apiUrl}/api/oeuvres?populate=couverture&sort=updatedAt:desc&pagination[limit]=6`),
+    fetchSSR(`${apiUrl}/api/oeuvres?populate=couverture&sort=createdAt:desc&pagination[limit]=6&filters[createdAt][$gte]=${monthStart}`),
+    fetchSSR(`${apiUrl}/api/chapitres?pagination[limit]=1`),
+    fetchSSR(`${apiUrl}/api/teams?pagination[limit]=1`),
+  ]);
+
+  const initialOeuvres = oeuvresRes?.data || [];
+  const initialTotal = oeuvresRes?.meta?.pagination?.total || 0;
+  const initialExtras = {
+    featuredCandidates: (featuredRes?.data || []).filter(o => o.couverture?.url && o.synopsis),
+    dernieresMaj: dernieresMajRes?.data || [],
+    nouveautes: nouveautesRes?.data || [],
+    stats: {
+      chapitres: chapitresRes?.meta?.pagination?.total || 0,
+      teams: teamsRes?.meta?.pagination?.total || 0,
+    },
+  };
 
   return (
     <div className="relative bg-gray-900 text-white min-h-screen">
@@ -75,6 +91,7 @@ export default async function OeuvresPage({ searchParams }) {
         initialOeuvres={initialOeuvres}
         initialTotal={initialTotal}
         initialPage={initialPage}
+        initialExtras={initialExtras}
       />
     </div>
   );

@@ -245,6 +245,16 @@ export function middleware(request) {
     "unknown";
   const pathname = request.nextUrl.pathname;
 
+  // --- Requêtes internes Next.js (RSC, prefetch) → toujours laisser passer ---
+  if (
+    request.headers.get("rsc") ||
+    request.headers.get("next-router-state-tree") ||
+    request.headers.get("next-router-prefetch") ||
+    request.headers.get("purpose") === "prefetch"
+  ) {
+    return NextResponse.next();
+  }
+
   // --- Nettoyage périodique du rate map ---
   cleanupRateMap();
 

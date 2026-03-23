@@ -18,6 +18,7 @@ const CoverBackground = () => {
           .filter((o) => o.couverture?.url)
           .map((o) => ({
             id: o.id,
+            titre: o.titre || "Couverture",
             url: o.couverture.url.startsWith("http")
               ? o.couverture.url
               : `${apiUrl}${o.couverture.url}`,
@@ -56,7 +57,7 @@ const CoverBackground = () => {
           >
             <img
               src={cover.url}
-              alt=""
+              alt={`Couverture de ${cover.titre}`}
               loading="lazy"
               className="w-full h-full object-cover"
             />

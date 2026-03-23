@@ -73,6 +73,11 @@ const AjouterOeuvresPopup = ({ user, onClose, category, onOeuvreAjoutee }) => {
     const jwt = localStorage.getItem("jwt");
     setSaving(true);
     try {
+      // Récupérer les oeuvres déjà présentes dans la catégorie
+      const existingIds = (category.oeuvres || []).map((o) => o.documentId).filter(Boolean);
+      // Fusionner sans doublons
+      const mergedIds = [...new Set([...existingIds, ...selectedDocumentIds])];
+
       await fetch(`${apiUrl}/api/nameoeuvrelists/${category.documentId}`, {
         method: "PUT",
         headers: {
@@ -81,7 +86,7 @@ const AjouterOeuvresPopup = ({ user, onClose, category, onOeuvreAjoutee }) => {
         },
         body: JSON.stringify({
           data: {
-            oeuvres: selectedDocumentIds,
+            oeuvres: mergedIds,
           },
         }),
       });

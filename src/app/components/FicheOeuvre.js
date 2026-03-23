@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import AffiChapitre from "./Affichapitre";
 import Commentaire from "./commentaire";
 import DOMPurify from "dompurify";
@@ -25,22 +25,46 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
   const [showAllGenres, setShowAllGenres] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
 
-  // E2: Fermeture par Escape
+  const modalRef = useRef(null);
+
+  // Focus trap dans la modale
+  const handleTabTrap = useCallback((e) => {
+    if (e.key !== 'Tab' || !modalRef.current) return;
+    const focusable = modalRef.current.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }, []);
+
+  // E2: Fermeture par Escape + focus trap
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setIsVisible(false);
         setTimeout(() => onClose(), 300);
+        return;
       }
+      handleTabTrap(e);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, handleTabTrap]);
 
-  // E3: Verrouiller le scroll du body
+  // E3: Verrouiller le scroll du body + focus initial
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    const timer = setTimeout(() => {
+      const firstBtn = modalRef.current?.querySelector('button');
+      if (firstBtn) firstBtn.focus();
+    }, 100);
+    return () => { document.body.style.overflow = ''; clearTimeout(timer); };
   }, []);
 
   useEffect(() => {
@@ -253,6 +277,10 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25 }}
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={oeuvre.titre || "Fiche œuvre"}
             className="relative bg-gray-900 text-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden border border-gray-700/50"
             onClick={(e) => e.stopPropagation()}
           >

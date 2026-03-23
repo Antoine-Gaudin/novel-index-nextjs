@@ -193,6 +193,7 @@ const AffiChapitre = ({ documentId, licence, totalChapitres }) => {
         <input
           type="text"
           placeholder="🔎 Rechercher un chapitre..."
+          aria-label="Rechercher un chapitre"
           value={searchTerm}
           onChange={handleSearch}
           className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
