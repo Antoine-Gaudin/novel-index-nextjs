@@ -18,7 +18,7 @@ export default function AdBanner({ format = "banner", className = "", delay = 80
   const [showKanveo, setShowKanveo] = useState(null);
 
   useEffect(() => {
-    setShowKanveo(Math.random() < 0.5);
+    setShowKanveo(Math.random() < 0.35);
   }, []);
 
   // null = côté serveur ou avant hydratation → on n'affiche rien
