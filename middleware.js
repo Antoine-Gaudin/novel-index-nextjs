@@ -301,8 +301,8 @@ export function middleware(request) {
     });
   }
 
-  // --- ÉTAPE 5 : Rate Limiting par IP ---
-  if (ip !== "unknown") {
+  // --- ÉTAPE 5 : Rate Limiting par IP (bots légitimes exemptés) ---
+  if (ip !== "unknown" && !isAllowedSearchBot(ua)) {
     const rateResult = checkRateLimit(ip);
 
     if (!rateResult.allowed) {
@@ -317,7 +317,7 @@ export function middleware(request) {
     }
 
     // Si suspect par le rate + pas un bot légitime → vérification supplémentaire
-    if (rateResult.suspect && !isAllowedSearchBot(ua)) {
+    if (rateResult.suspect) {
       const suspicionScore = isSuspiciousRequest(request, ua);
       if (suspicionScore >= 5) {
         return new NextResponse(null, {
@@ -340,25 +340,7 @@ export function middleware(request) {
     }
   }
 
-  // --- ÉTAPE 7 : Rate limit les bots légitimes (Google, Bing) ---
-  if (isAllowedSearchBot(ua) && ip !== "unknown") {
-    const botRateData = rateMap.get(`bot_${ip}`);
-    const now = Date.now();
-    if (!botRateData || now - botRateData.windowStart > 60_000) {
-      rateMap.set(`bot_${ip}`, { count: 1, windowStart: now });
-    } else {
-      botRateData.count++;
-      // Max 10 requêtes par minute pour les bots légitimes
-      if (botRateData.count > 10) {
-        return new NextResponse(null, {
-          status: 429,
-          headers: { "Retry-After": "120" },
-        });
-      }
-    }
-  }
-
-  // --- ÉTAPE 8 : Protection des routes API de scraping ---
+  // --- ÉTAPE 7 : Protection des routes API de scraping ---
   if (
     pathname.startsWith("/api/scrapeauto") ||
     pathname.startsWith("/api/scrapeul")
