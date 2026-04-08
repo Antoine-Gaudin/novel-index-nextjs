@@ -8,7 +8,7 @@ import Link from "next/link";
 import FiltreOeuvres from "@/app/components/FiltreOeuvres";
 import FicheOeuvre from "@/app/components/FicheOeuvre";
 import OeuvreCard from "@/app/components/OeuvreCard";
-import KanveoBanner from "@/app/components/KanveoBanner";
+import AdBanner from "@/app/components/AdBanner";
 import { slugify } from "@/utils/slugify";
 import { useAuth } from "@/contexts/AuthContext";
 import { FiChevronLeft, FiChevronRight, FiSearch, FiBook, FiGrid, FiFilter, FiStar, FiClock, FiTrendingUp, FiCalendar, FiRefreshCw, FiSettings, FiPlus, FiX, FiCheck, FiAlertCircle, FiArrowUp } from "react-icons/fi";
@@ -785,8 +785,8 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
         {/* Séparateur visuel */}
         <div className="border-t border-gray-800 my-8" />
 
-        {/* Publicité Kanveo */}
-        <KanveoBanner format="banner" className="mb-8" />
+        {/* Publicité — 50/50 Kanveo / Make Your List */}
+        <AdBanner format="banner" className="mb-8" />
 
         {/* Titre section catalogue */}
         <div ref={catalogueRef} className="flex items-center gap-3 mb-6 scroll-mt-20">
