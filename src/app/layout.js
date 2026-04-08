@@ -22,6 +22,9 @@ export const metadata = {
   },
   alternates: {
     canonical: "https://www.novel-index.com",
+    types: {
+      "application/rss+xml": "https://www.novel-index.com/api/rss",
+    },
   },
   openGraph: {
     title: "Novel-Index - Plateforme d'indexation de traductions",
@@ -80,10 +83,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="fr" className={`${inter.variable} ${geistSans.variable} ${geistMono.variable}`}>
       <head>
+        <link rel="preconnect" href="https://novel-index-strapi.onrender.com" />
+        <link rel="preconnect" href="https://res.cloudinary.com" />
         {isProduction && (
-          <script 
-            async 
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9369868670279081" 
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9369868670279081"
             crossOrigin="anonymous"
           />
         )}

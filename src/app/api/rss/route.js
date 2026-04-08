@@ -38,7 +38,8 @@ function parseItems(xml) {
 
     const mediaMatch = block.match(/<media:content[^>]*url="([^"]+)"/);
     const enclosureMatch = block.match(/<enclosure[^>]*url="([^"]+)"/);
-    const cover = mediaMatch?.[1] || enclosureMatch?.[1] || null;
+    const rawCover = mediaMatch?.[1] || enclosureMatch?.[1] || null;
+    const cover = cleanCoverUrl(rawCover);
 
     const rawDate = pubDate ? new Date(pubDate) : null;
     const date = rawDate
@@ -63,8 +64,7 @@ export async function GET() {
     for (const item of allItems) {
       if (item.url && seen.has(item.url)) continue;
       if (item.url) seen.add(item.url);
-      const { _ts, ...clean } = item;
-      unique.push(clean);
+      unique.push(item);
       if (unique.length >= 20) break;
     }
 
@@ -84,6 +84,22 @@ function extract(block, tag) {
   const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`);
   const m = block.match(regex);
   return m ? m[1].trim() : null;
+}
+
+function cleanCoverUrl(url) {
+  if (!url) return null;
+  // Décoder les entités HTML (&amp; → &)
+  const decoded = url.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+  // Vérifier que c'est bien une URL d'image (pas juste un domaine nu)
+  try {
+    const parsed = new URL(decoded);
+    const path = parsed.pathname;
+    // Rejeter les URLs sans chemin réel (ex: "https://www.boursorama.com/")
+    if (path === "/" || path === "") return null;
+    return decoded;
+  } catch {
+    return null;
+  }
 }
 
 function extractDomain(url) {

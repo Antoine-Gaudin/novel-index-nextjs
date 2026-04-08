@@ -21,7 +21,7 @@ export default function ArticleClient({ article, templateData, adjacent, apiUrl 
     if (templateData._type === "nouvelles-oeuvres") {
       return <TemplateNouvellesOeuvres preloadedData={templateData} />;
     }
-    return <TemplateSortiesJour preloadedData={templateData} />;
+    return <TemplateSortiesJour preloadedData={templateData} adjacent={adjacent} />;
   }
 
   const couverture = article.couverture?.url

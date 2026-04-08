@@ -133,9 +133,9 @@ Disallow: /admin-teams-relations
 Disallow: /api/
 Disallow: /Connexion
 Disallow: /Inscription
-Crawl-delay: 60
+Crawl-delay: 5
 
-# === Bingbot — ralenti ===
+# === Bingbot ===
 User-agent: Bingbot
 Allow: /
 Disallow: /Profil
@@ -151,7 +151,7 @@ Disallow: /admin-teams-relations
 Disallow: /api/
 Disallow: /Connexion
 Disallow: /Inscription
-Crawl-delay: 60
+Crawl-delay: 10
 
 # === Tous les autres bots ===
 User-agent: *
@@ -169,7 +169,7 @@ Disallow: /admin-teams-relations
 Disallow: /api/
 Disallow: /Connexion
 Disallow: /Inscription
-Crawl-delay: 60
+Crawl-delay: 10
 
 # Host
 Host: https://www.novel-index.com

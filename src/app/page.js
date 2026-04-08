@@ -4,7 +4,7 @@ import HeroSection from "./components/HeroSection";
 import SortieJours from "./components/SortieJours";
 import SortieHier from "./components/SortieHier";
 import SortieOeuvre from "./components/SortieOeuvre";
-import KanveoBanner from "./components/KanveoBanner";
+import AdBanner from "./components/AdBanner";
 import CtaInscription from "./components/CtaInscription";
 
 
@@ -61,8 +61,8 @@ export default function Home() {
         <SortieJours />
       </div>
 
-      {/* Publicité Kanveo — déplacée après les sorties du jour */}
-      <KanveoBanner format="banner" className="py-6 px-4" delay={1200} />
+      {/* Publicité — 50/50 Kanveo / Make Your List */}
+      <AdBanner format="banner" className="py-6 px-4" delay={1200} />
 
       <SortieHier />
       <SortieOeuvre />

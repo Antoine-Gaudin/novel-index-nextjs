@@ -10,7 +10,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { slugify } from "@/utils/slugify";
 import { FiX, FiBook, FiChevronsRight, FiStar, FiUser, FiGlobe, FiInfo, FiFileText, FiMessageCircle, FiTag, FiFolder, FiExternalLink } from "react-icons/fi";
-import KanveoBanner from "./KanveoBanner";
+import AdBanner from "./AdBanner";
 
 const FicheOeuvre = ({ oeuvre, onClose }) => {
   const [chapitres, setChapitres] = useState([]);
@@ -591,8 +591,8 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
                   )}
                 </AnimatePresence>
 
-                {/* Publicité Kanveo */}
-                <KanveoBanner format="mini" className="py-2" delay={1500} />
+                {/* Publicité — 50/50 Kanveo / Make Your List */}
+                <AdBanner format="mini" className="py-2" delay={1500} />
 
                 {/* Chapitres */}
                 <div className="bg-gray-800/40 backdrop-blur-md rounded-xl p-4 border border-gray-700/30">

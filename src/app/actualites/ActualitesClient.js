@@ -230,17 +230,17 @@ export default function ActualitesClient({
     displayItems = articles.filter((a) => (a.documentId || a.id) !== featuredId);
   }
 
-  // Intercaler les RSS
+  // Fusionner articles + RSS par date décroissante
   if (showRSS && rssItems.length > 0) {
     if (categorie === "externe") {
       displayItems = rssItems.map((r) => ({ ...r, externe: true }));
     } else {
-      const mixed = [...displayItems];
-      rssItems.forEach((r, i) => {
-        const pos = Math.min(2 + i * 3, mixed.length);
-        mixed.splice(pos, 0, { ...r, externe: true });
+      const rssWithFlag = rssItems.map((r) => ({ ...r, externe: true }));
+      displayItems = [...displayItems, ...rssWithFlag].sort((a, b) => {
+        const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : (a._ts || 0);
+        const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : (b._ts || 0);
+        return dateB - dateA;
       });
-      displayItems = mixed;
     }
   }
 

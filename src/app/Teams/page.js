@@ -6,7 +6,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { slugify } from "@/utils/slugify";
 import CoverBackground from "@/app/components/CoverBackground";
-import KanveoBanner from "@/app/components/KanveoBanner";
+import AdBanner from "@/app/components/AdBanner";
 import { FiUsers, FiBook, FiExternalLink, FiSearch, FiCheckCircle, FiXCircle } from "react-icons/fi";
 
 /**
@@ -170,8 +170,8 @@ export default function TeamsPage() {
         </div>
       </div>
 
-      {/* Publicité Kanveo */}
-      <KanveoBanner format="banner" className="max-w-7xl mx-auto px-4 py-4" />
+      {/* Publicité — 50/50 Kanveo / Make Your List */}
+      <AdBanner format="banner" className="max-w-7xl mx-auto px-4 py-4" />
 
       {/* Liste des Teams */}
       <div className="max-w-7xl mx-auto px-4 pb-12">

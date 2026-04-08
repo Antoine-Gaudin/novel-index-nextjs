@@ -27,12 +27,13 @@ async function fetchArticle(slug) {
   }
 }
 
-async function fetchAdjacent(publishedAt) {
+async function fetchAdjacent(publishedAt, slugPrefix = null) {
   if (!publishedAt) return { prev: null, next: null };
   try {
+    const slugFilter = slugPrefix ? `&filters[slug][$startsWith]=${slugPrefix}` : "";
     const [prevRes, nextRes] = await Promise.all([
-      fetch(`${API}/api/articles?filters[publishedAt][$lt]=${publishedAt}&sort=publishedAt:desc&pagination[limit]=1&fields[0]=titre&fields[1]=slug&status=published`, { next: { revalidate: 300 } }),
-      fetch(`${API}/api/articles?filters[publishedAt][$gt]=${publishedAt}&sort=publishedAt:asc&pagination[limit]=1&fields[0]=titre&fields[1]=slug&status=published`, { next: { revalidate: 300 } }),
+      fetch(`${API}/api/articles?filters[publishedAt][$lt]=${publishedAt}${slugFilter}&sort=publishedAt:desc&pagination[limit]=1&fields[0]=titre&fields[1]=slug&status=published`, { next: { revalidate: 300 } }),
+      fetch(`${API}/api/articles?filters[publishedAt][$gt]=${publishedAt}${slugFilter}&sort=publishedAt:asc&pagination[limit]=1&fields[0]=titre&fields[1]=slug&status=published`, { next: { revalidate: 300 } }),
     ]);
     const prev = prevRes.ok ? (await prevRes.json()).data?.[0] || null : null;
     const next = nextRes.ok ? (await nextRes.json()).data?.[0] || null : null;
@@ -206,7 +207,15 @@ export default async function ArticlePage({ params }) {
     } catch { /* pas du JSON */ }
   }
 
-  const adjacent = await fetchAdjacent(article.publishedAt);
+  // Filtrer adjacent par même type d'article pour les templates auto-générés
+  const slugPrefixMap = {
+    sorties: "sorties-",
+    "recap-semaine": "recap-semaine-",
+    "recap-mois": "bilan-",
+    "nouvelles-oeuvres": "nouvelles-oeuvres-",
+  };
+  const slugPrefix = templateData ? slugPrefixMap[templateData._type] || null : null;
+  const adjacent = await fetchAdjacent(article.publishedAt, slugPrefix);
 
   return (
     <>

@@ -140,7 +140,7 @@ const SECTIONS = [
 
 // ── TEMPLATE SORTIES DU JOUR ──
 
-export default function TemplateSortiesJour({ preloadedData }) {
+export default function TemplateSortiesJour({ preloadedData, adjacent = {} }) {
   const { article: ARTICLE, top3: TOP3, categories: CATEGORIES, teams: TEAMS, weekData, aiTexts } = preloadedData;
   const maxSemaine = Math.max(...(weekData || []).map((d) => d.count), 1);
 
@@ -470,7 +470,47 @@ export default function TemplateSortiesJour({ preloadedData }) {
             </div>
           </RevealSection>
 
-          <RevealSection delay={300}>
+          {/* Navigation article précédent / suivant */}
+          {(adjacent.prev || adjacent.next) && (
+            <RevealSection delay={300}>
+              <div className="flex items-stretch gap-4 mt-12 pt-6 border-t border-gray-800">
+                {adjacent.prev ? (
+                  <Link
+                    href={`/actualites/${adjacent.prev.slug}`}
+                    className="flex-1 flex items-center gap-3 p-4 rounded-xl bg-gray-800/50 border border-gray-700 hover:border-indigo-500 transition-all group"
+                  >
+                    <FiChevronRight className="text-xl text-gray-400 group-hover:text-indigo-400 transition-colors shrink-0 rotate-180" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Précédent</p>
+                      <p className="text-sm text-white font-medium truncate group-hover:text-indigo-300 transition-colors">
+                        {adjacent.prev.titre}
+                      </p>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="flex-1" />
+                )}
+                {adjacent.next ? (
+                  <Link
+                    href={`/actualites/${adjacent.next.slug}`}
+                    className="flex-1 flex items-center justify-end gap-3 p-4 rounded-xl bg-gray-800/50 border border-gray-700 hover:border-indigo-500 transition-all group text-right"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Suivant</p>
+                      <p className="text-sm text-white font-medium truncate group-hover:text-indigo-300 transition-colors">
+                        {adjacent.next.titre}
+                      </p>
+                    </div>
+                    <FiChevronRight className="text-xl text-gray-400 group-hover:text-indigo-400 transition-colors shrink-0" />
+                  </Link>
+                ) : (
+                  <div className="flex-1" />
+                )}
+              </div>
+            </RevealSection>
+          )}
+
+          <RevealSection delay={400}>
             <div className="mt-10 flex flex-wrap gap-4">
               <Link href="/Oeuvres" className="flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-400 transition-colors"><FiBookOpen /> Parcourir le catalogue</Link>
               <Link href="/Teams" className="flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-400 transition-colors"><FiUsers /> Toutes les teams</Link>
