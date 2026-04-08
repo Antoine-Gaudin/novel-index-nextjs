@@ -12,7 +12,11 @@ const RSS_FEEDS = [
 
 async function fetchOneFeed(url) {
   try {
-    const res = await fetch(url, { next: { revalidate: 1800 } });
+    const res = await fetch(url, {
+      next: { revalidate: 1800 },
+      signal: AbortSignal.timeout(5000),
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; NovelIndex-RSS/1.0)" },
+    });
     if (!res.ok) return [];
     const xml = await res.text();
     return parseItems(xml);
