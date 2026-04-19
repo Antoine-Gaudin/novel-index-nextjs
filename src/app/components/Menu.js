@@ -85,9 +85,28 @@ const Menu = () => {
     fetchUserProfile();
   }, [jwt, user, apiUrl]);
 
-  if (!hasMounted || isLoading) return null;
-
   const isActive = (path) => pathname === path;
+
+  // Pendant l'hydration/loading, afficher le header shell sans les éléments auth
+  if (!hasMounted || isLoading) {
+    return (
+      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-gray-900/90 to-transparent">
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
+          <Link href="/">
+            <Image src="/logo.png" alt="Logo Novel-index" width={40} height={40} className="h-10 w-auto drop-shadow-lg" />
+          </Link>
+          <ul className="hidden md:flex items-center gap-1">
+            <li><Link href="/" className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-gray-300"><FiHome className="text-lg text-gray-400" /><span>Accueil</span></Link></li>
+            <li><Link href="/Oeuvres" className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-gray-300"><FiBook className="text-lg text-gray-400" /><span>Oeuvres</span></Link></li>
+            <li><Link href="/Teams" className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-gray-300"><FiUsers className="text-lg text-gray-400" /><span>Teams</span></Link></li>
+            <li><Link href="/actualites" className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-gray-300"><FiFileText className="text-lg text-gray-400" /><span>Actualités</span></Link></li>
+          </ul>
+          <div className="hidden md:block w-24" />
+          <div className="md:hidden w-10 h-10" />
+        </nav>
+      </header>
+    );
+  }
 
   const NavLink = ({ href, icon: Icon, children }) => (
     <Link
@@ -114,20 +133,20 @@ const Menu = () => {
     }`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
         {/* Logo */}
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="cursor-pointer"
-          onClick={() => router.push("/")}
-        >
-          <Image 
-            src="/logo.png" 
-            alt="Logo Novel-index" 
-            width={40} 
-            height={40} 
-            className="h-10 w-auto drop-shadow-lg" 
-          />
-        </motion.div>
+        <Link href="/">
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Image
+              src="/logo.png"
+              alt="Logo Novel-index"
+              width={40}
+              height={40}
+              className="h-10 w-auto drop-shadow-lg"
+            />
+          </motion.div>
+        </Link>
 
         {/* Navigation Desktop */}
         <ul className="hidden md:flex items-center gap-1">

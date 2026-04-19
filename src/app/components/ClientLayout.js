@@ -3,11 +3,18 @@
 import Menu from "./Menu";
 import { GoogleAnalytics } from "nextjs-google-analytics";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AppProgressBar as ProgressBar } from "next-nprogress-bar";
 
 export default function ClientLayout({ children }) {
   return (
     <AuthProvider>
       <GoogleAnalytics gaMeasurementId="G-7MK34RRGND" trackPageViews />
+      <ProgressBar
+        height="3px"
+        color="linear-gradient(to right, #4f46e5, #7c3aed)"
+        options={{ showSpinner: false }}
+        shallowRouting
+      />
       {/* Lien d'accessibilité — skip to content */}
       <a
         href="#main-content"

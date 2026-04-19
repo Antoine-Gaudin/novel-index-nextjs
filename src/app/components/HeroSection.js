@@ -11,8 +11,17 @@ export default function HeroSection() {
   const [stats, setStats] = useState({ oeuvres: 0, chapitres: 0, teams: 0 });
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-  // Charger les stats
+  // Charger les stats (cache sessionStorage pour éviter de re-fetch à chaque visite)
   useEffect(() => {
+    const CACHE_KEY = "ni_hero_stats";
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        setStats(JSON.parse(cached));
+        return;
+      } catch {}
+    }
+
     const fetchStats = async () => {
       try {
         const [oeuvresRes, chapitresRes, teamsRes] = await Promise.all([
@@ -25,11 +34,13 @@ export default function HeroSection() {
           chapitresRes.json(),
           teamsRes.json(),
         ]);
-        setStats({
+        const newStats = {
           oeuvres: oeuvresData.meta?.pagination?.total || 0,
           chapitres: chapitresData.meta?.pagination?.total || 0,
           teams: teamsData.meta?.pagination?.total || 0,
-        });
+        };
+        setStats(newStats);
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(newStats));
       } catch (err) {
         console.error("Erreur chargement stats:", err);
       }

@@ -16,10 +16,10 @@ import {
 import { FaTwitter, FaRedditAlien, FaDiscord } from "react-icons/fa";
 import { slugify } from "@/utils/slugify";
 import DOMPurify from "dompurify";
-import CommentairePreview from "./components/CommentairePreview";
-import HeroSection from "./components/HeroSection";
-import AdBanner from "./components/AdBanner";
-import CtaInscription from "./components/CtaInscription";
+import CommentairePreview from "../components/CommentairePreview";
+import HeroSection from "../components/HeroSection";
+import AdBanner from "../components/AdBanner";
+import CtaInscription from "../components/CtaInscription";
 
 /* ============================================================
    PREVIEW OEUVRE — Modale immersive WOW
@@ -846,7 +846,7 @@ function NouvellesOeuvres({ onSelect }) {
         const today = new Date().toISOString().split("T")[0];
         const res = await fetch(`${apiUrl}/api/oeuvres?filters[createdAt][$gte]=${today}T00:00:00&sort=createdAt:desc&populate=couverture`);
         const data = await res.json();
-        setOeuvres((data.data || []).map((o) => ({ ...o, couverture: coverOf(o), type: o.type || "Type inconnu", traduction: o.traduction || "Catégorie inconnue" })));
+        setOeuvres((data.data || []).map((o) => ({ ...o, couverture: o.couverture?.url || null, type: o.type || "Type inconnu", traduction: o.traduction || "Catégorie inconnue" })));
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     };
@@ -947,7 +947,7 @@ function OeuvresVitrine({ onSelect }) {
       try {
         // Étape 1 : chapitres les plus récents → oeuvre documentIds uniques
         const chapRes = await fetch(
-          `${apiUrl}/api/chapitres?sort=createdAt:desc&pagination[limit]=40&populate[0]=oeuvres&fields[0]=createdAt`
+          `${apiUrl}/api/chapitres?sort=createdAt:desc&pagination[limit]=40&populate[0]=oeuvres`
         );
         const chapData = await chapRes.json();
         const seen = new Set();
@@ -962,35 +962,26 @@ function OeuvresVitrine({ onSelect }) {
         }
         if (oeuvreIds.length === 0) { setLoading(false); return; }
 
-        // Étape 2 : fetch complet de ces oeuvres (sans chapitres pour la perf)
+        // Étape 2 : fetch complet de ces oeuvres
         const filters = oeuvreIds.map((id, i) => `filters[documentId][$in][${i}]=${id}`).join("&");
-        const oRes = await fetch(`${apiUrl}/api/oeuvres?${filters}&populate[0]=couverture&populate[1]=genres`);
-        const data = await oRes.json();
+        const res = await fetch(
+          `${apiUrl}/api/oeuvres?${filters}&populate[0]=couverture&populate[1]=genres&populate[2]=chapitres`
+        );
+        const data = await res.json();
 
-        // Remettre dans l'ordre des chapitres récents — affichage immédiat
+        // Remettre dans l'ordre des chapitres récents
         const map = new Map((data.data || []).map((o) => [o.documentId, o]));
-        const makeItem = (o, count = 0) => ({
+        setOeuvres(oeuvreIds.map((id) => map.get(id)).filter(Boolean).map((o) => ({
           documentId: o.documentId,
           titre: o.titre,
           type: o.type || "Type inconnu",
           synopsis: o.synopsis || "",
           traduction: o.traduction || null,
           etat: o.etat || null,
-          couverture: coverOf(o),
+          couverture: o.couverture?.url || null,
           genres: (o.genres || []).map((g) => g.titre).filter(Boolean).slice(0, 4),
-          chapitresCount: count,
-        });
-        const ordered = oeuvreIds.map((id) => map.get(id)).filter(Boolean);
-        setOeuvres(ordered.map((o) => makeItem(o)));
-
-        // Counts en arrière-plan
-        Promise.all(ordered.map((o) =>
-          fetch(`${apiUrl}/api/chapitres?filters[oeuvres][documentId][$eq]=${o.documentId}&pagination[limit]=1`)
-            .then((r) => r.json()).then((d) => [o.documentId, d.meta?.pagination?.total || 0])
-        )).then((counts) => {
-          const countMap = new Map(counts);
-          setOeuvres((prev) => prev.map((o) => ({ ...o, chapitresCount: countMap.get(o.documentId) || o.chapitresCount })));
-        });
+          chapitresCount: o.chapitres?.length || 0,
+        })));
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     };
@@ -1047,7 +1038,7 @@ function OeuvresVitrine({ onSelect }) {
 
         {/* Featured — Grande carte horizontale */}
         <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}
-          className="group relative mb-6 cursor-pointer" onClick={() => onSelect({ documentId: featured.documentId, titre: featured.titre, type: featured.type, couverture: featured.couverture })}>
+          className="group relative mb-6 cursor-pointer" onClick={() => onSelect({ documentId: featured.documentId, titre: featured.titre, type: featured.type })}>
           <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-amber-500/0 via-orange-500/0 to-amber-500/0 group-hover:from-amber-500/30 group-hover:via-orange-500/15 group-hover:to-amber-500/30 transition-all duration-500" />
           <div className="relative flex flex-col sm:flex-row bg-white/[0.02] border border-white/[0.06] group-hover:border-amber-500/20 rounded-2xl overflow-hidden transition-all duration-300">
             {/* Cover */}
@@ -1101,7 +1092,7 @@ function OeuvresVitrine({ onSelect }) {
                 initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ duration: 0.3, delay: Math.min(i * 0.06, 0.3) }}
                 className="group relative cursor-pointer"
-                onClick={() => onSelect({ documentId: oeuvre.documentId, titre: oeuvre.titre, type: oeuvre.type, couverture: oeuvre.couverture })}
+                onClick={() => onSelect({ documentId: oeuvre.documentId, titre: oeuvre.titre, type: oeuvre.type })}
               >
                 <div className="absolute -inset-[1px] rounded-xl bg-gradient-to-b from-amber-500/0 to-amber-500/0 group-hover:from-amber-500/20 group-hover:to-orange-500/10 transition-all duration-500" />
                 <div className="relative flex gap-4 bg-white/[0.02] border border-white/[0.06] group-hover:border-amber-500/20 rounded-xl p-3.5 transition-all duration-300 h-full">
@@ -1164,7 +1155,7 @@ function TopTeams() {
   useEffect(() => {
     const f = async () => {
       try {
-        const res = await fetch(`${apiUrl}/api/teams?populate[0]=couverture&populate[1]=oeuvres&pagination[limit]=12&sort=createdAt:asc&fields[0]=titre&fields[1]=documentId`);
+        const res = await fetch(`${apiUrl}/api/teams?populate[0]=couverture&populate[1]=oeuvres&pagination[limit]=12&sort=createdAt:asc`);
         const data = await res.json();
         const items = (data.data || [])
           .map((t) => ({
@@ -1279,7 +1270,7 @@ function DecouvrirParTeam({ onSelect }) {
       try {
         // Récupérer les top teams pour en choisir une au hasard parmi les 5 meilleures
         const teamsRes = await fetch(
-          `${apiUrl}/api/teams?populate[0]=oeuvres&pagination[limit]=10&sort=createdAt:asc&fields[0]=titre&fields[1]=documentId`
+          `${apiUrl}/api/teams?populate[0]=oeuvres&populate[1]=couverture&pagination[limit]=10&sort=createdAt:asc`
         );
         const teamsData = await teamsRes.json();
         const sorted = (teamsData.data || [])
@@ -1295,33 +1286,22 @@ function DecouvrirParTeam({ onSelect }) {
         setTeamName(pick.nom);
         setTeamId(pick.documentId);
 
-        // Fetch les oeuvres de cette team avec couverture (sans chapitres pour la perf)
+        // Fetch les oeuvres de cette team avec couverture + chapitres
         const res = await fetch(
-          `${apiUrl}/api/teams/${pick.documentId}?populate[oeuvres][populate][0]=couverture`
+          `${apiUrl}/api/teams/${pick.documentId}?populate[oeuvres][populate][0]=couverture&populate[oeuvres][populate][1]=chapitres`
         );
         const data = await res.json();
-        const topOeuvres = (data.data?.oeuvres || []).slice(0, 6);
-        // Affichage immédiat sans counts
-        const makeItem = (o, count = 0) => ({
+        const items = (data.data?.oeuvres || []).slice(0, 6).map((o) => ({
           documentId: o.documentId,
           titre: o.titre,
           type: o.type || "Type inconnu",
           synopsis: o.synopsis || "",
           traduction: pick.nom,
           etat: o.etat || null,
-          couverture: coverOf(o),
-          chapitresCount: count,
-        });
-        setOeuvres(topOeuvres.map((o) => makeItem(o)));
-
-        // Counts en arrière-plan
-        Promise.all(topOeuvres.map((o) =>
-          fetch(`${apiUrl}/api/chapitres?filters[oeuvres][documentId][$eq]=${o.documentId}&pagination[limit]=1`)
-            .then((r) => r.json()).then((d) => [o.documentId, d.meta?.pagination?.total || 0])
-        )).then((counts) => {
-          const countMap = new Map(counts);
-          setOeuvres((prev) => prev.map((o) => ({ ...o, chapitresCount: countMap.get(o.documentId) || o.chapitresCount })));
-        });
+          couverture: o.couverture?.url || null,
+          chapitresCount: o.chapitres?.length || 0,
+        }));
+        setOeuvres(items);
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     };
@@ -1378,7 +1358,7 @@ function DecouvrirParTeam({ onSelect }) {
 
         {/* Featured — Grande carte horizontale */}
         <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}
-          className="group relative mb-6 cursor-pointer" onClick={() => onSelect({ documentId: featured.documentId, titre: featured.titre, type: featured.type, couverture: featured.couverture })}>
+          className="group relative mb-6 cursor-pointer" onClick={() => onSelect({ documentId: featured.documentId, titre: featured.titre, type: featured.type })}>
           <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-cyan-500/0 via-teal-500/0 to-cyan-500/0 group-hover:from-cyan-500/30 group-hover:via-teal-500/15 group-hover:to-cyan-500/30 transition-all duration-500" />
           <div className="relative flex flex-col sm:flex-row bg-white/[0.02] border border-white/[0.06] group-hover:border-cyan-500/20 rounded-2xl overflow-hidden transition-all duration-300">
             {/* Cover */}
@@ -1423,7 +1403,7 @@ function DecouvrirParTeam({ onSelect }) {
                 initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ duration: 0.3, delay: Math.min(i * 0.06, 0.3) }}
                 className="group relative cursor-pointer"
-                onClick={() => onSelect({ documentId: oeuvre.documentId, titre: oeuvre.titre, type: oeuvre.type, couverture: oeuvre.couverture })}
+                onClick={() => onSelect({ documentId: oeuvre.documentId, titre: oeuvre.titre, type: oeuvre.type })}
               >
                 <div className="absolute -inset-[1px] rounded-xl bg-gradient-to-b from-cyan-500/0 to-cyan-500/0 group-hover:from-cyan-500/20 group-hover:to-teal-500/10 transition-all duration-500" />
                 <div className="relative flex gap-4 bg-white/[0.02] border border-white/[0.06] group-hover:border-cyan-500/20 rounded-xl p-3.5 transition-all duration-300 h-full">
@@ -1479,7 +1459,7 @@ function DecouvrirParGenre({ onSelect }) {
     const f = async () => {
       try {
         const genresRes = await fetch(
-          `${apiUrl}/api/genres?populate[oeuvres][fields][0]=documentId&pagination[limit]=50&fields[0]=titre&fields[1]=documentId`
+          `${apiUrl}/api/genres?populate=oeuvres&pagination[limit]=50`
         );
         const genresData = await genresRes.json();
         const eligible = (genresData.data || [])
@@ -1493,33 +1473,25 @@ function DecouvrirParGenre({ onSelect }) {
         const pick = eligible[(dayOfYear + 3) % eligible.length];
         setGenreName(pick.titre);
 
-        // Fetch oeuvres du genre avec couverture (sans chapitres pour la perf)
+        // Fetch oeuvres du genre avec couverture + chapitres
         const res = await fetch(
-          `${apiUrl}/api/genres/${pick.documentId}?populate[oeuvres][populate][0]=couverture`
+          `${apiUrl}/api/genres/${pick.documentId}?populate[oeuvres][populate][0]=couverture&populate[oeuvres][populate][1]=chapitres`
         );
         const data = await res.json();
-        const topOeuvres = (data.data?.oeuvres || []).filter((o) => o.titre).slice(0, 6);
-        // Affichage immédiat sans counts
-        const makeItem = (o, count = 0) => ({
-          documentId: o.documentId,
-          titre: o.titre,
-          type: o.type || "Type inconnu",
-          synopsis: o.synopsis || "",
-          traduction: o.traduction || null,
-          etat: o.etat || null,
-          couverture: coverOf(o),
-          chapitresCount: count,
-        });
-        setOeuvres(topOeuvres.map((o) => makeItem(o)));
-
-        // Counts en arrière-plan
-        Promise.all(topOeuvres.map((o) =>
-          fetch(`${apiUrl}/api/chapitres?filters[oeuvres][documentId][$eq]=${o.documentId}&pagination[limit]=1`)
-            .then((r) => r.json()).then((d) => [o.documentId, d.meta?.pagination?.total || 0])
-        )).then((counts) => {
-          const countMap = new Map(counts);
-          setOeuvres((prev) => prev.map((o) => ({ ...o, chapitresCount: countMap.get(o.documentId) || o.chapitresCount })));
-        });
+        const items = (data.data?.oeuvres || [])
+          .filter((o) => o.titre)
+          .slice(0, 6)
+          .map((o) => ({
+            documentId: o.documentId,
+            titre: o.titre,
+            type: o.type || "Type inconnu",
+            synopsis: o.synopsis || "",
+            traduction: o.traduction || null,
+            etat: o.etat || null,
+            couverture: o.couverture?.url || null,
+            chapitresCount: o.chapitres?.length || 0,
+          }));
+        setOeuvres(items);
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     };
@@ -1576,7 +1548,7 @@ function DecouvrirParGenre({ onSelect }) {
 
         {/* Featured */}
         <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}
-          className="group relative mb-6 cursor-pointer" onClick={() => onSelect({ documentId: featured.documentId, titre: featured.titre, type: featured.type, couverture: featured.couverture })}>
+          className="group relative mb-6 cursor-pointer" onClick={() => onSelect({ documentId: featured.documentId, titre: featured.titre, type: featured.type })}>
           <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-rose-500/0 via-pink-500/0 to-rose-500/0 group-hover:from-rose-500/30 group-hover:via-pink-500/15 group-hover:to-rose-500/30 transition-all duration-500" />
           <div className="relative flex flex-col sm:flex-row bg-white/[0.02] border border-white/[0.06] group-hover:border-rose-500/20 rounded-2xl overflow-hidden transition-all duration-300">
             <div className="relative sm:w-[220px] md:w-[260px] flex-shrink-0 aspect-[2/3] sm:aspect-auto sm:min-h-[280px]">
@@ -1620,7 +1592,7 @@ function DecouvrirParGenre({ onSelect }) {
                 initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ duration: 0.3, delay: Math.min(i * 0.06, 0.3) }}
                 className="group relative cursor-pointer"
-                onClick={() => onSelect({ documentId: oeuvre.documentId, titre: oeuvre.titre, type: oeuvre.type, couverture: oeuvre.couverture })}
+                onClick={() => onSelect({ documentId: oeuvre.documentId, titre: oeuvre.titre, type: oeuvre.type })}
               >
                 <div className="absolute -inset-[1px] rounded-xl bg-gradient-to-b from-rose-500/0 to-rose-500/0 group-hover:from-rose-500/20 group-hover:to-pink-500/10 transition-all duration-500" />
                 <div className="relative flex gap-4 bg-white/[0.02] border border-white/[0.06] group-hover:border-rose-500/20 rounded-xl p-3.5 transition-all duration-300 h-full">
@@ -1733,7 +1705,7 @@ function CommunauteSection() {
 }
 
 
-export default function Home() {
+export default function PreviewAccueil() {
   const [allSorties, setAllSorties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1777,6 +1749,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#111827]">
+      {/* Banner preview */}
+      <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 text-center text-amber-300/80 text-xs backdrop-blur-sm">
+        <strong>PREVIEW</strong> — Proposition de nouvelle homepage · Cette page ne modifie rien
+      </div>
 
       {error && <div className="bg-red-900/30 border-b border-red-600 px-4 py-3 text-center text-red-200">{error}</div>}
 

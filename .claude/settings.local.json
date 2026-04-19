@@ -43,7 +43,14 @@
       "Bash(xxd)",
       "Bash(grep -r tag[ '/c/Users/agaud/OneDrive/Desktop/sites/novel-index v2/novel-index-v2-project/src')",
       "Bash(head -150 src/app/actualites/[slug]/page.js)",
-      "Bash(python3 -c \"import sys,json; items=json.load\\(sys.stdin\\)[''''items'''']; [print\\(f{i[''''titre''''][:50]:50s} | cover: {i.get\\(''''cover'''',''''NONE''''\\)}\\) for i in items[:20]]\")"
+      "Bash(python3 -c \"import sys,json; items=json.load\\(sys.stdin\\)[''''items'''']; [print\\(f{i[''''titre''''][:50]:50s} | cover: {i.get\\(''''cover'''',''''NONE''''\\)}\\) for i in items[:20]]\")",
+      "Bash(wait)",
+      "Bash(wc -l src/app/components/*.js src/app/layout.js src/app/page.js src/lib/api.js src/contexts/AuthContext.js middleware.js)",
+      "Bash(npx kill-port *)",
+      "Bash(npm run *)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python -m json.tool)"
     ]
   }
 }
