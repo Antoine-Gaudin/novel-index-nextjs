@@ -19,7 +19,7 @@ export default function MakeYourListBanner({ format = "banner", className = "", 
     return () => clearTimeout(timer);
   }, [delay]);
 
-  const href = "https://workspace-todo.vercel.app";
+  const href = "https://makeyourlist.novel-index.com";
 
   if (!visible) return null;
 
