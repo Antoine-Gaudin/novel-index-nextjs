@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { slugify } from "@/utils/slugify";
 import { auteurSlug } from "@/utils/auteurSlug";
+import TaxonomyChip from "@/app/components/TaxonomyChip";
 import { FiBook, FiTag, FiArrowLeft, FiUser, FiGlobe, FiLayers, FiHash, FiFileText } from "react-icons/fi";
 
 const STRAPI = process.env.NEXT_PUBLIC_API_URL;
@@ -453,13 +454,12 @@ export default async function AuteurPage({ params }) {
                 <ul className="flex flex-wrap gap-1.5">
                   {genres.map((g) => (
                     <li key={g}>
-                      <Link
-                        href={`/tags-genres/genre/${slugify(g)}`}
-                        className="inline-block px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-400/25 text-indigo-200 text-xs hover:bg-indigo-500/20 hover:border-indigo-400/50 hover:text-indigo-100 transition-colors"
+                      <TaxonomyChip
+                        type="genre"
+                        label={g}
+                        size="sm"
                         title={`Découvrir toutes les œuvres du genre ${g} sur Novel-Index`}
-                      >
-                        {g}
-                      </Link>
+                      />
                     </li>
                   ))}
                 </ul>
@@ -474,13 +474,12 @@ export default async function AuteurPage({ params }) {
                 <ul className="flex flex-wrap gap-1.5">
                   {tags.slice(0, 30).map((t) => (
                     <li key={t}>
-                      <Link
-                        href={`/tags-genres/tag/${slugify(t)}`}
-                        className="inline-block px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-400/25 text-purple-200 text-xs hover:bg-purple-500/20 hover:border-purple-400/50 hover:text-purple-100 transition-colors"
+                      <TaxonomyChip
+                        type="tag"
+                        label={t}
+                        size="sm"
                         title={`Découvrir toutes les œuvres avec la thématique ${t} sur Novel-Index`}
-                      >
-                        {t}
-                      </Link>
+                      />
                     </li>
                   ))}
                   {tags.length > 30 && (

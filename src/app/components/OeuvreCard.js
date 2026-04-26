@@ -5,6 +5,7 @@ import { FiBook } from "react-icons/fi";
 import Image from "next/image";
 import Link from "next/link";
 import { slugify } from "@/utils/slugify";
+import TaxonomyChip from "./TaxonomyChip";
 
 const OeuvreCard = ({ oeuvre, index = 0, onClick, showTimeAgo = false }) => {
   const getTimeAgo = (dateString) => {
@@ -24,11 +25,17 @@ const OeuvreCard = ({ oeuvre, index = 0, onClick, showTimeAgo = false }) => {
     : null;
 
   // Support des deux formats de couverture (URL directe ou objet avec .url)
-  const coverUrl = typeof oeuvre.couverture === "string" 
-    ? oeuvre.couverture 
+  const coverUrl = typeof oeuvre.couverture === "string"
+    ? oeuvre.couverture
     : oeuvre.couverture?.url;
 
   const oeuvreUrl = `/oeuvre/${oeuvre.documentId}-${slugify(oeuvre.titre || '')}`;
+
+  // Genres cliquables (max 2) — affichés sous la card si présents.
+  // Ils sont en dehors du <Link> englobant pour éviter les <a> imbriqués (HTML invalide).
+  const genres = Array.isArray(oeuvre.genres)
+    ? oeuvre.genres.filter((g) => g?.titre).slice(0, 2)
+    : [];
 
   const handleClick = (e) => {
     // Permettre Ctrl+clic / clic molette pour ouvrir dans un nouvel onglet
@@ -45,12 +52,12 @@ const OeuvreCard = ({ oeuvre, index = 0, onClick, showTimeAgo = false }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
       whileHover={{ y: -8, transition: { duration: 0.2 } }}
-      className="group relative bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-gray-700/30 hover:border-indigo-500/50 hover:shadow-indigo-500/10 hover:shadow-xl transition-all duration-300"
+      className="group relative bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-gray-700/30 hover:border-indigo-500/50 hover:shadow-indigo-500/10 hover:shadow-xl transition-all duration-300 flex flex-col"
     >
       <Link
         href={oeuvreUrl}
         onClick={handleClick}
-        className="block cursor-pointer"
+        className="block cursor-pointer relative"
       >
         {coverUrl ? (
           <div className="relative h-48 sm:h-64 overflow-hidden">
@@ -87,6 +94,24 @@ const OeuvreCard = ({ oeuvre, index = 0, onClick, showTimeAgo = false }) => {
           </p>
         </div>
       </Link>
+
+      {/* Chips genres cliquables — en dehors du Link englobant pour éviter
+          l'imbrication d'ancres (HTML invalide). Boostent le maillage interne SEO.
+          key sur documentId (unique en base) pour éviter les collisions quand
+          la base contient des doublons éditoriaux (ex. 2 tags "Nobles"). */}
+      {genres.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 px-3 py-2 border-t border-white/[0.04]">
+          {genres.map((g, i) => (
+            <TaxonomyChip
+              key={g.documentId || g.id || `${g.titre}-${i}`}
+              type="genre"
+              label={g.titre}
+              size="sm"
+              title={`Voir toutes les œuvres ${g.titre}`}
+            />
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 };

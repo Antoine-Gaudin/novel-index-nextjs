@@ -5,15 +5,17 @@ import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import FiltreOeuvres from "@/app/components/FiltreOeuvres";
-import FicheOeuvre from "@/app/components/FicheOeuvre";
+const FicheOeuvre = dynamic(() => import("@/app/components/FicheOeuvre"), { ssr: false });
 import OeuvreCard from "@/app/components/OeuvreCard";
 import AdBanner from "@/app/components/AdBanner";
+import TaxonomyChip from "@/app/components/TaxonomyChip";
 import { slugify } from "@/utils/slugify";
 import { useAuth } from "@/contexts/AuthContext";
-import { FiChevronLeft, FiChevronRight, FiSearch, FiBook, FiGrid, FiFilter, FiStar, FiClock, FiTrendingUp, FiCalendar, FiRefreshCw, FiSettings, FiPlus, FiX, FiCheck, FiAlertCircle, FiArrowUp } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiSearch, FiBook, FiGrid, FiFilter, FiStar, FiClock, FiTrendingUp, FiCalendar, FiRefreshCw, FiSettings, FiPlus, FiX, FiCheck, FiAlertCircle, FiArrowUp, FiHeart, FiUser } from "react-icons/fi";
 
-export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0, initialPage = 0, initialExtras = null }) {
+export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0, initialPage = 0, initialExtras = null, totalPages: initialTotalPages = 1 }) {
   const [oeuvres, setOeuvres] = useState(initialOeuvres);
   const [page, setPage] = useState(initialPage);
   const [loading, setLoading] = useState(initialOeuvres.length === 0);
@@ -35,13 +37,14 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
   const catalogueRef = useRef(null);
 
   // Nouvelles données pour les sections enrichies
-  const [featuredOeuvres, setFeaturedOeuvres] = useState([]);
-  const [featuredIndex, setFeaturedIndex] = useState(0);
+  // featuredOeuvres : initialisé depuis le SSR (initialFeatured) pour que la section
+  // soit indexable Googlebot. Le useEffect ci-dessous override avec la sélection
+  // admin si présente dans localStorage.
+  const [featuredOeuvres, setFeaturedOeuvres] = useState(initialExtras?.initialFeatured || []);
   const [dernieresMaj, setDernieresMaj] = useState(initialExtras?.dernieresMaj || []);
   const [nouveautes, setNouveautes] = useState(initialExtras?.nouveautes || []);
   const [stats, setStats] = useState(initialExtras?.stats || { chapitres: 0, teams: 0 });
-  const [loadingExtras, setLoadingExtras] = useState(!initialExtras);
-  const [isHoveringCarousel, setIsHoveringCarousel] = useState(false);
+  const [loadingExtras, setLoadingExtras] = useState(false);
   
   // Admin - gestion des coups de cœur
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -49,41 +52,26 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
   const [adminSearch, setAdminSearch] = useState("");
   const [loadingAdminSearch, setLoadingAdminSearch] = useState(false);
 
-  // Sélection featured depuis les données SSR + localStorage admin
+  // Override de la sélection SSR par le choix admin localStorage si présent.
+  // (Le shuffle quotidien par défaut est déjà fait en SSR dans page.js → indexable.)
   useEffect(() => {
     const candidates = initialExtras?.featuredCandidates || [];
     setAllOeuvresForPicker(candidates);
 
-    if (candidates.length > 0) {
-      // Vérifier le localStorage pour les sélections admin
-      try {
-        const savedFeatured = localStorage.getItem('novel-index-featured');
-        if (savedFeatured) {
-          const savedIds = JSON.parse(savedFeatured);
-          if (Array.isArray(savedIds) && savedIds.length > 0) {
-            const savedOeuvres = savedIds
-              .map(id => candidates.find(o => o.documentId === id))
-              .filter(Boolean);
-            if (savedOeuvres.length >= 3) {
-              setFeaturedOeuvres(savedOeuvres);
-              setLoadingExtras(false);
-              return;
-            }
-          }
-        }
-      } catch {}
+    if (candidates.length === 0) return;
 
-      // Mélanger et prendre 5 (basé sur le jour pour varier)
-      const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 1)) / (24 * 60 * 60 * 1000));
-      const shuffled = [...candidates].sort((a, b) => {
-        const hashA = (a.documentId.charCodeAt(0) + dayOfYear) % 100;
-        const hashB = (b.documentId.charCodeAt(0) + dayOfYear) % 100;
-        return hashA - hashB;
-      });
-      setFeaturedOeuvres(shuffled.slice(0, 5));
-    }
-
-    setLoadingExtras(false);
+    try {
+      const savedFeatured = localStorage.getItem('novel-index-featured');
+      if (!savedFeatured) return;
+      const savedIds = JSON.parse(savedFeatured);
+      if (!Array.isArray(savedIds) || savedIds.length === 0) return;
+      const savedOeuvres = savedIds
+        .map((id) => candidates.find((o) => o.documentId === id))
+        .filter(Boolean);
+      if (savedOeuvres.length >= 3) {
+        setFeaturedOeuvres(savedOeuvres);
+      }
+    } catch {}
   }, [initialExtras]);
 
   // F1: Admin - Sauvegarder la sélection dans localStorage
@@ -99,7 +87,6 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
     const shuffled = [...allOeuvresForPicker].sort(() => Math.random() - 0.5);
     const newFeatured = shuffled.slice(0, 5);
     setFeaturedOeuvres(newFeatured);
-    setFeaturedIndex(0);
     saveFeaturedToStorage(newFeatured);
   };
 
@@ -132,32 +119,12 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
       ).slice(0, 10)
     : [];
 
-  // F5: Auto-rotation avec pause au hover
-  useEffect(() => {
-    if (featuredOeuvres.length === 0 || isHoveringCarousel) return;
-    const interval = setInterval(() => {
-      setFeaturedIndex((prev) => (prev + 1) % featuredOeuvres.length);
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [featuredOeuvres.length, isHoveringCarousel]);
-
-  // E4: Navigation clavier pour le carousel
-  const handleCarouselKeyDown = useCallback((e) => {
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      setFeaturedIndex((prev) => (prev + 1) % featuredOeuvres.length);
-    } else if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      setFeaturedIndex((prev) => (prev - 1 + featuredOeuvres.length) % featuredOeuvres.length);
-    }
-  }, [featuredOeuvres.length]);
-
   const fetchOeuvres = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const start = page * pageSize;
-      let url = `${apiUrl}/api/oeuvres?populate=couverture&pagination[start]=${start}&pagination[limit]=${pageSize}`;
+      let url = `${apiUrl}/api/oeuvres?populate[couverture][fields][0]=url&populate[genres][fields][0]=titre&pagination[start]=${start}&pagination[limit]=${pageSize}`;
       if (queryFiltres) url += `&${queryFiltres}`;
       if (sortBy) url += `&sort=${sortBy}`;
 
@@ -252,7 +219,14 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
     setPage(0); // reset à la première page si on change les filtres
   }, []);
 
-  const totalPages = Math.ceil(totalOeuvres / pageSize);
+  const totalPages = Math.max(initialTotalPages, Math.ceil(totalOeuvres / pageSize));
+
+  // href crawlable pour la pagination — vraie URL ?page=N que Googlebot peut suivre.
+  // Le onClick reste pour le comportement SPA (pas de full reload).
+  const pageHref = useCallback(
+    (p) => (p <= 1 ? pathname : `${pathname}?page=${p}`),
+    [pathname]
+  );
 
   // Skeleton loader component
   const SkeletonCard = () => (
@@ -299,219 +273,29 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
         </motion.div>
       </div>
 
-      {/* SECTION COUPS DE CŒUR - PRÉSENTATION EXCEPTIONNELLE */}
+      {/* ═══ NOTRE SÉLECTION — Pattern home (Featured + Grid), accent rose/pink ═══
+          z-10 obligatoire : la section démarre dans la zone des 700px du CoverBackground
+          (hero) en haut de la page. Sans z-10 elle se retrouve derrière les couvertures. */}
       {!loadingExtras && featuredOeuvres.length > 0 && (
-        <div className="relative z-20 -mt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Hero Spotlight - Oeuvre principale */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
-            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
-            onMouseEnter={() => setIsHoveringCarousel(true)}
-            onMouseLeave={() => setIsHoveringCarousel(false)}
-            onKeyDown={handleCarouselKeyDown}
-            tabIndex={0}
-            role="region"
-            aria-label="Coups de cœur - utilisez les flèches gauche/droite pour naviguer"
-          >
-            {/* Background Image avec effet blur */}
-            <div className="absolute inset-0">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={featuredIndex}
-                  initial={{ opacity: 0, scale: 1.1 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="absolute inset-0"
-                >
-                  {featuredOeuvres[featuredIndex]?.couverture?.url && (
-                    <Image
-                      src={featuredOeuvres[featuredIndex].couverture.url}
-                      alt=""
-                      fill
-                      sizes="100vw"
-                      className="object-cover blur-2xl opacity-15 scale-110"
-                      priority
-                    />
-                  )}
-                </motion.div>
-              </AnimatePresence>
-              <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/90 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-gray-900/50" />
-            </div>
+        <section className="relative z-10 py-8 px-4 sm:px-6 lg:px-8">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-rose-600/[0.04] rounded-full blur-[120px] pointer-events-none" />
 
-            {/* Contenu principal */}
-            <div className="relative z-10 flex flex-col lg:flex-row items-center gap-8 p-6 md:p-10 lg:p-12 min-h-[400px] lg:min-h-[450px]">
-              
-              {/* Couverture avec effet 3D */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={featuredIndex}
-                  initial={{ opacity: 0, x: -50, rotateY: -15 }}
-                  animate={{ opacity: 1, x: 0, rotateY: 0 }}
-                  exit={{ opacity: 0, x: 50 }}
-                  transition={{ duration: 0.5 }}
-                  className="flex-shrink-0"
-                >
-                  <Link 
-                    href={`/oeuvre/${featuredOeuvres[featuredIndex]?.documentId}-${slugify(featuredOeuvres[featuredIndex]?.titre || '')}`}
-                    className="block group"
-                  >
-                    <div className="relative">
-                      {/* Effet glow */}
-                      <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-500" />
-                      
-                      {/* Couverture */}
-                      <div className="relative w-48 h-72 md:w-56 md:h-80 lg:w-64 lg:h-96 rounded-xl overflow-hidden shadow-2xl transform group-hover:scale-[1.02] transition-transform duration-500 ring-2 ring-white/10">
-                        {featuredOeuvres[featuredIndex]?.couverture?.url ? (
-                          <Image
-                            src={featuredOeuvres[featuredIndex].couverture.url}
-                            alt={featuredOeuvres[featuredIndex].titre}
-                            fill
-                            sizes="(max-width: 768px) 192px, (max-width: 1024px) 224px, 256px"
-                            className="object-cover"
-                            priority
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                            <FiBook className="text-5xl text-gray-600" />
-                          </div>
-                        )}
-                        
-                        {/* Badge numéro */}
-                        <div className="absolute top-3 left-3">
-                          <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-black px-3 py-1.5 rounded-full shadow-lg">
-                            #{featuredIndex + 1} COUP DE CŒUR
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              </AnimatePresence>
-
-              {/* Infos oeuvre */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={featuredIndex}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -30 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  className="flex-1 text-center lg:text-left"
-                >
-                  {/* Titre de section */}
-                  <div className="flex items-center justify-center lg:justify-start gap-2 mb-4">
-                    <FiStar className="text-yellow-400 text-xl" />
-                    <h2 className="text-sm font-medium text-yellow-400 uppercase tracking-wider">
-                      Notre sélection
-                    </h2>
-                  </div>
-                  
-                  {/* Titre oeuvre */}
-                  <Link 
-                    href={`/oeuvre/${featuredOeuvres[featuredIndex]?.documentId}-${slugify(featuredOeuvres[featuredIndex]?.titre || '')}`}
-                    className="block group"
-                  >
-                    <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-400 group-hover:to-pink-400 transition-all duration-300 line-clamp-2">
-                      {featuredOeuvres[featuredIndex]?.titre}
-                    </h3>
-                  </Link>
-                  
-                  {/* Métadonnées */}
-                  <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-5">
-                    <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm font-medium">
-                      {featuredOeuvres[featuredIndex]?.type || "Novel"}
-                    </span>
-                    {featuredOeuvres[featuredIndex]?.categorie && (
-                      <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-medium">
-                        {featuredOeuvres[featuredIndex].categorie}
-                      </span>
-                    )}
-                    {featuredOeuvres[featuredIndex]?.etat && (
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        featuredOeuvres[featuredIndex].etat === "En cours" 
-                          ? "bg-green-500/20 text-green-300" 
-                          : "bg-blue-500/20 text-blue-300"
-                      }`}>
-                        {featuredOeuvres[featuredIndex].etat}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Genres */}
-                  {featuredOeuvres[featuredIndex]?.genres?.length > 0 && (
-                    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 mb-5">
-                      {featuredOeuvres[featuredIndex].genres.slice(0, 4).map((genre) => (
-                        <span 
-                          key={genre.documentId || genre.id} 
-                          className="px-2 py-0.5 bg-gray-800/80 text-gray-300 rounded text-xs border border-gray-700"
-                        >
-                          {genre.titre}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Synopsis */}
-                  <p className="text-gray-300 text-base md:text-lg leading-relaxed mb-6 line-clamp-4 max-w-2xl mx-auto lg:mx-0">
-                    {featuredOeuvres[featuredIndex]?.synopsis 
-                      ? featuredOeuvres[featuredIndex].synopsis.replace(/<[^>]*>/g, '').substring(0, 280) + '...'
-                      : "Découvrez cette œuvre exceptionnelle sélectionnée par notre équipe."
-                    }
-                  </p>
-                  
-                  {/* CTA */}
-                  <Link 
-                    href={`/oeuvre/${featuredOeuvres[featuredIndex]?.documentId}-${slugify(featuredOeuvres[featuredIndex]?.titre || '')}`}
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-indigo-500/30 transition-all duration-300 transform hover:scale-105"
-                  >
-                    <FiBook className="text-lg" />
-                    Découvrir cette œuvre
-                    <FiChevronRight className="text-lg" />
-                  </Link>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            {/* Navigation carousel */}
-            <div className="relative z-10 flex items-center justify-center gap-3 pb-6">
-              {featuredOeuvres.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setFeaturedIndex(idx)}
-                  className={`transition-all duration-300 ${
-                    idx === featuredIndex 
-                      ? 'w-10 h-3 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full shadow-lg shadow-indigo-500/30' 
-                      : 'w-3 h-3 bg-gray-600 hover:bg-gray-500 rounded-full'
-                  }`}
-                  aria-label={`Voir œuvre ${idx + 1}`}
-                />
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Miniatures des 5 œuvres mises en avant */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <FiStar className="text-yellow-400" />
-                <span className="text-sm font-medium text-gray-400">Les 5 coups de cœur</span>
+          <div className="max-w-7xl mx-auto relative">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
+                <FiHeart className="text-white text-[15px]" />
               </div>
-              
-              {/* U6: Contrôles Admin - cachés sur mobile */}
+              <h2 className="text-xl font-black text-white tracking-tight">Notre sélection</h2>
+              <span className="bg-rose-500/15 text-rose-300 px-3 py-1 rounded-full font-bold text-xs border border-rose-500/20">
+                {featuredOeuvres.length}
+              </span>
+
               {isAdmin && (
-                <div className="hidden md:flex items-center gap-2">
+                <div className="ml-auto hidden md:flex items-center gap-2">
                   <button
                     onClick={handleRefreshFeatured}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/30 rounded-full text-xs text-indigo-300 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.025] hover:bg-white/[0.05] border border-white/[0.06] hover:border-rose-500/30 rounded-full text-xs text-white/60 hover:text-white transition-all"
                     title="Relancer la sélection aléatoire"
                   >
                     <FiRefreshCw className="text-sm" />
@@ -520,9 +304,9 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
                   <button
                     onClick={() => setShowAdminPanel(!showAdminPanel)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-xs transition-all ${
-                      showAdminPanel 
-                        ? 'bg-yellow-500/30 border-yellow-500/50 text-yellow-300' 
-                        : 'bg-gray-700/50 hover:bg-gray-700 border-gray-600 text-gray-300'
+                      showAdminPanel
+                        ? 'bg-rose-500/20 border-rose-500/40 text-rose-200'
+                        : 'bg-white/[0.025] hover:bg-white/[0.05] border-white/[0.06] hover:border-rose-500/30 text-white/60 hover:text-white'
                     }`}
                     title="Gérer les coups de cœur"
                   >
@@ -532,150 +316,256 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
                 </div>
               )}
             </div>
-            
-            {/* Panel Admin - Sélection manuelle */}
-            {isAdmin && showAdminPanel && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mb-4 p-4 bg-gray-800/80 rounded-xl border border-yellow-500/30"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <FiSettings className="text-yellow-400" />
-                  <span className="text-sm font-medium text-yellow-300">Gestion des coups de cœur</span>
-                </div>
-                
-                {/* Liste des oeuvres sélectionnées avec bouton supprimer */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {featuredOeuvres.map((oeuvre, idx) => (
-                    <div 
-                      key={oeuvre.documentId}
-                      className="flex items-center gap-2 bg-gray-700/50 rounded-lg px-3 py-1.5 text-sm"
-                    >
-                      <span className="text-indigo-400 font-bold">#{idx + 1}</span>
-                      <span className="text-gray-200 max-w-[150px] truncate">{oeuvre.titre}</span>
-                      <button
-                        onClick={() => handleRemoveFromFeatured(oeuvre.documentId)}
-                        className="text-red-400 hover:text-red-300 transition-colors"
-                        title="Retirer"
-                      >
-                        <FiX />
-                      </button>
-                    </div>
-                  ))}
-                  {featuredOeuvres.length < 5 && (
-                    <span className="text-gray-500 text-sm italic px-2 py-1.5">
-                      {5 - featuredOeuvres.length} emplacement(s) disponible(s)
-                    </span>
-                  )}
-                </div>
+            <p className="text-white/35 text-sm mb-6">
+              Une curation d&apos;œuvres à découvrir, sélectionnées pour leur qualité et leur potentiel.
+            </p>
 
-                {/* Recherche pour ajouter */}
-                <div className="relative">
-                  <div className="flex items-center gap-2">
-                    <FiSearch className="text-gray-400" />
-                    <input
-                      type="text"
-                      value={adminSearch}
-                      onChange={(e) => setAdminSearch(e.target.value)}
-                      placeholder="Rechercher une œuvre à ajouter..."
-                      className="flex-1 bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-                  
-                  {/* Résultats de recherche */}
-                  {filteredOeuvresForPicker.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto">
-                      {filteredOeuvresForPicker.map((oeuvre) => (
-                        <button
+            {/* Panneau Admin dépliable */}
+            <AnimatePresence>
+              {isAdmin && showAdminPanel && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-6 overflow-hidden"
+                >
+                  <div className="p-4 bg-white/[0.025] border border-rose-500/20 rounded-xl">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FiSettings className="text-rose-400" />
+                      <span className="text-sm font-medium text-rose-200">Gestion de la sélection</span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {featuredOeuvres.map((oeuvre, idx) => (
+                        <div
                           key={oeuvre.documentId}
-                          onClick={() => handleAddToFeatured(oeuvre)}
-                          className="w-full flex items-center gap-3 p-3 hover:bg-gray-700/50 transition-colors text-left"
+                          className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5 text-sm"
                         >
-                          <div className="w-10 h-14 rounded overflow-hidden flex-shrink-0 bg-gray-700">
-                            {oeuvre.couverture?.url && (
-                              <Image
-                                src={oeuvre.couverture.url}
-                                alt={oeuvre.titre}
-                                width={40}
-                                height={56}
-                                className="w-full h-full object-cover"
-                              />
+                          <span className="text-rose-400 font-bold">#{idx + 1}</span>
+                          <span className="text-white/80 max-w-[150px] truncate">{oeuvre.titre}</span>
+                          <button
+                            onClick={() => handleRemoveFromFeatured(oeuvre.documentId)}
+                            className="text-red-400 hover:text-red-300 transition-colors"
+                            title="Retirer"
+                          >
+                            <FiX />
+                          </button>
+                        </div>
+                      ))}
+                      {featuredOeuvres.length < 5 && (
+                        <span className="text-white/40 text-sm italic px-2 py-1.5">
+                          {5 - featuredOeuvres.length} emplacement(s) disponible(s)
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="relative">
+                      <div className="flex items-center gap-2">
+                        <FiSearch className="text-white/40" />
+                        <input
+                          type="text"
+                          value={adminSearch}
+                          onChange={(e) => setAdminSearch(e.target.value)}
+                          placeholder="Rechercher une œuvre à ajouter..."
+                          className="flex-1 bg-white/[0.025] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-rose-500/50"
+                        />
+                      </div>
+
+                      {filteredOeuvresForPicker.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-white/[0.08] rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto">
+                          {filteredOeuvresForPicker.map((oeuvre) => (
+                            <button
+                              key={oeuvre.documentId}
+                              onClick={() => handleAddToFeatured(oeuvre)}
+                              className="w-full flex items-center gap-3 p-3 hover:bg-white/[0.04] transition-colors text-left"
+                            >
+                              <div className="w-10 h-14 rounded overflow-hidden flex-shrink-0 bg-white/[0.04]">
+                                {oeuvre.couverture?.url && (
+                                  <Image
+                                    src={oeuvre.couverture.url}
+                                    alt={oeuvre.titre}
+                                    width={40}
+                                    height={56}
+                                    className="w-full h-full object-cover"
+                                  />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate text-white/80">{oeuvre.titre}</p>
+                                <p className="text-xs text-white/40">{oeuvre.type || "Novel"}</p>
+                              </div>
+                              <FiPlus className="text-rose-400 flex-shrink-0" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Featured — Grande carte horizontale (œuvre #1) */}
+            {(() => {
+              const featured = featuredOeuvres[0];
+              if (!featured) return null;
+              const cover = featured.couverture?.url;
+              const url = `/oeuvre/${featured.documentId}-${slugify(featured.titre || '')}`;
+              const cleanSyno = (featured.synopsis || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4 }}
+                  className="group relative mb-6"
+                >
+                  <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-rose-500/0 via-pink-500/0 to-rose-500/0 group-hover:from-rose-500/30 group-hover:via-pink-500/15 group-hover:to-rose-500/30 transition-all duration-500" />
+                  <div className="relative flex flex-col sm:flex-row bg-white/[0.02] border border-white/[0.06] group-hover:border-rose-500/20 rounded-2xl overflow-hidden transition-all duration-300">
+                    {/* Cover */}
+                    <Link
+                      href={url}
+                      className="block relative sm:w-[220px] md:w-[260px] flex-shrink-0 aspect-[2/3] sm:aspect-auto sm:min-h-[280px]"
+                    >
+                      {cover ? (
+                        <Image
+                          src={cover}
+                          alt={featured.titre}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-700"
+                          sizes="260px"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                          <FiBook className="text-4xl text-white/10" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#111827] hidden sm:block" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#111827] to-transparent sm:hidden" />
+                    </Link>
+
+                    {/* Info */}
+                    <div className="flex-1 p-5 sm:p-7 flex flex-col justify-center relative">
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <span className="bg-rose-500/15 text-rose-300 border border-rose-500/20 px-2.5 py-0.5 text-[11px] rounded-lg font-semibold uppercase tracking-wider">
+                          Sélection
+                        </span>
+                        {featured.type && (
+                          <span className="bg-white/[0.06] text-white/60 px-2.5 py-0.5 text-[11px] rounded-lg font-medium">{featured.type}</span>
+                        )}
+                        {featured.etat && (
+                          <span className="bg-white/[0.06] text-white/50 px-2.5 py-0.5 text-[11px] rounded-lg font-medium">{featured.etat}</span>
+                        )}
+                      </div>
+                      <Link href={url} className="block">
+                        <h3 className="text-xl sm:text-2xl font-black text-white mb-2 group-hover:text-rose-200 transition-colors leading-tight">
+                          {featured.titre}
+                        </h3>
+                      </Link>
+                      {featured.auteur && (
+                        <p className="text-white/30 text-xs mb-3 flex items-center gap-1.5">
+                          <FiUser className="text-[10px]" />{featured.auteur}
+                        </p>
+                      )}
+                      {cleanSyno && (
+                        <p className="text-white/40 text-sm leading-relaxed mb-4 line-clamp-3">{cleanSyno}</p>
+                      )}
+                      {featured.genres?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {featured.genres.slice(0, 4).map((g) => (
+                            <TaxonomyChip
+                              key={g.documentId || g.id || g.titre}
+                              type="genre"
+                              label={g.titre}
+                              size="sm"
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })()}
+
+            {/* Grille — 4 autres sélections */}
+            {featuredOeuvres.length > 1 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {featuredOeuvres.slice(1, 5).map((oeuvre, i) => {
+                  const cover = oeuvre.couverture?.url;
+                  const url = `/oeuvre/${oeuvre.documentId}-${slugify(oeuvre.titre || '')}`;
+                  const cleanSyno = (oeuvre.synopsis || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+
+                  return (
+                    <motion.div
+                      key={oeuvre.documentId}
+                      initial={{ opacity: 0, y: 12 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.3, delay: Math.min(i * 0.06, 0.3) }}
+                      className="group relative"
+                    >
+                      <div className="absolute -inset-[1px] rounded-xl bg-gradient-to-b from-rose-500/0 to-rose-500/0 group-hover:from-rose-500/20 group-hover:to-pink-500/10 transition-all duration-500" />
+                      <div className="relative flex gap-4 bg-white/[0.02] border border-white/[0.06] group-hover:border-rose-500/20 rounded-xl p-3.5 transition-all duration-300 h-full">
+                        <Link
+                          href={url}
+                          className="relative flex-shrink-0 w-[80px] sm:w-[90px] aspect-[2/3] rounded-lg overflow-hidden bg-gray-900 block"
+                        >
+                          {cover ? (
+                            <Image
+                              src={cover}
+                              alt={oeuvre.titre}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-500"
+                              sizes="90px"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                              <FiBook className="text-xl text-white/10" />
+                            </div>
+                          )}
+                        </Link>
+
+                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            {oeuvre.type && (
+                              <span className="bg-white/[0.06] text-white/50 px-2 py-0.5 text-[10px] rounded-md font-semibold">{oeuvre.type}</span>
+                            )}
+                            {oeuvre.etat && (
+                              <span className="text-white/30 text-[10px]">{oeuvre.etat}</span>
                             )}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{oeuvre.titre}</p>
-                            <p className="text-xs text-gray-500">{oeuvre.type || "Novel"}</p>
-                          </div>
-                          <FiPlus className="text-green-400 flex-shrink-0" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
+                          <Link href={url} className="block">
+                            <h4 className="font-bold text-sm text-white truncate group-hover:text-rose-200 transition-colors mb-1">{oeuvre.titre}</h4>
+                          </Link>
+                          {oeuvre.auteur && (
+                            <p className="text-white/25 text-[11px] mb-1.5 truncate">{oeuvre.auteur}</p>
+                          )}
+                          {cleanSyno && (
+                            <p className="text-white/30 text-xs leading-relaxed line-clamp-2">{cleanSyno}</p>
+                          )}
+                          {oeuvre.genres?.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {oeuvre.genres.slice(0, 3).map((g) => (
+                                <TaxonomyChip
+                                  key={g.documentId || g.id || g.titre}
+                                  type="genre"
+                                  label={g.titre}
+                                  size="sm"
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
             )}
-            
-            <div className="grid grid-cols-5 gap-3">
-              {featuredOeuvres.map((oeuvre, idx) => (
-                <div
-                  key={oeuvre.documentId}
-                  onClick={() => setFeaturedIndex(idx)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && setFeaturedIndex(idx)}
-                  className={`group relative aspect-[3/4] rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
-                    idx === featuredIndex 
-                      ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-gray-900 scale-105 shadow-xl shadow-indigo-500/20' 
-                      : 'opacity-60 hover:opacity-100 hover:scale-[1.02]'
-                  }`}
-                >
-                  {oeuvre.couverture?.url ? (
-                    <Image
-                      src={oeuvre.couverture.url}
-                      alt={oeuvre.titre}
-                      fill
-                      sizes="(max-width: 640px) 20vw, 150px"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                      <FiBook className="text-gray-600" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-2">
-                    <p className="text-[10px] sm:text-xs font-medium truncate">{oeuvre.titre}</p>
-                  </div>
-                  <div className="absolute top-2 left-2">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                      idx === featuredIndex 
-                        ? 'bg-indigo-500 text-white' 
-                        : 'bg-black/50 text-gray-300'
-                    }`}>
-                      #{idx + 1}
-                    </span>
-                  </div>
-                  
-                  {/* Bouton supprimer pour admin */}
-                  {isAdmin && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveFromFeatured(oeuvre.documentId);
-                      }}
-                      className="absolute top-2 right-2 w-6 h-6 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                      title="Retirer ce coup de cœur"
-                    >
-                      <FiX className="text-white text-xs" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
+          </div>
+        </section>
       )}
 
       {/* Sections enrichies */}
@@ -833,21 +723,35 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
         {/* E5: Pagination compacte en haut */}
         {totalPages > 1 && !loading && (
           <div className="flex items-center justify-center gap-2 mb-6">
-            <button
-              disabled={page === 0}
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <FiChevronLeft className="inline" />
-            </button>
+            {page === 0 ? (
+              <span className="px-3 py-1.5 bg-gray-800 rounded-lg text-white text-sm opacity-40 cursor-not-allowed">
+                <FiChevronLeft className="inline" />
+              </span>
+            ) : (
+              <Link
+                href={pageHref(page)}
+                onClick={(e) => { e.preventDefault(); setPage((p) => Math.max(0, p - 1)); }}
+                className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-white text-sm transition-all"
+                aria-label="Page précédente"
+              >
+                <FiChevronLeft className="inline" />
+              </Link>
+            )}
             <span className="text-gray-400 text-sm">Page {page + 1} / {totalPages}</span>
-            <button
-              disabled={page >= totalPages - 1}
-              onClick={() => setPage((p) => p + 1)}
-              className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <FiChevronRight className="inline" />
-            </button>
+            {page >= totalPages - 1 ? (
+              <span className="px-3 py-1.5 bg-gray-800 rounded-lg text-white text-sm opacity-40 cursor-not-allowed">
+                <FiChevronRight className="inline" />
+              </span>
+            ) : (
+              <Link
+                href={pageHref(page + 2)}
+                onClick={(e) => { e.preventDefault(); setPage((p) => p + 1); }}
+                className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-white text-sm transition-all"
+                aria-label="Page suivante"
+              >
+                <FiChevronRight className="inline" />
+              </Link>
+            )}
           </div>
         )}
 
@@ -919,14 +823,22 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700/30 p-4 md:p-6">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 {/* Bouton Précédent */}
-                <button
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-xl text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  <FiChevronLeft className="text-lg" />
-                  <span className="hidden sm:inline">Précédent</span>
-                </button>
+                {page === 0 ? (
+                  <span className="flex items-center gap-2 px-4 py-2 bg-gray-700/50 rounded-xl text-white opacity-40 cursor-not-allowed">
+                    <FiChevronLeft className="text-lg" />
+                    <span className="hidden sm:inline">Précédent</span>
+                  </span>
+                ) : (
+                  <Link
+                    href={pageHref(page)}
+                    onClick={(e) => { e.preventDefault(); setPage((p) => Math.max(0, p - 1)); }}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-xl text-white transition-all"
+                    aria-label="Page précédente"
+                  >
+                    <FiChevronLeft className="text-lg" />
+                    <span className="hidden sm:inline">Précédent</span>
+                  </Link>
+                )}
 
                 {/* Pages numérotées */}
                 <div className="flex flex-wrap items-center justify-center gap-1 md:gap-2">
@@ -943,13 +855,15 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
                     // Première page
                     if (startPage > 0) {
                       pages.push(
-                        <button
+                        <Link
                           key="first"
-                          onClick={() => setPage(0)}
-                          className="w-10 h-10 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-white text-sm transition-all"
+                          href={pageHref(1)}
+                          onClick={(e) => { e.preventDefault(); setPage(0); }}
+                          className="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-700/50 hover:bg-gray-700 text-white text-sm transition-all"
+                          aria-label="Page 1"
                         >
                           1
-                        </button>
+                        </Link>
                       );
                       if (startPage > 1) {
                         pages.push(
@@ -960,18 +874,22 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
 
                     // Pages du milieu
                     for (let i = startPage; i <= endPage; i++) {
+                      const isCurrent = i === page;
                       pages.push(
-                        <button
+                        <Link
                           key={i}
-                          onClick={() => setPage(i)}
-                          className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
-                            i === page
+                          href={pageHref(i + 1)}
+                          onClick={(e) => { e.preventDefault(); setPage(i); }}
+                          aria-label={`Page ${i + 1}`}
+                          aria-current={isCurrent ? "page" : undefined}
+                          className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-all ${
+                            isCurrent
                               ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
                               : "bg-gray-700/50 hover:bg-gray-700 text-white"
                           }`}
                         >
                           {i + 1}
-                        </button>
+                        </Link>
                       );
                     }
 
@@ -983,13 +901,15 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
                         );
                       }
                       pages.push(
-                        <button
+                        <Link
                           key="last"
-                          onClick={() => setPage(totalPages - 1)}
-                          className="w-10 h-10 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-white text-sm transition-all"
+                          href={pageHref(totalPages)}
+                          onClick={(e) => { e.preventDefault(); setPage(totalPages - 1); }}
+                          className="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-700/50 hover:bg-gray-700 text-white text-sm transition-all"
+                          aria-label={`Page ${totalPages}`}
                         >
                           {totalPages}
-                        </button>
+                        </Link>
                       );
                     }
 
@@ -998,14 +918,22 @@ export default function CatalogueClient({ initialOeuvres = [], initialTotal = 0,
                 </div>
 
                 {/* Bouton Suivant */}
-                <button
-                  disabled={(page + 1) * pageSize >= totalOeuvres}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-xl text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  <span className="hidden sm:inline">Suivant</span>
-                  <FiChevronRight className="text-lg" />
-                </button>
+                {(page + 1) * pageSize >= totalOeuvres ? (
+                  <span className="flex items-center gap-2 px-4 py-2 bg-gray-700/50 rounded-xl text-white opacity-40 cursor-not-allowed">
+                    <span className="hidden sm:inline">Suivant</span>
+                    <FiChevronRight className="text-lg" />
+                  </span>
+                ) : (
+                  <Link
+                    href={pageHref(page + 2)}
+                    onClick={(e) => { e.preventDefault(); setPage((p) => p + 1); }}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-xl text-white transition-all"
+                    aria-label="Page suivante"
+                  >
+                    <span className="hidden sm:inline">Suivant</span>
+                    <FiChevronRight className="text-lg" />
+                  </Link>
+                )}
               </div>
 
               {/* Saut de page intégré */}

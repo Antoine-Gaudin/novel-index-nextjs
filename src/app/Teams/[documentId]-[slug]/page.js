@@ -4,6 +4,7 @@ import Image from "next/image";
 import { slugify } from "@/utils/slugify";
 import { auteurSlug } from "@/utils/auteurSlug";
 import CoverBackground from "@/app/components/CoverBackground";
+import TaxonomyChip from "@/app/components/TaxonomyChip";
 import TeamCatalogClient from "./TeamCatalogClient";
 import ShareTeamButton from "./ShareTeamButton";
 import {
@@ -728,14 +729,13 @@ export default async function TeamPage({ params }) {
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {dominantGenres.map(([g, count]) => (
-                        <Link
+                        <TaxonomyChip
                           key={g}
-                          href={`/tags-genres/genre/${slugify(g)}`}
+                          type="genre"
+                          label={g}
+                          count={count}
                           title={`Voir le genre ${g}`}
-                          className="px-3 py-1.5 bg-pink-500/10 hover:bg-pink-500/20 text-pink-200 border border-pink-400/30 hover:border-pink-300/60 rounded-full text-sm flex items-center gap-2 transition-colors"
-                        >
-                          {g} <span className="text-xs text-pink-300/70">({count})</span>
-                        </Link>
+                        />
                       ))}
                     </div>
                   </div>
@@ -747,14 +747,14 @@ export default async function TeamPage({ params }) {
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {dominantTags.map(([t, count]) => (
-                        <Link
+                        <TaxonomyChip
                           key={t}
-                          href={`/tags-genres/tag/${slugify(t)}`}
+                          type="tag"
+                          label={t}
+                          count={count}
+                          size="sm"
                           title={`Voir le tag ${t}`}
-                          className="px-2.5 py-1 bg-gray-900/60 hover:bg-gray-900/80 text-gray-300 border border-gray-700/40 hover:border-gray-500/60 rounded-full text-xs flex items-center gap-1.5 transition-colors"
-                        >
-                          #{t} <span className="text-gray-500">({count})</span>
-                        </Link>
+                        />
                       ))}
                     </div>
                   </div>

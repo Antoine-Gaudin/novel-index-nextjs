@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
 import {
@@ -20,7 +21,8 @@ import CommentairePreview from "./components/CommentairePreview";
 import HeroSection from "./components/HeroSection";
 import AdBanner from "./components/AdBanner";
 import CtaInscription from "./components/CtaInscription";
-import FicheOeuvre from "./components/FicheOeuvre";
+const FicheOeuvre = dynamic(() => import("./components/FicheOeuvre"), { ssr: false });
+import TaxonomyChip from "./components/TaxonomyChip";
 
 
 /* ============================================================
@@ -332,65 +334,41 @@ function NouvellesOeuvres({ onSelect }) {
    ============================================================ */
 
 /* ── 4. À DÉCOUVRIR — Vitrine oeuvres mises à jour récemment ── */
-function OeuvresVitrine({ onSelect }) {
-  const [oeuvres, setOeuvres] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+function OeuvresVitrine({ onSelect, initialOeuvres = null }) {
+  const [oeuvres, setOeuvres] = useState(initialOeuvres || []);
+  const [loading, setLoading] = useState(!initialOeuvres || initialOeuvres.length === 0);
+
+  // Si on reçoit des données dérivées de allSorties (top 6 oeuvres uniques), on les utilise
+  // directement — zero requête supplémentaire, affichage instantané.
+  useEffect(() => {
+    if (initialOeuvres && initialOeuvres.length > 0) {
+      setOeuvres(initialOeuvres);
+      setLoading(false);
+    }
+  }, [initialOeuvres]);
 
   useEffect(() => {
+    // Fallback : si pas de données initiales, on appelle la route cachée
+    if (initialOeuvres && initialOeuvres.length > 0) return;
+    let cancelled = false;
     const f = async () => {
       try {
-        // Étape 1 : chapitres les plus récents → oeuvre documentIds uniques
-        const chapRes = await fetch(
-          `${apiUrl}/api/chapitres?sort=createdAt:desc&pagination[limit]=40&populate[0]=oeuvres&fields[0]=createdAt`
-        );
-        const chapData = await chapRes.json();
-        const seen = new Set();
-        const oeuvreIds = [];
-        for (const ch of chapData.data || []) {
-          const oe = Array.isArray(ch.oeuvres) ? ch.oeuvres[0] : ch.oeuvres;
-          if (oe?.documentId && !seen.has(oe.documentId)) {
-            seen.add(oe.documentId);
-            oeuvreIds.push(oe.documentId);
-            if (oeuvreIds.length >= 6) break;
-          }
-        }
-        if (oeuvreIds.length === 0) { setLoading(false); return; }
-
-        // Étape 2 : fetch complet de ces oeuvres (sans chapitres pour la perf)
-        const filters = oeuvreIds.map((id, i) => `filters[documentId][$in][${i}]=${id}`).join("&");
-        const oRes = await fetch(`${apiUrl}/api/oeuvres?${filters}&populate[0]=couverture&populate[1]=genres`);
-        const data = await oRes.json();
-
-        // Remettre dans l'ordre des chapitres récents — affichage immédiat
-        const map = new Map((data.data || []).map((o) => [o.documentId, o]));
-        const makeItem = (o, count = 0) => ({
-          documentId: o.documentId,
-          titre: o.titre,
-          type: o.type || "Type inconnu",
-          synopsis: o.synopsis || "",
-          traduction: o.traduction || null,
-          etat: o.etat || null,
-          couverture: coverOf(o),
-          genres: (o.genres || []).map((g) => g.titre).filter(Boolean).slice(0, 4),
-          chapitresCount: count,
-        });
-        const ordered = oeuvreIds.map((id) => map.get(id)).filter(Boolean);
-        setOeuvres(ordered.map((o) => makeItem(o)));
-
-        // Counts en arrière-plan
-        Promise.all(ordered.map((o) =>
-          fetch(`${apiUrl}/api/chapitres?filters[oeuvres][documentId][$eq]=${o.documentId}&pagination[limit]=1`)
-            .then((r) => r.json()).then((d) => [o.documentId, d.meta?.pagination?.total || 0])
-        )).then((counts) => {
-          const countMap = new Map(counts);
-          setOeuvres((prev) => prev.map((o) => ({ ...o, chapitresCount: countMap.get(o.documentId) || o.chapitresCount })));
-        });
-      } catch (e) { console.error(e); }
-      finally { setLoading(false); }
+        const res = await fetch("/api/home/recent-oeuvres", { cache: "force-cache" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setOeuvres(data.oeuvres || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
     f();
-  }, [apiUrl]);
+    return () => {
+      cancelled = true;
+    };
+  }, [initialOeuvres]);
 
   if (loading) return (
     <section className="relative py-10 px-4">
@@ -1135,6 +1113,32 @@ export default function Home() {
   const [selectedData, setSelectedData] = useState(null);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
+  // Dérivation gratuite : top 6 oeuvres uniques par dernier update,
+  // au format attendu par OeuvresVitrine. Aucune requête supplémentaire.
+  const vitrineOeuvres = useMemo(() => {
+    if (!allSorties.length) return [];
+    const seen = new Set();
+    const out = [];
+    for (const s of allSorties) {
+      const o = s.oeuvre;
+      if (!o?.documentId || seen.has(o.documentId)) continue;
+      seen.add(o.documentId);
+      out.push({
+        documentId: o.documentId,
+        titre: o.titre,
+        type: o.type || "Type inconnu",
+        synopsis: o.synopsis || "",
+        traduction: o.traduction || null,
+        etat: o.etat || null,
+        couverture: coverOf(o),
+        genres: (o.genres || []).map((g) => g.titre).filter(Boolean).slice(0, 4),
+        chapitresCount: 0,
+      });
+      if (out.length >= 6) break;
+    }
+    return out;
+  }, [allSorties]);
+
   useEffect(() => {
     const fetchAll = async () => {
       const sevenDaysAgo = new Date();
@@ -1150,7 +1154,7 @@ export default function Home() {
 
         while (hasMore) {
           const res = await fetch(
-            `${apiUrl}/api/sortie-du-jours?filters[date][$gte]=${sinceStr}&populate[oeuvre][populate]=couverture&sort=dernierUpdate:desc&pagination[start]=${start}&pagination[limit]=${limit}`
+            `${apiUrl}/api/sortie-du-jours?filters[date][$gte]=${sinceStr}&populate[oeuvre][populate][0]=couverture&populate[oeuvre][populate][1]=genres&sort=dernierUpdate:desc&pagination[start]=${start}&pagination[limit]=${limit}`
           );
           const data = await res.json();
           const items = data?.data || [];
@@ -1197,7 +1201,7 @@ export default function Home() {
           <NouvellesOeuvres onSelect={setSelectedData} />
 
           {/* 3. À DÉCOUVRIR — Vitrine */}
-          <OeuvresVitrine onSelect={setSelectedData} />
+          <OeuvresVitrine onSelect={setSelectedData} initialOeuvres={vitrineOeuvres} />
 
           {/* 4. TOP TEAMS */}
           <TopTeams />
@@ -1273,10 +1277,7 @@ export default function Home() {
             </h3>
             <div className="flex flex-wrap gap-2 mb-8">
               {["Action","Aventure","Comédie","Drame","Fantaisie","Horreur","Isekai","Mystère","Romance","Sci-Fi","Slice of Life","Thriller","Surnaturel","Arts Martiaux","Mecha","Historique"].map((genre) => (
-                <Link key={genre} href={`/tags-genres/genres/${genre.toLowerCase().replace(/ /g, "-")}`}
-                  className="group bg-white/[0.025] hover:bg-indigo-500/15 border border-white/[0.06] hover:border-indigo-500/30 text-white/40 hover:text-white/80 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300">
-                  <FiTag className="inline mr-1.5 text-xs opacity-40 group-hover:opacity-80 transition-opacity" />{genre}
-                </Link>
+                <TaxonomyChip key={genre} type="genre" label={genre} />
               ))}
             </div>
             <div className="text-center mt-8">

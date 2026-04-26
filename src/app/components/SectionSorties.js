@@ -6,8 +6,9 @@ import { Pagination, Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
+import dynamic from "next/dynamic";
 import OeuvreCard from "./OeuvreCard";
-import FicheOeuvre from "./FicheOeuvre";
+const FicheOeuvre = dynamic(() => import("./FicheOeuvre"), { ssr: false });
 
 const SkeletonCard = () => (
   <div className="relative bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden animate-pulse border border-gray-700/30">

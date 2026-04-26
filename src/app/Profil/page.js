@@ -9,7 +9,7 @@ import Parametre from "../components/Parametre";
 import Indexeur from "../components/Indexeur";
 import Administration from "../components/Administration";
 import Bibliotheque from "../components/bibliotheque";
-import BulkTagsGenre from "../indexeur/BulkTagsGenre";
+import BulkTagsGenrePile from "../indexeur/BulkTagsGenrePile";
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
@@ -74,7 +74,7 @@ const ProfilePage = () => {
       case "indexeur":
         return <Indexeur user={user} />;
       case "bulktags":
-        return <BulkTagsGenre user={user} />;
+        return <BulkTagsGenrePile user={user} />;
       case "administration":
         return <Administration user={user} />;
       case "bibliotheque":

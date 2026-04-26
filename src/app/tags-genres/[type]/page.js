@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { slugify } from "@/utils/slugify";
+import TaxonomyChip from "@/app/components/TaxonomyChip";
 import { FiArrowLeft, FiBook, FiTag, FiBookOpen, FiHash } from "react-icons/fi";
 
 const STRAPI = process.env.NEXT_PUBLIC_API_URL;
@@ -228,17 +229,16 @@ export default async function TagsGenresIndexPage({ params }) {
               <FiBookOpen className={`w-5 h-5 ${isTag ? "text-purple-400" : "text-indigo-400"}`} />
               {isTag ? "Thématiques les plus présentes" : "Genres les plus représentés"}
             </h2>
-            <ul className="flex flex-wrap gap-1.5">
+            <ul className="flex flex-wrap gap-2">
               {top.filter((t) => t.count > 0).map((it) => (
                 <li key={it.id}>
-                  <Link
-                    href={`/tags-genres/${type}/${it.slug}`}
+                  <TaxonomyChip
+                    type={isTag ? "tag" : "genre"}
+                    label={it.titre}
+                    slug={it.slug}
+                    count={it.count}
                     title={`${it.count} œuvre${it.count > 1 ? "s" : ""} ${isTag ? "avec la thématique" : "du genre"} ${it.titre}`}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${isTag ? "bg-purple-500/10 border-purple-400/25 text-purple-200 hover:bg-purple-500/20 hover:border-purple-400/50 hover:text-purple-100" : "bg-indigo-500/10 border-indigo-400/25 text-indigo-200 hover:bg-indigo-500/20 hover:border-indigo-400/50 hover:text-indigo-100"} border text-xs transition-colors`}
-                  >
-                    {it.titre}
-                    <span className={isTag ? "text-purple-300/70" : "text-indigo-300/70"}>×{it.count}</span>
-                  </Link>
+                  />
                 </li>
               ))}
             </ul>

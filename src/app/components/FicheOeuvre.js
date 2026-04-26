@@ -2,10 +2,12 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import DOMPurify from "dompurify";
 import Cookies from "js-cookie";
 import Image from "next/image";
 import Link from "next/link";
+import TaxonomyChip from "./TaxonomyChip";
 import { slugify } from "@/utils/slugify";
 import CommentairePreview from "./CommentairePreview";
 import {
@@ -215,11 +217,15 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
     try { await navigator.clipboard.writeText(pageUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
   };
 
-  const stagger = (i) => ({ initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 }, transition: { delay: 0.3 + i * 0.08, duration: 0.45, ease: [.22,1,.36,1] } });
+  const stagger = (i) => ({ initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { delay: 0.05 + i * 0.025, duration: 0.25, ease: [.22,1,.36,1] } });
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   if (!oeuvre) return null;
+  if (!mounted) return null;
 
-  return (
+  return createPortal((
     <AnimatePresence>
       {/* ═══ Keyframes pour effets spéciaux ═══ */}
       <style>{`
@@ -237,11 +243,11 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
 
       {/* ═══ MODAL WRAPPER — bordure gradient tournante ═══ */}
       <motion.div key="modal-wrap"
-        initial={{ opacity: 0, y: 60, scale: 0.92 }}
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 60, scale: 0.92 }}
-        transition={{ type: "spring", damping: 24, stiffness: 220 }}
-        className="fixed z-50 inset-0 m-auto w-[calc(100%-1.5rem)] sm:w-[740px] md:w-[880px] h-fit max-h-[92vh] p-[2px] rounded-[22px]"
+        exit={{ opacity: 0, y: 24, scale: 0.97 }}
+        transition={{ duration: 0.22, ease: [.22,1,.36,1] }}
+        className="fixed z-50 inset-0 m-auto w-full sm:w-[740px] md:w-[880px] max-w-[100vw] h-full sm:h-fit max-h-[100vh] sm:max-h-[92vh] p-0 sm:p-[2px] rounded-none sm:rounded-[22px]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Animated spinning conic gradient border */}
@@ -252,12 +258,12 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
           }} />
         </div>
         {/* Ambient glow */}
-        <div className="absolute -inset-6 bg-indigo-500/[0.07] rounded-[40px] blur-3xl pointer-events-none" />
+        <div className="absolute -inset-2 sm:-inset-6 bg-indigo-500/[0.07] rounded-[40px] blur-3xl pointer-events-none -z-10" />
 
         {/* ═══ MODAL CONTENT ═══ */}
         <div ref={modalRef} role="dialog" aria-modal="true"
-          className="relative bg-[#111827] rounded-[20px] overflow-hidden shadow-2xl">
-          <div className="overflow-y-auto max-h-[calc(92vh-4px)]" style={{ scrollbarWidth: "thin", scrollbarColor: "#334155 transparent" }}>
+          className="relative bg-[#111827] rounded-none sm:rounded-[20px] overflow-hidden shadow-2xl h-full sm:h-auto">
+          <div className="overflow-y-auto h-full sm:h-auto max-h-[100vh] sm:max-h-[calc(92vh-4px)]" style={{ scrollbarWidth: "thin", scrollbarColor: "#334155 transparent" }}>
 
             {/* ════════════════ IMMERSIVE HERO ════════════════ */}
             <div className="relative h-[310px] sm:h-[370px] overflow-hidden">
@@ -286,19 +292,19 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
               </button>
 
               {/* Hero content — cover + titre */}
-              <div className="absolute bottom-0 left-0 right-0 px-6 sm:px-8 pb-7 flex gap-6 items-end">
+              <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-8 pb-5 sm:pb-7 flex gap-4 sm:gap-6 items-end">
                 {/* Cover with gradient ring + glow */}
                 <motion.div className="flex-shrink-0 relative"
-                  initial={{ opacity: 0, x: -30, rotate: -3 }}
-                  animate={{ opacity: 1, x: 0, rotate: 0 }}
-                  transition={{ delay: 0.15, duration: 0.6, ease: [.22,1,.36,1] }}>
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.04, duration: 0.28, ease: [.22,1,.36,1] }}>
                   <div className="absolute -inset-4 bg-gradient-to-b from-indigo-500/25 via-purple-500/15 to-pink-500/10 rounded-2xl blur-2xl" />
                   <div className="absolute -inset-[3px] rounded-xl bg-gradient-to-b from-indigo-400/50 via-purple-500/30 to-pink-500/20" />
                   {cover ? (
                     <Image src={cover} alt={m.titre || ""} width={160} height={230}
-                      className="relative w-[115px] sm:w-[145px] aspect-[2/3] object-cover rounded-[9px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)]" />
+                      className="relative w-[95px] sm:w-[145px] aspect-[2/3] object-cover rounded-[9px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)]" />
                   ) : (
-                    <div className="relative w-[115px] sm:w-[145px] aspect-[2/3] bg-[#0f1318] rounded-[9px] flex items-center justify-center">
+                    <div className="relative w-[95px] sm:w-[145px] aspect-[2/3] bg-[#0f1318] rounded-[9px] flex items-center justify-center">
                       <FiBook className="text-4xl text-slate-700" />
                     </div>
                   )}
@@ -311,9 +317,9 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
 
                 {/* Titre + méta */}
                 <motion.div className="flex-1 min-w-0 space-y-3"
-                  initial={{ opacity: 0, y: 25 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25, duration: 0.6, ease: [.22,1,.36,1] }}>
+                  transition={{ delay: 0.07, duration: 0.28, ease: [.22,1,.36,1] }}>
                   <div className="flex flex-wrap gap-1.5">
                     {m.type && (
                       <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-indigo-200 bg-indigo-500/20 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-indigo-400/25 shadow-[0_0_12px_rgba(99,102,241,0.15)]">
@@ -357,7 +363,7 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
             </div>
 
             {/* ════════════════ BENTO STATS GRID ════════════════ */}
-            <motion.div className="px-6 sm:px-8 py-5" {...stagger(0)}>
+            <motion.div className="px-4 sm:px-8 py-4 sm:py-5" {...stagger(0)}>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {totalCh > 0 && (
                   <div className="group bg-white/[0.025] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-4 hover:bg-indigo-500/[0.06] hover:border-indigo-500/20 transition-all duration-300 cursor-default">
@@ -407,10 +413,10 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
             </motion.div>
 
             {/* ════════════════ ACTION BAR ════════════════ */}
-            <motion.div className="px-6 sm:px-8 pb-5 flex flex-wrap items-center gap-2.5" {...stagger(1)}>
+            <motion.div className="px-4 sm:px-8 pb-5 flex flex-wrap items-center gap-2 sm:gap-2.5" {...stagger(1)}>
               {/* Shimmer CTA */}
               <button onClick={() => handleRead("first")} disabled={!totalCh}
-                className="group relative flex items-center gap-2 text-white pl-5 pr-6 py-3 rounded-full text-sm font-extrabold transition-all duration-300 disabled:opacity-30 overflow-hidden shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.04] active:scale-[0.97]"
+                className="group relative flex items-center gap-2 text-white pl-4 pr-5 sm:pl-5 sm:pr-6 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm font-extrabold transition-all duration-300 disabled:opacity-30 overflow-hidden shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.04] active:scale-[0.97]"
                 style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7)" }}>
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                   style={{
@@ -423,14 +429,14 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
               </button>
 
               <button onClick={() => handleRead("last")} disabled={!totalCh || totalCh < 2}
-                className="flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-30 text-white/70 hover:text-white pl-5 pr-6 py-3 rounded-full text-sm font-bold transition-all duration-300 border border-white/[0.06] hover:border-indigo-400/30 hover:scale-[1.03]">
+                className="flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-30 text-white/70 hover:text-white pl-4 pr-5 sm:pl-5 sm:pr-6 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 border border-white/[0.06] hover:border-indigo-400/30 hover:scale-[1.03]">
                 <FiChevronsRight className="text-indigo-400" /> Ch. {lastCh?.order || "..."}
               </button>
 
               {/* Bouton Suivre — fonctionnel */}
               <button
                 onClick={isSubscribed ? handleUnsubscribe : handleSubscribe}
-                className={`flex items-center gap-2 pl-5 pr-6 py-3 rounded-full text-sm font-bold transition-all duration-300 border hover:scale-[1.03] ${
+                className={`flex items-center gap-2 pl-4 pr-5 sm:pl-5 sm:pr-6 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 border hover:scale-[1.03] ${
                   isSubscribed
                     ? "bg-amber-500/15 text-amber-300 border-amber-400/30 hover:bg-amber-500/25"
                     : "bg-white/[0.04] text-amber-400/80 hover:text-amber-300 border-white/[0.06] hover:border-amber-400/30 hover:bg-amber-500/10"
@@ -439,14 +445,14 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
                 {isSubscribed ? "Suivi" : "Suivre"}
               </button>
 
-              <div className="relative ml-auto flex items-center gap-2" ref={shareRef}>
+              <div className="relative sm:ml-auto flex items-center gap-2" ref={shareRef}>
                 <button onClick={() => setShowShareMenu((p) => !p)}
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white/[0.04] hover:bg-white/[0.1] text-white/30 hover:text-white transition-all duration-300 border border-white/[0.06] hover:border-white/20 hover:scale-110">
+                  className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-white/[0.04] hover:bg-white/[0.1] text-white/30 hover:text-white transition-all duration-300 border border-white/[0.06] hover:border-white/20 hover:scale-110">
                   <FiShare2 className="text-sm" />
                 </button>
                 {slug && (
                   <Link href={`/oeuvre/${slug}`}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/[0.04] hover:bg-white/[0.1] text-white/30 hover:text-white transition-all duration-300 border border-white/[0.06] hover:border-white/20 hover:scale-110">
+                    className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-white/[0.04] hover:bg-white/[0.1] text-white/30 hover:text-white transition-all duration-300 border border-white/[0.06] hover:border-white/20 hover:scale-110">
                     <FiExternalLink className="text-sm" />
                   </Link>
                 )}
@@ -475,10 +481,10 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
             </motion.div>
 
             {/* Gradient separator */}
-            <div className="mx-6 sm:mx-8 h-px bg-gradient-to-r from-transparent via-indigo-500/15 to-transparent" />
+            <div className="mx-4 sm:mx-8 h-px bg-gradient-to-r from-transparent via-indigo-500/15 to-transparent" />
 
             {/* ════════════════ BODY ════════════════ */}
-            <div className="px-6 sm:px-8 py-7 space-y-7">
+            <div className="px-4 sm:px-8 py-5 sm:py-7 space-y-6 sm:space-y-7">
 
               {/* ── Synopsis avec barre accent ── */}
               {m.synopsis && (
@@ -544,15 +550,16 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
                       </h3>
                       <div className="flex flex-wrap gap-1.5">
                         {(showAllGenres ? genres : genres.slice(0, 10)).map((g) => (
-                          <Link key={g.id || g.nom || g.titre}
-                            href={`/tags-genres/genre/${slugify(g.titre || g.nom || "")}`}
-                            className="text-[11px] font-semibold text-pink-300/70 bg-pink-500/8 hover:bg-pink-500/15 px-3 py-1.5 rounded-lg transition-all duration-200 border border-pink-500/10 hover:border-pink-500/25 hover:text-pink-200 hover:scale-[1.04] hover:shadow-[0_0_12px_rgba(236,72,153,0.12)]">
-                            {g.titre || g.nom}
-                          </Link>
+                          <TaxonomyChip
+                            key={g.id || g.nom || g.titre}
+                            type="genre"
+                            label={g.titre || g.nom}
+                            size="sm"
+                          />
                         ))}
                         {genres.length > 10 && (
                           <button onClick={() => setShowAllGenres((p) => !p)}
-                            className="text-[11px] text-pink-400/40 hover:text-pink-300 px-2.5 py-1.5 transition font-medium">
+                            className="text-[11px] text-pink-400/60 hover:text-pink-300 px-2.5 py-1.5 transition font-medium">
                             {showAllGenres ? "− Réduire" : `+${genres.length - 10}`}
                           </button>
                         )}
@@ -562,20 +569,21 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
                   {tags.length > 0 && (
                     <div>
                       <h3 className="text-xs font-bold text-white/50 uppercase tracking-[0.2em] mb-2.5 flex items-center gap-2.5">
-                        <div className="w-1 h-4 rounded-full bg-gradient-to-b from-slate-400 to-slate-600" />
+                        <div className="w-1 h-4 rounded-full bg-gradient-to-b from-indigo-400 to-violet-500" />
                         Tags <span className="text-white/15 font-normal">({tags.length})</span>
                       </h3>
                       <div className="flex flex-wrap gap-1.5">
                         {(showAllTags ? tags : tags.slice(0, 12)).map((t) => (
-                          <Link key={t.id || t.nom || t.titre}
-                            href={`/tags-genres/tag/${slugify(t.titre || t.nom || "")}`}
-                            className="text-[11px] font-medium text-white/30 bg-white/[0.03] hover:bg-white/[0.07] px-3 py-1.5 rounded-lg transition-all duration-200 border border-white/[0.04] hover:border-white/[0.12] hover:text-white/60 hover:scale-[1.04]">
-                            {t.titre || t.nom}
-                          </Link>
+                          <TaxonomyChip
+                            key={t.id || t.nom || t.titre}
+                            type="tag"
+                            label={t.titre || t.nom}
+                            size="sm"
+                          />
                         ))}
                         {tags.length > 12 && (
                           <button onClick={() => setShowAllTags((p) => !p)}
-                            className="text-[11px] text-white/20 hover:text-white/40 px-2.5 py-1.5 transition font-medium">
+                            className="text-[11px] text-indigo-400/60 hover:text-indigo-300 px-2.5 py-1.5 transition font-medium">
                             {showAllTags ? "− Réduire" : `+${tags.length - 12}`}
                           </button>
                         )}
@@ -609,7 +617,7 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
                     <div className="space-y-1">
                       {lastFive.map((ch, i) => (
                         <a key={ch.id || ch.order}
-                          href={ch.lien || "#"} target="_blank" rel="noopener noreferrer"
+                          href={ch.url || ch.lien || "#"} target="_blank" rel="noopener noreferrer"
                           className="relative flex items-center gap-4 py-2.5 pl-4 -ml-5 group hover:bg-white/[0.02] rounded-lg transition-all duration-200">
                           <div className={`absolute left-[3px] w-[9px] h-[9px] rounded-full border-2 border-[#111827] transition-all duration-300 ${
                             i === 0
@@ -729,7 +737,7 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
         </div>
       </motion.div>
     </AnimatePresence>
-  );
+  ), document.body);
 };
 
 export default FicheOeuvre;

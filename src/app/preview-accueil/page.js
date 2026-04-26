@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import TaxonomyChip from "@/app/components/TaxonomyChip";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
@@ -437,15 +438,16 @@ function PreviewOeuvre({ oeuvre, onClose }) {
                       </h3>
                       <div className="flex flex-wrap gap-1.5">
                         {(showAllGenres ? genres : genres.slice(0, 10)).map((g) => (
-                          <Link key={g.id || g.nom || g.titre}
-                            href={`/tags-genres/genre/${slugify(g.titre || g.nom || "")}`}
-                            className="text-[11px] font-semibold text-pink-300/70 bg-pink-500/8 hover:bg-pink-500/15 px-3 py-1.5 rounded-lg transition-all duration-200 border border-pink-500/10 hover:border-pink-500/25 hover:text-pink-200 hover:scale-[1.04] hover:shadow-[0_0_12px_rgba(236,72,153,0.12)]">
-                            {g.titre || g.nom}
-                          </Link>
+                          <TaxonomyChip
+                            key={g.id || g.nom || g.titre}
+                            type="genre"
+                            label={g.titre || g.nom}
+                            size="sm"
+                          />
                         ))}
                         {genres.length > 10 && (
                           <button onClick={() => setShowAllGenres((p) => !p)}
-                            className="text-[11px] text-pink-400/40 hover:text-pink-300 px-2.5 py-1.5 transition font-medium">
+                            className="text-[11px] text-pink-400/60 hover:text-pink-300 px-2.5 py-1.5 transition font-medium">
                             {showAllGenres ? "− Réduire" : `+${genres.length - 10}`}
                           </button>
                         )}
@@ -455,20 +457,21 @@ function PreviewOeuvre({ oeuvre, onClose }) {
                   {tags.length > 0 && (
                     <div>
                       <h3 className="text-xs font-bold text-white/50 uppercase tracking-[0.2em] mb-2.5 flex items-center gap-2.5">
-                        <div className="w-1 h-4 rounded-full bg-gradient-to-b from-slate-400 to-slate-600" />
+                        <div className="w-1 h-4 rounded-full bg-gradient-to-b from-indigo-400 to-violet-500" />
                         Tags <span className="text-white/15 font-normal">({tags.length})</span>
                       </h3>
                       <div className="flex flex-wrap gap-1.5">
                         {(showAllTags ? tags : tags.slice(0, 12)).map((t) => (
-                          <Link key={t.id || t.nom || t.titre}
-                            href={`/tags-genres/tag/${slugify(t.titre || t.nom || "")}`}
-                            className="text-[11px] font-medium text-white/30 bg-white/[0.03] hover:bg-white/[0.07] px-3 py-1.5 rounded-lg transition-all duration-200 border border-white/[0.04] hover:border-white/[0.12] hover:text-white/60 hover:scale-[1.04]">
-                            {t.titre || t.nom}
-                          </Link>
+                          <TaxonomyChip
+                            key={t.id || t.nom || t.titre}
+                            type="tag"
+                            label={t.titre || t.nom}
+                            size="sm"
+                          />
                         ))}
                         {tags.length > 12 && (
                           <button onClick={() => setShowAllTags((p) => !p)}
-                            className="text-[11px] text-white/20 hover:text-white/40 px-2.5 py-1.5 transition font-medium">
+                            className="text-[11px] text-indigo-400/60 hover:text-indigo-300 px-2.5 py-1.5 transition font-medium">
                             {showAllTags ? "− Réduire" : `+${tags.length - 12}`}
                           </button>
                         )}

@@ -233,6 +233,7 @@ module.exports = {
 
     // Pages statiques supplémentaires
     const staticPages = [
+      { loc: "/Oeuvres", changefreq: "daily", priority: 0.9 },
       { loc: "/tags-genres/tag", changefreq: "weekly", priority: 0.7 },
       { loc: "/tags-genres/genre", changefreq: "weekly", priority: 0.7 },
       { loc: "/auteur", changefreq: "weekly", priority: 0.7 },
@@ -240,7 +241,21 @@ module.exports = {
       { loc: "/sitemap", changefreq: "weekly", priority: 0.3 },
     ];
 
-    const allRoutes = [...staticPages, ...oeuvres, ...tags, ...genres, ...articles, ...auteurs, ...teams];
+    // Pages paginées du catalogue — toutes les pages, calculées depuis le total
+    // d'œuvres déjà fetché (PAGE_SIZE=12 dans /Oeuvres/page.js).
+    const OEUVRES_PER_CATALOG_PAGE = 12;
+    const totalCatalogPages = Math.max(1, Math.ceil(oeuvres.length / OEUVRES_PER_CATALOG_PAGE));
+    const oeuvresPaginatedPages = Array.from(
+      { length: Math.max(0, totalCatalogPages - 1) },
+      (_, i) => ({
+        loc: `/Oeuvres?page=${i + 2}`,
+        changefreq: "daily",
+        // Les premières pages sont plus importantes (œuvres récentes)
+        priority: i < 5 ? 0.6 : 0.4,
+      })
+    );
+
+    const allRoutes = [...staticPages, ...oeuvresPaginatedPages, ...oeuvres, ...tags, ...genres, ...articles, ...auteurs, ...teams];
     console.log(`Sitemap: ${oeuvres.length} oeuvres, ${tags.length} tags, ${genres.length} genres, ${articles.length} articles, ${auteurs.length} auteurs, ${teams.length} teams (incluant /Teams)`);
 
     return allRoutes;

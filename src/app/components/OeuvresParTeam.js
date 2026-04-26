@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import FicheOeuvre from "./FicheOeuvre"; // Import du composant FicheOeuvre
+import dynamic from "next/dynamic";
+const FicheOeuvre = dynamic(() => import("./FicheOeuvre"), { ssr: false });
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Navigation } from "swiper/modules";
 import "swiper/css";

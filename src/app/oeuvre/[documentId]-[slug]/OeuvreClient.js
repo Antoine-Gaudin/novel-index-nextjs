@@ -7,11 +7,12 @@ import Link from "next/link";
 import Cookies from "js-cookie";
 import DOMPurify from "dompurify";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiShare2, FiCopy, FiCheck, FiClock, FiUsers, FiBookOpen, FiCalendar, FiTrendingUp, FiChevronDown, FiHelpCircle } from "react-icons/fi";
+import { FiShare2, FiCopy, FiCheck, FiClock, FiUsers, FiBookOpen, FiCalendar, FiTrendingUp, FiChevronDown, FiHelpCircle, FiEdit3, FiTag, FiHash } from "react-icons/fi";
 import AffiChapitre from "../../components/Affichapitre";
 import Commentaire from "../../components/commentaire";
 import CoverBackground from "../../components/CoverBackground";
 import AdBanner from "../../components/AdBanner";
+import TaxonomyChip from "../../components/TaxonomyChip";
 import { slugify } from "@/utils/slugify";
 import { auteurSlug } from "@/utils/auteurSlug";
 
@@ -123,6 +124,13 @@ export default function OeuvreClient({
   initialSimilar = [],
   initialSubscribers = 0,
   initialByType = [],
+  initialByGenre = [],
+  initialByTag = [],
+  initialByAuthor = [],
+  initialByTeam = [],
+  initialSimilarAuthor = null,
+  primaryGenre = null,
+  primaryTag = null,
 }) {
   const router = useRouter();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -140,6 +148,11 @@ export default function OeuvreClient({
   const [subscribersCount] = useState(initialSubscribers);
   const [similarOeuvres] = useState(initialSimilar);
   const [byTypeOeuvres] = useState(initialByType);
+  const [byGenreOeuvres] = useState(initialByGenre);
+  const [byTagOeuvres] = useState(initialByTag);
+  const [byAuthorOeuvres] = useState(initialByAuthor);
+  const [byTeamOeuvres] = useState(initialByTeam);
+  const [similarAuthor] = useState(initialSimilarAuthor);
   const [lastChapterDate, setLastChapterDate] = useState(() => {
     if (initialChapitres && initialChapitres.length > 0) {
       const lastCh = initialChapitres[initialChapitres.length - 1];
@@ -151,6 +164,35 @@ export default function OeuvreClient({
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copied, setCopied] = useState(false);
   const [faqOpenIndex, setFaqOpenIndex] = useState(null);
+
+  // Upload couverture (admin uniquement, si pas de couverture)
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const isAdmin = user?.admin === true;
+
+  const handleCoverUpload = async (file) => {
+    if (!file) return;
+    setUploadError(null);
+    setUploadingCover(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("documentId", documentId);
+      const jwt = Cookies.get("jwt");
+      const res = await fetch("/api/upload-cover", {
+        method: "POST",
+        headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Échec upload");
+      router.refresh();
+    } catch (e) {
+      setUploadError(e.message);
+    } finally {
+      setUploadingCover(false);
+    }
+  };
 
   // Recalcul si la liste de chapitres change après mount (revalidate)
   useEffect(() => {
@@ -503,8 +545,39 @@ export default function OeuvreClient({
                   )}
                 </div>
               ) : (
-                <div className="w-64 h-96 bg-gray-700/50 backdrop-blur flex items-center justify-center rounded-xl text-gray-400 flex-shrink-0 border border-gray-600/30">
-                  Pas de couverture
+                <div className="w-64 h-96 bg-gray-700/50 backdrop-blur flex flex-col items-center justify-center rounded-xl text-gray-400 flex-shrink-0 border border-gray-600/30 p-4 text-center gap-3">
+                  {isAdmin ? (
+                    <>
+                      <span className="text-sm">Aucune couverture</span>
+                      <label
+                        className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-medium transition ${
+                          uploadingCover
+                            ? "bg-gray-600 text-gray-300 cursor-wait"
+                            : "bg-indigo-600 hover:bg-indigo-500 text-white"
+                        }`}
+                      >
+                        {uploadingCover ? "Envoi…" : "+ Ajouter une image"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={uploadingCover}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleCoverUpload(f);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                      {uploadError && (
+                        <span className="text-xs text-red-400 break-words">
+                          {uploadError}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    "Pas de couverture"
+                  )}
                 </div>
               )}
 
@@ -922,14 +995,12 @@ export default function OeuvreClient({
               </h3>
               <div className="flex flex-wrap gap-2">
                 {(showAllGenres ? oeuvre.genres : oeuvre.genres.slice(0, 15)).map((genre, idx) => (
-                  <Link
+                  <TaxonomyChip
                     key={`genre-${idx}`}
-                    href={`/tags-genres/genre/${slugify(genre.titre)}`}
-                    className="cursor-pointer bg-pink-600 hover:bg-pink-500 text-white px-3 py-1 rounded-full text-sm transition"
+                    type="genre"
+                    label={genre.titre}
                     title={genre.description || `Découvrir toutes les œuvres du genre ${genre.titre} sur Novel-Index`}
-                  >
-                    {genre.titre}
-                  </Link>
+                  />
                 ))}
               </div>
               {oeuvre.genres.length > 15 && (
@@ -956,14 +1027,12 @@ export default function OeuvreClient({
               </h3>
               <div className="flex flex-wrap gap-2">
                 {(showAllTags ? oeuvre.tags : oeuvre.tags.slice(0, 15)).map((tag, idx) => (
-                  <Link
+                  <TaxonomyChip
                     key={`tag-${idx}`}
-                    href={`/tags-genres/tag/${slugify(tag.titre)}`}
-                    className="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-full text-sm transition"
+                    type="tag"
+                    label={tag.titre}
                     title={tag.description || `Découvrir toutes les œuvres avec la thématique ${tag.titre} sur Novel-Index`}
-                  >
-                    {tag.titre}
-                  </Link>
+                  />
                 ))}
               </div>
               {oeuvre.tags.length > 15 && (
@@ -1171,6 +1240,309 @@ export default function OeuvreClient({
                   </div>
                 </Link>
               ))}
+            </div>
+          </div>
+        )}
+
+        {byGenreOeuvres.length > 0 && primaryGenre && (
+          <div className="bg-gray-800/50 rounded-xl p-4 space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2 flex-wrap">
+              <FiTag className="w-5 h-5 text-pink-400" />
+              <span>Plus d'œuvres en</span>
+              <Link
+                href={`/tags-genres/genre/${slugify(primaryGenre)}`}
+                className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-gradient-to-r from-pink-500/90 to-rose-600/90 hover:from-pink-400 hover:to-rose-500 text-white shadow-sm shadow-pink-900/30 ring-1 ring-pink-400/20 transition-all"
+              >
+                {primaryGenre}
+              </Link>
+              <span className="text-sm font-normal text-gray-400">— Le genre principal</span>
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+              {byGenreOeuvres.map((item) => (
+                <Link
+                  key={item.documentId}
+                  href={`/oeuvre/${item.documentId}-${slugify(item.titre)}`}
+                  className="group"
+                  title={`Lire ${item.titre} (${primaryGenre}) sur Novel-Index`}
+                >
+                  <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-700">
+                    {item.couverture?.url ? (
+                      <Image
+                        src={item.couverture.url}
+                        alt={`Couverture de ${item.titre}`}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FiBookOpen className="text-3xl text-gray-600" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-sm font-medium line-clamp-2 group-hover:text-pink-300 transition-colors">
+                        {item.titre}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">{item.type || "Novel"}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {byTagOeuvres.length > 0 && primaryTag && (
+          <div className="bg-gray-800/50 rounded-xl p-4 space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2 flex-wrap">
+              <FiHash className="w-5 h-5 text-indigo-400" />
+              <span>Œuvres explorant</span>
+              <Link
+                href={`/tags-genres/tag/${slugify(primaryTag)}`}
+                className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-gradient-to-r from-indigo-500/90 to-violet-600/90 hover:from-indigo-400 hover:to-violet-500 text-white shadow-sm shadow-indigo-900/30 ring-1 ring-indigo-400/20 transition-all"
+              >
+                {primaryTag}
+              </Link>
+              <span className="text-sm font-normal text-gray-400">— Thématique commune</span>
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+              {byTagOeuvres.map((item) => (
+                <Link
+                  key={item.documentId}
+                  href={`/oeuvre/${item.documentId}-${slugify(item.titre)}`}
+                  className="group"
+                  title={`Lire ${item.titre} (${primaryTag}) sur Novel-Index`}
+                >
+                  <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-700">
+                    {item.couverture?.url ? (
+                      <Image
+                        src={item.couverture.url}
+                        alt={`Couverture de ${item.titre}`}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FiBookOpen className="text-3xl text-gray-600" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-sm font-medium line-clamp-2 group-hover:text-indigo-300 transition-colors">
+                        {item.titre}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">{item.type || "Novel"}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {byAuthorOeuvres.length > 0 && oeuvre.auteur && (
+          <div className="rounded-xl p-5 space-y-4 bg-gradient-to-br from-amber-900/20 via-gray-800/50 to-gray-800/50 border border-amber-500/20">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-900/40">
+                <FiEdit3 className="w-6 h-6 text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs uppercase tracking-wider text-amber-300/80 font-semibold">Du même auteur</p>
+                <Link
+                  href={`/auteur/${auteurSlug(oeuvre.auteur)}`}
+                  className="text-xl font-bold text-white hover:text-amber-300 transition-colors inline-flex items-center gap-1.5"
+                  title={`Voir la fiche de ${oeuvre.auteur}`}
+                >
+                  {oeuvre.auteur}
+                </Link>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {byAuthorOeuvres.length} autre{byAuthorOeuvres.length > 1 ? "s" : ""} œuvre{byAuthorOeuvres.length > 1 ? "s" : ""} disponible{byAuthorOeuvres.length > 1 ? "s" : ""}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+              {byAuthorOeuvres.map((item) => (
+                <Link
+                  key={item.documentId}
+                  href={`/oeuvre/${item.documentId}-${slugify(item.titre)}`}
+                  className="group"
+                  title={`Lire ${item.titre} de ${oeuvre.auteur}`}
+                >
+                  <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-700 ring-1 ring-amber-500/10 group-hover:ring-amber-400/40 transition-all">
+                    {item.couverture?.url ? (
+                      <Image
+                        src={item.couverture.url}
+                        alt={`Couverture de ${item.titre}`}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FiBookOpen className="text-3xl text-gray-600" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-sm font-medium line-clamp-2 group-hover:text-amber-300 transition-colors">
+                        {item.titre}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">{item.type || "Novel"}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {byTeamOeuvres.length > 0 && oeuvre.traduction && (
+          <div className="bg-gray-800/50 rounded-xl p-4 space-y-4 border border-emerald-500/15">
+            <h3 className="text-lg font-semibold flex items-center gap-2 flex-wrap">
+              <FiUsers className="w-5 h-5 text-emerald-400" />
+              <span>Autres œuvres traduites par</span>
+              <Link
+                href={`/Teams/${team?.documentId ? `${team.documentId}-${slugify(oeuvre.traduction)}` : slugify(oeuvre.traduction)}`}
+                className="text-emerald-300 hover:text-emerald-200 transition-colors font-bold"
+              >
+                {oeuvre.traduction}
+              </Link>
+              <span className="text-sm font-normal text-gray-400">— Même équipe</span>
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+              {byTeamOeuvres.map((item) => (
+                <Link
+                  key={item.documentId}
+                  href={`/oeuvre/${item.documentId}-${slugify(item.titre)}`}
+                  className="group"
+                  title={`Lire ${item.titre} (traduit par ${oeuvre.traduction})`}
+                >
+                  <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-700">
+                    {item.couverture?.url ? (
+                      <Image
+                        src={item.couverture.url}
+                        alt={`Couverture de ${item.titre}`}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FiBookOpen className="text-3xl text-gray-600" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-sm font-medium line-clamp-2 group-hover:text-emerald-300 transition-colors">
+                        {item.titre}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">{item.type || "Novel"}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {similarAuthor && similarAuthor.oeuvres?.length > 0 && (
+          <div className="rounded-xl overflow-hidden bg-gradient-to-br from-fuchsia-900/25 via-purple-900/20 to-gray-800/60 border border-fuchsia-500/25 shadow-lg shadow-fuchsia-900/10">
+            <div className="p-5 sm:p-6 space-y-5">
+              <div className="flex items-start gap-4 flex-wrap sm:flex-nowrap">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-fuchsia-500 via-purple-500 to-violet-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-fuchsia-900/40 ring-2 ring-fuchsia-400/20">
+                  <FiTrendingUp className="w-7 h-7 text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] uppercase tracking-widest text-fuchsia-300/80 font-bold mb-1">
+                    Auteur à découvrir · Affinité thématique forte
+                  </p>
+                  <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
+                    <Link
+                      href={`/auteur/${auteurSlug(similarAuthor.auteur)}`}
+                      className="bg-gradient-to-r from-fuchsia-300 to-purple-300 bg-clip-text text-transparent hover:from-fuchsia-200 hover:to-purple-200 transition-all"
+                      title={`Voir la fiche de ${similarAuthor.auteur}`}
+                    >
+                      {similarAuthor.auteur}
+                    </Link>
+                  </h3>
+                  <p className="text-sm text-gray-300 mt-2 leading-relaxed">
+                    Si tu aimes <span className="font-semibold text-white">{oeuvre.titre}</span>, son univers et ses thématiques pourraient te plaire. Son œuvre la mieux assortie partage{" "}
+                    <span className="font-bold text-fuchsia-300">
+                      {similarAuthor.bestScore} thématique{similarAuthor.bestScore > 1 ? "s" : ""} commune{similarAuthor.bestScore > 1 ? "s" : ""}
+                    </span>{" "}
+                    avec celle-ci.
+                  </p>
+                  {similarAuthor.bestMatchedTags?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {similarAuthor.bestMatchedTags.slice(0, 6).map((t) => (
+                        <span
+                          key={t}
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs rounded-full bg-fuchsia-500/15 border border-fuchsia-400/30 text-fuchsia-200"
+                        >
+                          <FiHash className="w-3 h-3" />
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={`grid gap-4 ${similarAuthor.oeuvres.length === 1 ? "grid-cols-1 sm:grid-cols-2" : similarAuthor.oeuvres.length === 2 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"}`}>
+                {similarAuthor.oeuvres.map((item) => (
+                  <Link
+                    key={item.documentId}
+                    href={`/oeuvre/${item.documentId}-${slugify(item.titre)}`}
+                    className="group flex gap-3 p-3 rounded-xl bg-gray-900/40 hover:bg-gray-900/70 border border-fuchsia-500/10 hover:border-fuchsia-400/40 transition-all"
+                    title={`Lire ${item.titre} de ${similarAuthor.auteur}`}
+                  >
+                    <div className="relative w-20 h-28 sm:w-24 sm:h-32 flex-shrink-0 rounded-lg overflow-hidden bg-gray-700">
+                      {item.couverture?.url ? (
+                        <Image
+                          src={item.couverture.url}
+                          alt={`Couverture de ${item.titre}`}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <FiBookOpen className="text-2xl text-gray-600" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 flex flex-col">
+                      <p className="text-sm font-semibold text-white line-clamp-2 group-hover:text-fuchsia-300 transition-colors">
+                        {item.titre}
+                      </p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">{item.type || "Novel"}</p>
+                      {item._matchedTags?.length > 0 && (
+                        <div className="mt-auto pt-2 flex flex-wrap gap-1">
+                          {item._matchedTags.slice(0, 3).map((t) => (
+                            <span
+                              key={t}
+                              className="text-[10px] px-1.5 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-200 border border-fuchsia-400/20"
+                              title={`Thématique partagée : ${t}`}
+                            >
+                              {t}
+                            </span>
+                          ))}
+                          {item._matchedTags.length > 3 && (
+                            <span className="text-[10px] text-fuchsia-300/70">+{item._matchedTags.length - 3}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              <div className="pt-1">
+                <Link
+                  href={`/auteur/${auteurSlug(similarAuthor.auteur)}`}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-fuchsia-300 hover:text-fuchsia-200 transition-colors group"
+                >
+                  Découvrir tout ce que {similarAuthor.auteur} a écrit
+                  <span className="transition-transform group-hover:translate-x-1">→</span>
+                </Link>
+              </div>
             </div>
           </div>
         )}
