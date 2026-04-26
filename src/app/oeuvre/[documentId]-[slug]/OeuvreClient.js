@@ -2,24 +2,128 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import Cookies from "js-cookie";
+import DOMPurify from "dompurify";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiShare2, FiCopy, FiCheck, FiClock, FiUsers, FiBookOpen, FiCalendar, FiTrendingUp, FiChevronDown, FiHelpCircle } from "react-icons/fi";
 import AffiChapitre from "../../components/Affichapitre";
 import Commentaire from "../../components/commentaire";
-import DOMPurify from "dompurify";
+import CoverBackground from "../../components/CoverBackground";
+import AdBanner from "../../components/AdBanner";
+import { slugify } from "@/utils/slugify";
+import { auteurSlug } from "@/utils/auteurSlug";
 
 function sanitizeHtml(html) {
   if (typeof window === "undefined") return html;
   return DOMPurify.sanitize(html);
 }
-import Image from "next/image";
-import Link from "next/link";
-import { slugify } from "@/utils/slugify";
-import CoverBackground from "../../components/CoverBackground";
-import AdBanner from "../../components/AdBanner";
-import { motion, AnimatePresence } from "framer-motion";
-import { FiShare2, FiCopy, FiCheck, FiClock, FiUsers, FiBookOpen, FiCalendar, FiTrendingUp } from "react-icons/fi";
 
-export default function OeuvreClient({ initialOeuvre, initialChapitres, documentId }) {
+function buildEditorial({ titre, type, auteur, traduction, titrealt, categorie, genres, annee, etat, totalCh, readLabel, majLabel, licence, team }) {
+  const typeName = type ? type.toLowerCase() : "œuvre";
+  const article = type ? "un" : "une";
+
+  let intro = `${titre} est ${article} ${typeName}`;
+  if (auteur) intro += ` de ${auteur}`;
+  if (traduction) intro += `, dont la traduction française est assurée par ${traduction}`;
+  intro += ".";
+  if (titrealt) intro += ` Cette œuvre est également connue sous le titre alternatif « ${titrealt} ».`;
+
+  const genresList = genres?.length > 0 ? genres.slice(0, 5).map((g) => g.titre).join(", ") : null;
+  let corps = categorie ? `Classée dans la catégorie ${categorie}, cette œuvre` : "Cette œuvre";
+  if (genresList) corps += ` explore les genres ${genresList}`;
+  corps += ".";
+  if (annee) corps += ` Publiée pour la première fois en ${annee}`;
+  if (etat) corps += `${annee ? "," : "."} elle est actuellement ${etat.toLowerCase()}`;
+  if (annee || etat) corps += ".";
+
+  let stats = totalCh > 0
+    ? `À ce jour, ${totalCh} chapitre${totalCh > 1 ? "s" : ""} sont disponibles en français sur Novel-Index, soit environ ${readLabel} de lecture.`
+    : "Aucun chapitre n'est encore disponible en français pour le moment.";
+  if (majLabel) stats += ` La dernière mise à jour des chapitres date de ${majLabel.toLowerCase()}.`;
+  if (team?.titre) stats += ` La traduction est portée par l'équipe ${team.titre}.`;
+
+  const cta = licence
+    ? `${titre} a été officiellement licenciée. Pour soutenir l'auteur original et son éditeur, nous vous invitons à acquérir la version officielle.`
+    : null;
+
+  return { intro, corps, stats, cta };
+}
+
+function buildFaq({ titre, auteur, traduction, etat, totalCh, genres, licence, annee, team }) {
+  const items = [];
+
+  items.push({
+    q: `Combien de chapitres compte ${titre} ?`,
+    a: totalCh > 0
+      ? `${titre} compte actuellement ${totalCh} chapitre${totalCh > 1 ? "s" : ""} disponible${totalCh > 1 ? "s" : ""} en français sur Novel-Index.`
+      : `Aucun chapitre de ${titre} n'est encore disponible en français.`,
+  });
+
+  items.push({
+    q: `Qui est l'auteur de ${titre} ?`,
+    a: auteur
+      ? `${titre} a été écrit par ${auteur}.`
+      : `L'auteur original de ${titre} n'est pas renseigné sur Novel-Index pour le moment.`,
+  });
+
+  items.push({
+    q: `Qui traduit ${titre} en français ?`,
+    a: team?.titre
+      ? `La traduction française de ${titre} est assurée par l'équipe ${team.titre}.`
+      : traduction
+        ? `La traduction française de ${titre} est assurée par ${traduction}.`
+        : `Aucune équipe de traduction n'est référencée pour ${titre}.`,
+  });
+
+  if (etat) {
+    items.push({
+      q: `Quel est le statut de ${titre} ?`,
+      a: `${titre} est actuellement ${etat.toLowerCase()}.`,
+    });
+  }
+
+  if (genres?.length > 0) {
+    items.push({
+      q: `Quels sont les genres de ${titre} ?`,
+      a: `${titre} relève des genres suivants : ${genres.map((g) => g.titre).join(", ")}.`,
+    });
+  }
+
+  items.push({
+    q: `${titre} est-elle une œuvre licenciée ?`,
+    a: licence
+      ? `Oui, ${titre} a été officiellement licenciée. La traduction amateur n'est plus disponible — vous pouvez retrouver l'édition officielle chez l'éditeur.`
+      : `Non, ${titre} n'a pas été officiellement licenciée à ce jour.`,
+  });
+
+  items.push({
+    q: `Où peut-on lire ${titre} en français ?`,
+    a: licence
+      ? `${titre} étant licenciée, nous vous invitons à acquérir l'édition officielle pour la lire.`
+      : `Vous pouvez lire ${titre} directement depuis Novel-Index : cliquez sur un chapitre dans la liste de cette page pour être redirigé vers le site du traducteur.`,
+  });
+
+  if (annee) {
+    items.push({
+      q: `Quand ${titre} a-t-elle été publiée ?`,
+      a: `${titre} a été publiée pour la première fois en ${annee}.`,
+    });
+  }
+
+  return items;
+}
+
+export default function OeuvreClient({
+  initialOeuvre,
+  initialChapitres,
+  documentId,
+  initialTeam = null,
+  initialSimilar = [],
+  initialSubscribers = 0,
+  initialByType = [],
+}) {
   const router = useRouter();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -32,14 +136,23 @@ export default function OeuvreClient({ initialOeuvre, initialChapitres, document
   const [showAllGenres, setShowAllGenres] = useState(false);
   const [user, setUser] = useState(null);
 
-  const [team, setTeam] = useState(null);
-  const [subscribersCount, setSubscribersCount] = useState(0);
-  const [similarOeuvres, setSimilarOeuvres] = useState([]);
-  const [lastChapterDate, setLastChapterDate] = useState(null);
+  const [team] = useState(initialTeam);
+  const [subscribersCount] = useState(initialSubscribers);
+  const [similarOeuvres] = useState(initialSimilar);
+  const [byTypeOeuvres] = useState(initialByType);
+  const [lastChapterDate, setLastChapterDate] = useState(() => {
+    if (initialChapitres && initialChapitres.length > 0) {
+      const lastCh = initialChapitres[initialChapitres.length - 1];
+      const d = lastCh.publishedAt || lastCh.createdAt;
+      return d ? new Date(d) : null;
+    }
+    return null;
+  });
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [faqOpenIndex, setFaqOpenIndex] = useState(null);
 
-  // Calculer la date du dernier chapitre au mount
+  // Recalcul si la liste de chapitres change après mount (revalidate)
   useEffect(() => {
     if (chapitres.length > 0) {
       const lastCh = chapitres[chapitres.length - 1];
@@ -74,42 +187,7 @@ export default function OeuvreClient({ initialOeuvre, initialChapitres, document
     fetchUser();
   }, [apiUrl]);
 
-  useEffect(() => {
-    if (!oeuvre) return;
-
-    const fetchEnrichments = async () => {
-      try {
-        const [teamRes, subscribersRes, similarRes] = await Promise.all([
-          oeuvre.traduction
-            ? fetch(`${apiUrl}/api/teams?filters[titre][$eqi]=${encodeURIComponent(oeuvre.traduction)}&populate=couverture&pagination[limit]=1`)
-            : Promise.resolve({ json: () => ({ data: [] }) }),
-          fetch(`${apiUrl}/api/checkoeuvretimes?filters[oeuvres][documentId][$eq]=${oeuvre.documentId}&pagination[limit]=1`),
-          oeuvre.genres?.length > 0
-            ? fetch(`${apiUrl}/api/oeuvres?populate=couverture&filters[genres][titre][$in]=${oeuvre.genres.slice(0, 3).map(g => encodeURIComponent(g.titre)).join(',')}&filters[documentId][$ne]=${oeuvre.documentId}&pagination[limit]=6`)
-            : Promise.resolve({ json: () => ({ data: [] }) })
-        ]);
-
-        const [teamData, subscribersData, similarData] = await Promise.all([
-          teamRes.json ? teamRes.json() : { data: [] },
-          subscribersRes.json(),
-          similarRes.json ? similarRes.json() : { data: [] }
-        ]);
-
-        if (teamData.data?.[0]) {
-          setTeam(teamData.data[0]);
-        }
-
-        setSubscribersCount(subscribersData.meta?.pagination?.total || 0);
-
-        const similaires = (similarData.data || []).filter(o => o.documentId !== oeuvre.documentId);
-        setSimilarOeuvres(similaires.slice(0, 5));
-      } catch (err) {
-        console.error("Erreur enrichissements:", err);
-      }
-    };
-
-    fetchEnrichments();
-  }, [oeuvre, apiUrl]);
+  // team / similar / subscribersCount sont fournis par le SSR (page.js) — plus de fetch côté client.
 
   useEffect(() => {
     const checkAbonnement = async () => {
@@ -269,6 +347,76 @@ export default function OeuvreClient({ initialOeuvre, initialChapitres, document
     return `Il y a ${Math.floor(diffDays / 365)} ans`;
   };
 
+  // Données pour le bloc éditorial et la FAQ (uniquement si oeuvre est défini)
+  const totalCh = oeuvre?.licence
+    ? oeuvre?.achatlivres?.length || 0
+    : chapitres.length;
+  const readLabel = totalCh > 0 ? formatReadingTime(totalCh * 5) : null;
+  const majLabel = lastChapterDate ? formatRelativeDate(lastChapterDate) : null;
+
+  // Date du premier chapitre + fréquence moyenne de publication
+  const firstChapterDate =
+    chapitres.length > 0 && (chapitres[0].publishedAt || chapitres[0].createdAt)
+      ? new Date(chapitres[0].publishedAt || chapitres[0].createdAt)
+      : null;
+
+  const frequencyLabel = (() => {
+    if (!firstChapterDate || !lastChapterDate || chapitres.length < 2) return null;
+    const diffDays = Math.max(
+      1,
+      Math.round((lastChapterDate - firstChapterDate) / (1000 * 60 * 60 * 24))
+    );
+    const chapPerWeek = (chapitres.length / diffDays) * 7;
+    if (chapPerWeek >= 5) return `~${Math.round(chapPerWeek)} chapitres / semaine`;
+    if (chapPerWeek >= 1) return `~${chapPerWeek.toFixed(1)} chapitres / semaine`;
+    const daysPerChap = Math.round(diffDays / chapitres.length);
+    if (daysPerChap <= 14) return `~1 chapitre tous les ${daysPerChap} jours`;
+    const weeksPerChap = Math.round(daysPerChap / 7);
+    return `~1 chapitre toutes les ${weeksPerChap} semaines`;
+  })();
+
+  const formatAbsoluteDate = (date) => {
+    if (!date) return null;
+    return date.toLocaleDateString("fr-FR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const editorial = oeuvre
+    ? buildEditorial({
+        titre: oeuvre.titre,
+        type: oeuvre.type,
+        auteur: oeuvre.auteur,
+        traduction: oeuvre.traduction,
+        titrealt: oeuvre.titrealt,
+        categorie: oeuvre.categorie,
+        genres: oeuvre.genres,
+        annee: oeuvre.annee,
+        etat: oeuvre.etat,
+        totalCh,
+        readLabel,
+        majLabel,
+        licence: oeuvre.licence,
+        team,
+      })
+    : null;
+
+  const faqItems = oeuvre
+    ? buildFaq({
+        titre: oeuvre.titre,
+        auteur: oeuvre.auteur,
+        traduction: oeuvre.traduction,
+        etat: oeuvre.etat,
+        totalCh,
+        genres: oeuvre.genres,
+        licence: oeuvre.licence,
+        annee: oeuvre.annee,
+        team,
+      })
+    : [];
+
   if (!oeuvre)
     return (
       <div className="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center px-4">
@@ -342,7 +490,7 @@ export default function OeuvreClient({ initialOeuvre, initialChapitres, document
                   <div className="absolute -inset-4 bg-gradient-to-b from-indigo-500/30 to-purple-500/30 rounded-2xl blur-3xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
                   <Image
                     src={oeuvre.couverture.url}
-                    alt={oeuvre.titre || "Image non disponible"}
+                    alt={`Couverture de ${oeuvre.titre}${oeuvre.type ? ` — ${oeuvre.type}` : ""}${oeuvre.auteur ? ` par ${oeuvre.auteur}` : ""}`}
                     width={256}
                     height={384}
                     className="relative w-64 h-96 object-cover rounded-xl shadow-2xl shadow-black/70 ring-1 ring-white/10 group-hover:scale-105 group-hover:shadow-indigo-500/30 transition-all duration-300"
@@ -370,13 +518,43 @@ export default function OeuvreClient({ initialOeuvre, initialChapitres, document
                 <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                <span><strong>Auteur :</strong> {oeuvre.auteur || "Inconnu"}</span>
+                <span>
+                  <strong>Auteur :</strong>{" "}
+                  {oeuvre.auteur ? (
+                    <Link
+                      href={`/auteur/${auteurSlug(oeuvre.auteur)}`}
+                      className="text-indigo-300 hover:text-indigo-200 underline-offset-4 hover:underline transition-colors"
+                      title={`Voir toutes les œuvres de ${oeuvre.auteur} traduites en français`}
+                    >
+                      {oeuvre.auteur}
+                    </Link>
+                  ) : (
+                    "Inconnu"
+                  )}
+                </span>
               </div>
               <div className="flex items-center gap-2 justify-center sm:justify-start">
                 <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                 </svg>
-                <span><strong>Traduction :</strong> {oeuvre.traduction || "Inconnue"}</span>
+                <span>
+                  <strong>Traduction :</strong>{" "}
+                  {oeuvre.traduction ? (
+                    team?.documentId ? (
+                      <Link
+                        href={`/Teams/${team.documentId}-${slugify(team.titre || oeuvre.traduction)}`}
+                        className="text-green-300 hover:text-green-200 underline-offset-4 hover:underline transition-colors"
+                        title={`Voir la fiche de l'équipe ${oeuvre.traduction} et toutes ses traductions`}
+                      >
+                        {oeuvre.traduction}
+                      </Link>
+                    ) : (
+                      oeuvre.traduction
+                    )
+                  ) : (
+                    "Inconnue"
+                  )}
+                </span>
               </div>
             </div>
 
@@ -640,7 +818,7 @@ export default function OeuvreClient({ initialOeuvre, initialChapitres, document
               style={{ whiteSpace: "pre-wrap" }}
               dangerouslySetInnerHTML={{
                 __html: sanitizeHtml(
-                  oeuvre.synopsis.replace(/\\r\\n|\\n|\\r/g, "<br>")
+                  oeuvre.synopsis.replace(/\r?\n/g, "<br>")
                 ),
               }}
             ></div>
@@ -651,6 +829,87 @@ export default function OeuvreClient({ initialOeuvre, initialChapitres, document
       </div>
 
       <div className="max-w-6xl mx-auto px-4 pb-8 space-y-8">
+        {editorial && (
+          <section className="bg-gray-800/40 backdrop-blur-md rounded-xl p-5 border border-gray-700/30">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <FiBookOpen className="w-5 h-5 text-indigo-400" />
+              À propos de {oeuvre.titre}
+            </h2>
+            <div className="text-gray-300 leading-relaxed space-y-3">
+              <p>{editorial.intro}</p>
+              <p>{editorial.corps}</p>
+              <p>{editorial.stats}</p>
+              {editorial.cta && (
+                <p className="text-amber-300/90 italic">{editorial.cta}</p>
+              )}
+            </div>
+          </section>
+        )}
+
+        {totalCh > 0 && (
+          <section className="bg-gray-800/40 backdrop-blur-md rounded-xl p-5 border border-gray-700/30">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <FiTrendingUp className="w-5 h-5 text-emerald-400" />
+              Statistiques de {oeuvre.titre}
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="bg-gray-900/40 rounded-lg p-3 border border-gray-700/30">
+                <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                  <FiBookOpen className="w-3.5 h-3.5" /> Chapitres
+                </p>
+                <p className="text-lg font-semibold text-white">{totalCh}</p>
+              </div>
+              {readLabel && (
+                <div className="bg-gray-900/40 rounded-lg p-3 border border-gray-700/30">
+                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                    <FiClock className="w-3.5 h-3.5" /> Lecture estimée
+                  </p>
+                  <p className="text-lg font-semibold text-white">{readLabel}</p>
+                </div>
+              )}
+              {firstChapterDate && (
+                <div className="bg-gray-900/40 rounded-lg p-3 border border-gray-700/30">
+                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                    <FiCalendar className="w-3.5 h-3.5" /> Premier chapitre
+                  </p>
+                  <p className="text-sm font-semibold text-white">{formatAbsoluteDate(firstChapterDate)}</p>
+                </div>
+              )}
+              {lastChapterDate && (
+                <div className="bg-gray-900/40 rounded-lg p-3 border border-gray-700/30">
+                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                    <FiCalendar className="w-3.5 h-3.5" /> Dernier chapitre
+                  </p>
+                  <p className="text-sm font-semibold text-white">{formatAbsoluteDate(lastChapterDate)}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{formatRelativeDate(lastChapterDate)}</p>
+                </div>
+              )}
+              {frequencyLabel && (
+                <div className="bg-gray-900/40 rounded-lg p-3 border border-gray-700/30 sm:col-span-2">
+                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                    <FiTrendingUp className="w-3.5 h-3.5" /> Fréquence de publication
+                  </p>
+                  <p className="text-sm font-semibold text-white">{frequencyLabel}</p>
+                </div>
+              )}
+              {subscribersCount > 0 && (
+                <div className="bg-gray-900/40 rounded-lg p-3 border border-gray-700/30">
+                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                    <FiUsers className="w-3.5 h-3.5" /> Abonnés
+                  </p>
+                  <p className="text-lg font-semibold text-white">{subscribersCount}</p>
+                </div>
+              )}
+              {oeuvre.etat && (
+                <div className="bg-gray-900/40 rounded-lg p-3 border border-gray-700/30">
+                  <p className="text-xs text-gray-400 mb-1">Statut</p>
+                  <p className="text-sm font-semibold text-white">{oeuvre.etat}</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         <div className="grid md:grid-cols-2 gap-4">
           {oeuvre.genres?.length > 0 && (
             <div className="bg-gray-800/50 rounded-xl p-4">
@@ -667,7 +926,7 @@ export default function OeuvreClient({ initialOeuvre, initialChapitres, document
                     key={`genre-${idx}`}
                     href={`/tags-genres/genre/${slugify(genre.titre)}`}
                     className="cursor-pointer bg-pink-600 hover:bg-pink-500 text-white px-3 py-1 rounded-full text-sm transition"
-                    title={genre.description}
+                    title={genre.description || `Découvrir toutes les œuvres du genre ${genre.titre} sur Novel-Index`}
                   >
                     {genre.titre}
                   </Link>
@@ -701,7 +960,7 @@ export default function OeuvreClient({ initialOeuvre, initialChapitres, document
                     key={`tag-${idx}`}
                     href={`/tags-genres/tag/${slugify(tag.titre)}`}
                     className="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-full text-sm transition"
-                    title={tag.description}
+                    title={tag.description || `Découvrir toutes les œuvres avec la thématique ${tag.titre} sur Novel-Index`}
                   >
                     {tag.titre}
                   </Link>
@@ -761,8 +1020,71 @@ export default function OeuvreClient({ initialOeuvre, initialChapitres, document
           <AffiChapitre
             documentId={oeuvre.documentId}
             licence={oeuvre.licence}
-            totalChapitres={chapitres.length}
+            totalChapitres={oeuvre.licence ? (oeuvre.achatlivres?.length || 0) : chapitres.length}
+            initialItems={oeuvre.licence ? oeuvre.achatlivres : chapitres}
           />
+
+          {!oeuvre.licence && chapitres.length > 10 && (
+            <details className="mt-2 group">
+              <summary className="cursor-pointer text-sm text-indigo-300 hover:text-indigo-200 transition-colors py-2 select-none">
+                Voir l'index complet des chapitres ({chapitres.length})
+              </summary>
+              <div className="mt-3 space-y-4 text-sm">
+                {(() => {
+                  const sorted = [...chapitres].sort((a, b) => (a.order || 0) - (b.order || 0));
+                  const firstN = sorted.slice(0, 20);
+                  const lastN = sorted.slice(-20).reverse();
+                  const overlap = chapitres.length <= 40;
+                  return (
+                    <>
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
+                          Derniers chapitres publiés
+                        </p>
+                        <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-1">
+                          {lastN.map((ch) => (
+                            <li key={`last-${ch.id}`} className="truncate">
+                              <a
+                                href={ch.url}
+                                target="_blank"
+                                rel="noopener nofollow"
+                                className="text-gray-300 hover:text-indigo-300 transition-colors"
+                                title={ch.titre}
+                              >
+                                {ch.titre || `Chapitre ${ch.order}`}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      {!overlap && (
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
+                            Premiers chapitres
+                          </p>
+                          <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-1">
+                            {firstN.map((ch) => (
+                              <li key={`first-${ch.id}`} className="truncate">
+                                <a
+                                  href={ch.url}
+                                  target="_blank"
+                                  rel="noopener nofollow"
+                                  className="text-gray-300 hover:text-indigo-300 transition-colors"
+                                  title={ch.titre}
+                                >
+                                  {ch.titre || `Chapitre ${ch.order}`}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </details>
+          )}
         </div>
 
         {similarOeuvres.length > 0 && (
@@ -780,12 +1102,13 @@ export default function OeuvreClient({ initialOeuvre, initialChapitres, document
                   key={similar.documentId}
                   href={`/oeuvre/${similar.documentId}-${slugify(similar.titre)}`}
                   className="group"
+                  title={`Lire ${similar.titre}${similar.type ? ` (${similar.type})` : ""} sur Novel-Index`}
                 >
                   <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-700">
                     {similar.couverture?.url ? (
                       <Image
                         src={similar.couverture.url}
-                        alt={similar.titre}
+                        alt={`Couverture de ${similar.titre}`}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
@@ -806,6 +1129,86 @@ export default function OeuvreClient({ initialOeuvre, initialChapitres, document
               ))}
             </div>
           </div>
+        )}
+
+        {byTypeOeuvres.length > 0 && (
+          <div className="bg-gray-800/50 rounded-xl p-4 space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <FiBookOpen className="w-5 h-5 text-cyan-400" />
+              Plus d'œuvres en {oeuvre.type || "même type"}
+              <span className="text-sm font-normal text-gray-400">
+                Suggestions par type
+              </span>
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+              {byTypeOeuvres.map((item) => (
+                <Link
+                  key={item.documentId}
+                  href={`/oeuvre/${item.documentId}-${slugify(item.titre)}`}
+                  className="group"
+                  title={`Lire ${item.titre}${item.type ? ` (${item.type})` : ""} sur Novel-Index`}
+                >
+                  <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-700">
+                    {item.couverture?.url ? (
+                      <Image
+                        src={item.couverture.url}
+                        alt={`Couverture de ${item.titre}`}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FiBookOpen className="text-3xl text-gray-600" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-sm font-medium line-clamp-2 group-hover:text-cyan-300 transition-colors">
+                        {item.titre}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">{item.type || "Novel"}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {faqItems.length > 0 && (
+          <section className="bg-gray-800/50 rounded-xl p-4 space-y-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <FiHelpCircle className="w-5 h-5 text-amber-400" />
+              Questions fréquentes
+            </h2>
+            <div className="divide-y divide-gray-700/50">
+              {faqItems.map((item, idx) => {
+                const open = faqOpenIndex === idx;
+                return (
+                  <div key={`faq-${idx}`} className="py-2">
+                    <button
+                      type="button"
+                      onClick={() => setFaqOpenIndex(open ? null : idx)}
+                      aria-expanded={open}
+                      className="w-full flex items-center justify-between gap-4 text-left py-2 hover:text-indigo-300 transition-colors"
+                    >
+                      <span className="font-medium text-white">{item.q}</span>
+                      <FiChevronDown
+                        className={`w-5 h-5 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    <div
+                      className={`overflow-hidden transition-all ${open ? "max-h-96 mt-2" : "max-h-0"}`}
+                    >
+                      <p className="text-gray-300 text-sm leading-relaxed pb-2">
+                        {item.a}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         )}
 
         <div className="bg-gray-800/50 rounded-xl p-4 space-y-4">

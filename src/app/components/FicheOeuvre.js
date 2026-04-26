@@ -33,7 +33,9 @@ function timeAgo(date) {
 const FicheOeuvre = ({ oeuvre, onClose }) => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const [details, setDetails] = useState(null);
-  const [allChapitres, setAllChapitres] = useState([]);
+  const [chapitresPreview, setChapitresPreview] = useState([]);
+  const [firstChapitre, setFirstChapitre] = useState(null);
+  const [totalChapitres, setTotalChapitres] = useState(0);
   const [showAllGenres, setShowAllGenres] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
   const [selectedChapter, setSelectedChapter] = useState(null);
@@ -45,17 +47,23 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
   const modalRef = useRef(null);
   const shareRef = useRef(null);
 
-  /* ── Fetch détails oeuvre ── */
+  /* ── Fetch détails oeuvre + chapitres affichés ── */
   useEffect(() => {
     if (!oeuvre?.documentId) return;
     (async () => {
       try {
-        const res = await fetch(
-          `${apiUrl}/api/oeuvres/${oeuvre.documentId}?populate[chapitres][populate]=users_permissions_users&populate[tags]=true&populate[genres]=true`
-        );
-        const data = await res.json();
-        setDetails(data.data);
-        setAllChapitres((data.data?.chapitres || []).sort((a, b) => a.order - b.order));
+        const [oeuvreRes, previewRes, firstRes] = await Promise.all([
+          fetch(`${apiUrl}/api/oeuvres/${oeuvre.documentId}?populate[tags]=true&populate[genres]=true`),
+          fetch(`${apiUrl}/api/chapitres?filters[oeuvres][documentId][$eq]=${oeuvre.documentId}&sort=order:desc&pagination[limit]=5&populate=users_permissions_users`),
+          fetch(`${apiUrl}/api/chapitres?filters[oeuvres][documentId][$eq]=${oeuvre.documentId}&sort=order:asc&pagination[limit]=1&pagination[withCount]=true`),
+        ]);
+        const [oeuvreData, previewData, firstData] = await Promise.all([
+          oeuvreRes.json(), previewRes.json(), firstRes.json(),
+        ]);
+        setDetails(oeuvreData.data);
+        setChapitresPreview(previewData.data || []);
+        setFirstChapitre(firstData.data?.[0] || null);
+        setTotalChapitres(firstData.meta?.pagination?.total || 0);
       } catch (e) { console.error(e); }
     })();
   }, [oeuvre?.documentId, apiUrl]);
@@ -180,10 +188,10 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
   const slug = m.documentId ? `${m.documentId}-${slugify(m.titre || "")}` : "";
   const genres = details?.genres || [];
   const tags = details?.tags || [];
-  const totalCh = allChapitres.length;
-  const lastFive = [...allChapitres].reverse().slice(0, 5);
-  const firstCh = allChapitres[0];
-  const lastCh = allChapitres[allChapitres.length - 1];
+  const totalCh = totalChapitres;
+  const lastFive = chapitresPreview;
+  const firstCh = firstChapitre;
+  const lastCh = chapitresPreview[0];
   const readTime = totalCh * 5;
   const readLabel = readTime >= 60 ? `${Math.floor(readTime / 60)}h${readTime % 60 > 0 ? `${readTime % 60}` : ""}` : `${readTime}min`;
   const lastDate = lastCh?.publishedAt || lastCh?.createdAt;
@@ -198,7 +206,7 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
   })();
 
   const handleRead = (type) => {
-    if (!allChapitres.length) return;
+    if (!totalCh) return;
     setSelectedChapter(type === "first" ? firstCh : lastCh);
   };
 
@@ -706,12 +714,12 @@ const FicheOeuvre = ({ oeuvre, onClose }) => {
                       className="flex-1 px-4 py-3 bg-white/[0.05] hover:bg-white/[0.1] rounded-xl transition-all duration-200 text-sm font-medium text-white/50 hover:text-white/80">
                       Annuler
                     </button>
-                    <button
-                      onClick={() => { window.open(selectedChapter.lien || selectedChapter.url || "#", "_blank"); setSelectedChapter(null); }}
-                      className="flex-1 px-4 py-3 rounded-xl text-sm font-bold text-white transition-all duration-200 overflow-hidden relative shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-[0.98]"
+                    <a href={selectedChapter.lien || selectedChapter.url || "#"} target="_blank" rel="noopener noreferrer"
+                      onClick={() => setSelectedChapter(null)}
+                      className="flex-1 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-extrabold flex items-center justify-center gap-2 hover:scale-[1.02] shadow-lg shadow-indigo-500/20"
                       style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
-                      <span className="relative z-10 flex items-center justify-center gap-2">Continuer <FiExternalLink className="text-xs" /></span>
-                    </button>
+                      Lire <FiChevronsRight />
+                    </a>
                   </div>
                 </motion.div>
               </motion.div>
